@@ -11,6 +11,8 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as CategoriesRouteImport } from './routes/categories'
+import { Route as ExpertsIndexRouteImport } from './routes/experts.index'
+import { Route as ExpertsExpertSlugRouteImport } from './routes/experts.$expertSlug'
 import { Route as QuestionsIndexRouteImport } from './routes/questions.index'
 import { Route as QuestionsQuestionIdRouteImport } from './routes/questions.$questionId'
 
@@ -22,6 +24,16 @@ const IndexRoute = IndexRouteImport.update({
 const CategoriesRoute = CategoriesRouteImport.update({
   id: '/categories',
   path: '/categories',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ExpertsIndexRoute = ExpertsIndexRouteImport.update({
+  id: '/experts/',
+  path: '/experts/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ExpertsExpertSlugRoute = ExpertsExpertSlugRouteImport.update({
+  id: '/experts/$expertSlug',
+  path: '/experts/$expertSlug',
   getParentRoute: () => rootRouteImport,
 } as any)
 const QuestionsIndexRoute = QuestionsIndexRouteImport.update({
@@ -38,35 +50,61 @@ const QuestionsQuestionIdRoute = QuestionsQuestionIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/categories': typeof CategoriesRoute
+  '/experts/$expertSlug': typeof ExpertsExpertSlugRoute
   '/questions/$questionId': typeof QuestionsQuestionIdRoute
+  '/experts/': typeof ExpertsIndexRoute
   '/questions/': typeof QuestionsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/categories': typeof CategoriesRoute
+  '/experts/$expertSlug': typeof ExpertsExpertSlugRoute
   '/questions/$questionId': typeof QuestionsQuestionIdRoute
+  '/experts': typeof ExpertsIndexRoute
   '/questions': typeof QuestionsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/categories': typeof CategoriesRoute
+  '/experts/$expertSlug': typeof ExpertsExpertSlugRoute
   '/questions/$questionId': typeof QuestionsQuestionIdRoute
+  '/experts/': typeof ExpertsIndexRoute
   '/questions/': typeof QuestionsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/categories' | '/questions/$questionId' | '/questions/'
+  fullPaths:
+    | '/'
+    | '/categories'
+    | '/experts/$expertSlug'
+    | '/questions/$questionId'
+    | '/experts/'
+    | '/questions/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/categories' | '/questions/$questionId' | '/questions'
+  to:
+    | '/'
+    | '/categories'
+    | '/experts/$expertSlug'
+    | '/questions/$questionId'
+    | '/experts'
+    | '/questions'
   id:
-    '__root__' | '/' | '/categories' | '/questions/$questionId' | '/questions/'
+    | '__root__'
+    | '/'
+    | '/categories'
+    | '/experts/$expertSlug'
+    | '/questions/$questionId'
+    | '/experts/'
+    | '/questions/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   CategoriesRoute: typeof CategoriesRoute
+  ExpertsExpertSlugRoute: typeof ExpertsExpertSlugRoute
   QuestionsQuestionIdRoute: typeof QuestionsQuestionIdRoute
+  ExpertsIndexRoute: typeof ExpertsIndexRoute
   QuestionsIndexRoute: typeof QuestionsIndexRoute
 }
 
@@ -84,6 +122,20 @@ declare module '@tanstack/react-router' {
       path: '/categories'
       fullPath: '/categories'
       preLoaderRoute: typeof CategoriesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/experts/': {
+      id: '/experts/'
+      path: '/experts'
+      fullPath: '/experts/'
+      preLoaderRoute: typeof ExpertsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/experts/$expertSlug': {
+      id: '/experts/$expertSlug'
+      path: '/experts/$expertSlug'
+      fullPath: '/experts/$expertSlug'
+      preLoaderRoute: typeof ExpertsExpertSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/questions/': {
@@ -106,7 +158,9 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CategoriesRoute: CategoriesRoute,
+  ExpertsExpertSlugRoute: ExpertsExpertSlugRoute,
   QuestionsQuestionIdRoute: QuestionsQuestionIdRoute,
+  ExpertsIndexRoute: ExpertsIndexRoute,
   QuestionsIndexRoute: QuestionsIndexRoute,
 }
 export const routeTree = rootRouteImport
