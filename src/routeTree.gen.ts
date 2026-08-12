@@ -10,33 +10,193 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AboutRouteImport } from './routes/about'
+import { Route as AskRouteImport } from './routes/ask'
+import { Route as BecomeExpertRouteImport } from './routes/become-expert'
+import { Route as BlogRouteImport } from './routes/blog'
+import { Route as CategoriesRouteImport } from './routes/categories'
+import { Route as ContactRouteImport } from './routes/contact'
+import { Route as PricingRouteImport } from './routes/pricing'
+import { Route as TokensRouteImport } from './routes/tokens'
+import { Route as ExpertsIndexRouteImport } from './routes/experts.index'
+import { Route as ExpertsExpertSlugRouteImport } from './routes/experts.$expertSlug'
+import { Route as QuestionsIndexRouteImport } from './routes/questions.index'
+import { Route as QuestionsQuestionIdRouteImport } from './routes/questions.$questionId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AboutRoute = AboutRouteImport.update({
+  id: '/about',
+  path: '/about',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AskRoute = AskRouteImport.update({
+  id: '/ask',
+  path: '/ask',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BecomeExpertRoute = BecomeExpertRouteImport.update({
+  id: '/become-expert',
+  path: '/become-expert',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BlogRoute = BlogRouteImport.update({
+  id: '/blog',
+  path: '/blog',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CategoriesRoute = CategoriesRouteImport.update({
+  id: '/categories',
+  path: '/categories',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ContactRoute = ContactRouteImport.update({
+  id: '/contact',
+  path: '/contact',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PricingRoute = PricingRouteImport.update({
+  id: '/pricing',
+  path: '/pricing',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TokensRoute = TokensRouteImport.update({
+  id: '/tokens',
+  path: '/tokens',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ExpertsIndexRoute = ExpertsIndexRouteImport.update({
+  id: '/experts/',
+  path: '/experts/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ExpertsExpertSlugRoute = ExpertsExpertSlugRouteImport.update({
+  id: '/experts/$expertSlug',
+  path: '/experts/$expertSlug',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const QuestionsIndexRoute = QuestionsIndexRouteImport.update({
+  id: '/questions/',
+  path: '/questions/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const QuestionsQuestionIdRoute = QuestionsQuestionIdRouteImport.update({
+  id: '/questions/$questionId',
+  path: '/questions/$questionId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/about': typeof AboutRoute
+  '/ask': typeof AskRoute
+  '/become-expert': typeof BecomeExpertRoute
+  '/blog': typeof BlogRoute
+  '/categories': typeof CategoriesRoute
+  '/contact': typeof ContactRoute
+  '/pricing': typeof PricingRoute
+  '/tokens': typeof TokensRoute
+  '/experts/$expertSlug': typeof ExpertsExpertSlugRoute
+  '/questions/$questionId': typeof QuestionsQuestionIdRoute
+  '/experts/': typeof ExpertsIndexRoute
+  '/questions/': typeof QuestionsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/about': typeof AboutRoute
+  '/ask': typeof AskRoute
+  '/become-expert': typeof BecomeExpertRoute
+  '/blog': typeof BlogRoute
+  '/categories': typeof CategoriesRoute
+  '/contact': typeof ContactRoute
+  '/pricing': typeof PricingRoute
+  '/tokens': typeof TokensRoute
+  '/experts/$expertSlug': typeof ExpertsExpertSlugRoute
+  '/questions/$questionId': typeof QuestionsQuestionIdRoute
+  '/experts': typeof ExpertsIndexRoute
+  '/questions': typeof QuestionsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/about': typeof AboutRoute
+  '/ask': typeof AskRoute
+  '/become-expert': typeof BecomeExpertRoute
+  '/blog': typeof BlogRoute
+  '/categories': typeof CategoriesRoute
+  '/contact': typeof ContactRoute
+  '/pricing': typeof PricingRoute
+  '/tokens': typeof TokensRoute
+  '/experts/$expertSlug': typeof ExpertsExpertSlugRoute
+  '/questions/$questionId': typeof QuestionsQuestionIdRoute
+  '/experts/': typeof ExpertsIndexRoute
+  '/questions/': typeof QuestionsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/about'
+    | '/ask'
+    | '/become-expert'
+    | '/blog'
+    | '/categories'
+    | '/contact'
+    | '/pricing'
+    | '/tokens'
+    | '/experts/$expertSlug'
+    | '/questions/$questionId'
+    | '/experts/'
+    | '/questions/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/about'
+    | '/ask'
+    | '/become-expert'
+    | '/blog'
+    | '/categories'
+    | '/contact'
+    | '/pricing'
+    | '/tokens'
+    | '/experts/$expertSlug'
+    | '/questions/$questionId'
+    | '/experts'
+    | '/questions'
+  id:
+    | '__root__'
+    | '/'
+    | '/about'
+    | '/ask'
+    | '/become-expert'
+    | '/blog'
+    | '/categories'
+    | '/contact'
+    | '/pricing'
+    | '/tokens'
+    | '/experts/$expertSlug'
+    | '/questions/$questionId'
+    | '/experts/'
+    | '/questions/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AboutRoute: typeof AboutRoute
+  AskRoute: typeof AskRoute
+  BecomeExpertRoute: typeof BecomeExpertRoute
+  BlogRoute: typeof BlogRoute
+  CategoriesRoute: typeof CategoriesRoute
+  ContactRoute: typeof ContactRoute
+  PricingRoute: typeof PricingRoute
+  TokensRoute: typeof TokensRoute
+  ExpertsExpertSlugRoute: typeof ExpertsExpertSlugRoute
+  QuestionsQuestionIdRoute: typeof QuestionsQuestionIdRoute
+  ExpertsIndexRoute: typeof ExpertsIndexRoute
+  QuestionsIndexRoute: typeof QuestionsIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +208,107 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/about': {
+      id: '/about'
+      path: '/about'
+      fullPath: '/about'
+      preLoaderRoute: typeof AboutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ask': {
+      id: '/ask'
+      path: '/ask'
+      fullPath: '/ask'
+      preLoaderRoute: typeof AskRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/become-expert': {
+      id: '/become-expert'
+      path: '/become-expert'
+      fullPath: '/become-expert'
+      preLoaderRoute: typeof BecomeExpertRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/blog': {
+      id: '/blog'
+      path: '/blog'
+      fullPath: '/blog'
+      preLoaderRoute: typeof BlogRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/categories': {
+      id: '/categories'
+      path: '/categories'
+      fullPath: '/categories'
+      preLoaderRoute: typeof CategoriesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/contact': {
+      id: '/contact'
+      path: '/contact'
+      fullPath: '/contact'
+      preLoaderRoute: typeof ContactRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pricing': {
+      id: '/pricing'
+      path: '/pricing'
+      fullPath: '/pricing'
+      preLoaderRoute: typeof PricingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/tokens': {
+      id: '/tokens'
+      path: '/tokens'
+      fullPath: '/tokens'
+      preLoaderRoute: typeof TokensRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/experts/': {
+      id: '/experts/'
+      path: '/experts'
+      fullPath: '/experts/'
+      preLoaderRoute: typeof ExpertsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/experts/$expertSlug': {
+      id: '/experts/$expertSlug'
+      path: '/experts/$expertSlug'
+      fullPath: '/experts/$expertSlug'
+      preLoaderRoute: typeof ExpertsExpertSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/questions/': {
+      id: '/questions/'
+      path: '/questions'
+      fullPath: '/questions/'
+      preLoaderRoute: typeof QuestionsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/questions/$questionId': {
+      id: '/questions/$questionId'
+      path: '/questions/$questionId'
+      fullPath: '/questions/$questionId'
+      preLoaderRoute: typeof QuestionsQuestionIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AboutRoute: AboutRoute,
+  AskRoute: AskRoute,
+  BecomeExpertRoute: BecomeExpertRoute,
+  BlogRoute: BlogRoute,
+  CategoriesRoute: CategoriesRoute,
+  ContactRoute: ContactRoute,
+  PricingRoute: PricingRoute,
+  TokensRoute: TokensRoute,
+  ExpertsExpertSlugRoute: ExpertsExpertSlugRoute,
+  QuestionsQuestionIdRoute: QuestionsQuestionIdRoute,
+  ExpertsIndexRoute: ExpertsIndexRoute,
+  QuestionsIndexRoute: QuestionsIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
