@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { questions } from "@/data/platform";
 
-type Search = { category?: string };
+type Search = { category?: string | undefined };
 
 const filters = ["newest", "trending", "most answered", "premium", "unresolved"] as const;
 
