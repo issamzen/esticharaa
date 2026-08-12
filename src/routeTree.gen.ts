@@ -11,6 +11,8 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as CategoriesRouteImport } from './routes/categories'
+import { Route as PricingRouteImport } from './routes/pricing'
+import { Route as TokensRouteImport } from './routes/tokens'
 import { Route as ExpertsIndexRouteImport } from './routes/experts.index'
 import { Route as ExpertsExpertSlugRouteImport } from './routes/experts.$expertSlug'
 import { Route as QuestionsIndexRouteImport } from './routes/questions.index'
@@ -24,6 +26,16 @@ const IndexRoute = IndexRouteImport.update({
 const CategoriesRoute = CategoriesRouteImport.update({
   id: '/categories',
   path: '/categories',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PricingRoute = PricingRouteImport.update({
+  id: '/pricing',
+  path: '/pricing',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TokensRoute = TokensRouteImport.update({
+  id: '/tokens',
+  path: '/tokens',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ExpertsIndexRoute = ExpertsIndexRouteImport.update({
@@ -50,6 +62,8 @@ const QuestionsQuestionIdRoute = QuestionsQuestionIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/categories': typeof CategoriesRoute
+  '/pricing': typeof PricingRoute
+  '/tokens': typeof TokensRoute
   '/experts/$expertSlug': typeof ExpertsExpertSlugRoute
   '/questions/$questionId': typeof QuestionsQuestionIdRoute
   '/experts/': typeof ExpertsIndexRoute
@@ -58,6 +72,8 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/categories': typeof CategoriesRoute
+  '/pricing': typeof PricingRoute
+  '/tokens': typeof TokensRoute
   '/experts/$expertSlug': typeof ExpertsExpertSlugRoute
   '/questions/$questionId': typeof QuestionsQuestionIdRoute
   '/experts': typeof ExpertsIndexRoute
@@ -67,6 +83,8 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/categories': typeof CategoriesRoute
+  '/pricing': typeof PricingRoute
+  '/tokens': typeof TokensRoute
   '/experts/$expertSlug': typeof ExpertsExpertSlugRoute
   '/questions/$questionId': typeof QuestionsQuestionIdRoute
   '/experts/': typeof ExpertsIndexRoute
@@ -77,6 +95,8 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/categories'
+    | '/pricing'
+    | '/tokens'
     | '/experts/$expertSlug'
     | '/questions/$questionId'
     | '/experts/'
@@ -85,6 +105,8 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/categories'
+    | '/pricing'
+    | '/tokens'
     | '/experts/$expertSlug'
     | '/questions/$questionId'
     | '/experts'
@@ -93,6 +115,8 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/categories'
+    | '/pricing'
+    | '/tokens'
     | '/experts/$expertSlug'
     | '/questions/$questionId'
     | '/experts/'
@@ -102,6 +126,8 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   CategoriesRoute: typeof CategoriesRoute
+  PricingRoute: typeof PricingRoute
+  TokensRoute: typeof TokensRoute
   ExpertsExpertSlugRoute: typeof ExpertsExpertSlugRoute
   QuestionsQuestionIdRoute: typeof QuestionsQuestionIdRoute
   ExpertsIndexRoute: typeof ExpertsIndexRoute
@@ -122,6 +148,20 @@ declare module '@tanstack/react-router' {
       path: '/categories'
       fullPath: '/categories'
       preLoaderRoute: typeof CategoriesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pricing': {
+      id: '/pricing'
+      path: '/pricing'
+      fullPath: '/pricing'
+      preLoaderRoute: typeof PricingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/tokens': {
+      id: '/tokens'
+      path: '/tokens'
+      fullPath: '/tokens'
+      preLoaderRoute: typeof TokensRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/experts/': {
@@ -158,6 +198,8 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CategoriesRoute: CategoriesRoute,
+  PricingRoute: PricingRoute,
+  TokensRoute: TokensRoute,
   ExpertsExpertSlugRoute: ExpertsExpertSlugRoute,
   QuestionsQuestionIdRoute: QuestionsQuestionIdRoute,
   ExpertsIndexRoute: ExpertsIndexRoute,
