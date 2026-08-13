@@ -19,6 +19,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth";
+import { useSiteSettings } from "@/lib/site-settings";
 
 export const Route = createFileRoute("/account")({
   component: AccountPage,
@@ -38,6 +39,7 @@ type MyOrder = {
   tokens: number;
   bonus: number;
   price_mad: number;
+  method: string;
   status: string;
   created_at: string;
 };
@@ -54,6 +56,14 @@ function AccountPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { user, profile, loading, refreshProfile, signOut } = useAuth();
+  const site = useSiteSettings();
+
+  // Match an order's method label to the admin-configured payment details
+  function methodDetails(methodLabel: string) {
+    return site.paymentMethods.find(
+      (m) => m.label === methodLabel || m.id === methodLabel,
+    )?.details;
+  }
 
   const [questions, setQuestions] = useState<MyQuestion[]>([]);
   const [orders, setOrders] = useState<MyOrder[]>([]);
@@ -87,7 +97,7 @@ function AccountPage() {
       .then(({ data }) => setQuestions((data as MyQuestion[]) ?? []));
     supabase
       .from("orders")
-      .select("id, tokens, bonus, price_mad, status, created_at")
+      .select("id, tokens, bonus, price_mad, method, status, created_at")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
       .limit(20)
@@ -292,37 +302,50 @@ function AccountPage() {
                 {orders.map((o) => (
                   <div
                     key={o.id}
-                    className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border/70 bg-card p-4"
+                    className="rounded-2xl border border-border/70 bg-card p-4"
                   >
-                    <div>
-                      <p className="font-medium">
-                        {o.tokens + o.bonus} {t("common.tokens")}
-                        {o.bonus > 0 && (
-                          <span className="ms-1 text-xs text-secondary">
-                            (+{o.bonus})
-                          </span>
-                        )}
-                      </p>
-                      <p className="mt-0.5 text-xs text-muted-foreground">
-                        {new Date(o.created_at).toLocaleDateString()} ·{" "}
-                        {o.price_mad} {t("common.mad")}
-                      </p>
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div>
+                        <p className="font-medium">
+                          {o.tokens + o.bonus} {t("common.tokens")}
+                          {o.bonus > 0 && (
+                            <span className="ms-1 text-xs text-secondary">
+                              (+{o.bonus})
+                            </span>
+                          )}
+                        </p>
+                        <p className="mt-0.5 text-xs text-muted-foreground">
+                          {new Date(o.created_at).toLocaleDateString()} ·{" "}
+                          {o.price_mad} {t("common.mad")}
+                          {o.method ? <> · {o.method}</> : null}
+                        </p>
+                      </div>
+                      {o.status === "pending" && (
+                        <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-700">
+                          {t("account.orderPending", "بانتظار تأكيد الدفع")}
+                        </span>
+                      )}
+                      {o.status === "paid" && (
+                        <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-semibold text-emerald-700">
+                          {t("account.orderPaid", "مدفوع")}
+                        </span>
+                      )}
+                      {o.status === "cancelled" && (
+                        <span className="rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-semibold text-red-700">
+                          {t("account.orderCancelled", "ملغى")}
+                        </span>
+                      )}
                     </div>
-                    {o.status === "pending" && (
-                      <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-700">
-                        {t("account.orderPending", "بانتظار تأكيد الدفع")}
-                      </span>
-                    )}
-                    {o.status === "paid" && (
-                      <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-semibold text-emerald-700">
-                        {t("account.orderPaid", "مدفوع")}
-                      </span>
-                    )}
-                    {o.status === "cancelled" && (
-                      <span className="rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-semibold text-red-700">
-                        {t("account.orderCancelled", "ملغى")}
-                      </span>
-                    )}
+                    {o.status === "pending" && methodDetails(o.method) ? (
+                      <div className="mt-3 rounded-xl border border-amber-200/70 bg-amber-50/60 p-3">
+                        <p className="text-xs font-semibold text-amber-800">
+                          {t("account.paymentInstructions", "تعليمات إتمام الدفع")}
+                        </p>
+                        <p className="mt-1.5 whitespace-pre-wrap text-xs leading-6 text-amber-900/80" dir="auto">
+                          {methodDetails(o.method)}
+                        </p>
+                      </div>
+                    ) : null}
                   </div>
                 ))}
               </div>
