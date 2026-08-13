@@ -16,6 +16,7 @@ export type PaymentMethod = {
 };
 export type Branding = {
   site_name: string;
+  site_name_ar: string;
   logo_url: string;
   favicon_url: string;
 };
@@ -36,7 +37,7 @@ type SiteSettings = {
 };
 
 const DEFAULTS: SiteSettings = {
-  branding: { site_name: "Estichara.ma", logo_url: "", favicon_url: "" },
+  branding: { site_name: "Estichara.ma", site_name_ar: "", logo_url: "", favicon_url: "" },
   colors: null,
   nav: [],
   footer: [],
@@ -117,4 +118,12 @@ export function SiteSettingsProvider({ children }: { children: ReactNode }) {
 
 export function useSiteSettings() {
   return useContext(Ctx);
+}
+
+/** Site name in the visitor's language:
+ *  Arabic locale → Arabic name (if set), otherwise the default name. */
+export function useSiteName(locale: string) {
+  const { branding } = useContext(Ctx);
+  if (locale === "ar" && branding.site_name_ar) return branding.site_name_ar;
+  return branding.site_name || "Estichara.ma";
 }
