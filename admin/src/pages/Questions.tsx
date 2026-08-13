@@ -24,7 +24,7 @@ export function QuestionsPage() {
   async function load() {
     const [{ data: qs }, { data: as }] = await Promise.all([
       supabase.from("questions")
-        .select("id, title, body, tokens, status, views, answers_count, created_at, profiles(full_name), categories(name_ar)")
+        .select("id, title, body, tokens, status, views, answers_count, created_at, profiles:user_id(full_name), categories(name_ar)")
         .order("created_at", { ascending: false }).limit(200),
       supabase.from("answers")
         .select("id, body, status, created_at, profiles:expert_id(full_name), questions(title)")
