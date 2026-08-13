@@ -2,6 +2,7 @@ import { useEffect, useState, type ChangeEvent } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Loader2, Paperclip, ShieldCheck, Sparkles, Wand2 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
+import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import { z } from "zod";
 import { useTranslation } from "react-i18next";
@@ -48,6 +49,19 @@ function AskPage() {
   const [category, setCategory] = useState("");
   const [visibility, setVisibility] = useState("public");
   const [reward, setReward] = useState<number>(5);
+  const [submitting, setSubmitting] = useState(false);
+  const [dbCategories, setDbCategories] = useState<
+    { id: string; slug: string; name_ar: string; name_fr: string; name_en: string }[]
+  >([]);
+
+  useEffect(() => {
+    supabase
+      .from("categories")
+      .select("id, slug, name_ar, name_fr, name_en")
+      .eq("active", true)
+      .order("sort")
+      .then(({ data }) => setDbCategories(data ?? []));
+  }, []);
 
   // Not logged in → go to register/login first
   useEffect(() => {
@@ -73,7 +87,7 @@ function AskPage() {
     return `${value} ${t("common.tokens")}`;
   }
 
-  function submit() {
+  async function submit() {
     const schema = z.object({
       title: z.string().trim().min(15, copy.validationTitle).max(160),
       body: z.string().trim().min(30, copy.validationBody).max(4000),
@@ -84,7 +98,31 @@ function AskPage() {
       toast.error(result.error.issues[0]?.message ?? copy.validationGeneric);
       return;
     }
+    setSubmitting(true);
+
+    // Find the category's database id from its slug
+    const { data: cat } = await supabase
+      .from("categories")
+      .select("id")
+      .eq("slug", result.data.category)
+      .maybeSingle();
+
+    const { error } = await supabase.from("questions").insert({
+      user_id: user!.id,
+      category_id: cat?.id ?? null,
+      title: result.data.title,
+      body: result.data.body,
+      tokens: reward > 0 ? reward : 0,
+      status: "pending",
+      tags: [],
+    });
+    setSubmitting(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
     toast.success(copy.success, { description: copy.successDescription });
+    navigate({ to: "/account" });
   }
 
   return (
@@ -137,11 +175,21 @@ function AskPage() {
                     <SelectValue placeholder={copy.selectCategory} />
                   </SelectTrigger>
                   <SelectContent>
-                    {localizedCategories.map((item) => (
-                      <SelectItem key={item.slug} value={item.slug}>
-                        {item.name}
-                      </SelectItem>
-                    ))}
+                    {dbCategories.length > 0
+                      ? dbCategories.map((item) => (
+                          <SelectItem key={item.slug} value={item.slug}>
+                            {locale === "fr" && item.name_fr
+                              ? item.name_fr
+                              : locale === "en" && item.name_en
+                                ? item.name_en
+                                : item.name_ar}
+                          </SelectItem>
+                        ))
+                      : localizedCategories.map((item) => (
+                          <SelectItem key={item.slug} value={item.slug}>
+                            {item.name}
+                          </SelectItem>
+                        ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -193,7 +241,7 @@ function AskPage() {
               </Badge>
             </div>
 
-            <Button size="lg" className="w-full rounded-xl" onClick={submit}>
+            <Button size="lg" className="w-full rounded-xl" disabled={submitting} onClick={submit}>
               {copy.publish}
             </Button>
           </div>
