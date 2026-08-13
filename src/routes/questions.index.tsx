@@ -1,6 +1,10 @@
-import { useMemo, useState, type ChangeEvent } from "react";
-import { createFileRoute } from "@tanstack/react-router";
-import { Search } from "lucide-react";
+import { useEffect, useMemo, useState, type ChangeEvent } from "react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { Eye, Lock, MessageSquare, Search } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { useTranslation } from "react-i18next";
+import { supabase } from "@/lib/supabase";
+import { formatDate } from "@/i18n/format";
 import { SiteLayout, PageHeader } from "@/components/site/layout";
 import { QuestionCard } from "@/components/site/question-card";
 import { Input } from "@/components/ui/input";
@@ -33,10 +37,40 @@ export const Route = createFileRoute("/questions/")({
   component: QuestionsPage,
 });
 
+type LiveQuestion = {
+  id: string;
+  title: string;
+  body: string;
+  tokens: number;
+  views: number;
+  answers_count: number;
+  created_at: string;
+  categories: { slug: string; name_ar: string } | null;
+};
+
 function QuestionsPage() {
   const { category } = Route.useSearch();
   const copy = usePageCopy().questions;
   const locale = useLocale();
+  const { t } = useTranslation();
+  const [live, setLive] = useState<LiveQuestion[]>([]);
+
+  useEffect(() => {
+    supabase
+      .from("questions")
+      .select(
+        "id, title, body, tokens, views, answers_count, created_at, categories(slug, name_ar)",
+      )
+      .eq("status", "published")
+      .order("created_at", { ascending: false })
+      .limit(50)
+      .then(({ data }) => setLive((data as unknown as LiveQuestion[]) ?? []));
+  }, []);
+
+  const liveVisible = useMemo(
+    () => live.filter((q) => !category || q.categories?.slug === category),
+    [live, category],
+  );
   const localized = useMemo(
     () => questions.map((item) => localizeQuestion(item, locale)),
     [locale],
@@ -99,6 +133,50 @@ function QuestionsPage() {
         </div>
 
         <div className="mt-8 grid gap-5 lg:grid-cols-2">
+          {/* Real questions from the community (database) */}
+          {liveVisible.map((q) => (
+            <Link
+              key={q.id}
+              to="/questions/$questionId"
+              params={{ questionId: q.id }}
+              className="group relative block overflow-hidden rounded-3xl border border-border/70 bg-card p-5 shadow-soft transition-all duration-300 hover:-translate-y-1 hover:border-secondary/35 hover:shadow-lift sm:p-6"
+            >
+              <div className="absolute inset-x-0 top-0 h-0.5 origin-start scale-x-0 bg-gradient-to-r from-secondary to-accent transition-transform duration-300 group-hover:scale-x-100" />
+              <div className="flex flex-wrap items-center gap-2">
+                {q.categories ? (
+                  <Badge variant="secondary" className="rounded-full">
+                    {q.categories.name_ar}
+                  </Badge>
+                ) : null}
+                {q.tokens > 0 ? (
+                  <Badge className="rounded-full bg-accent text-accent-foreground">
+                    <Lock className="size-3" /> {q.tokens} {t("common.tokens")}
+                  </Badge>
+                ) : (
+                  <Badge variant="outline" className="rounded-full">
+                    {t("common.free")}
+                  </Badge>
+                )}
+              </div>
+              <h3 className="mt-4 text-lg font-semibold leading-snug transition-colors group-hover:text-primary sm:text-xl">
+                {q.title}
+              </h3>
+              <p className="mt-2 line-clamp-2 text-sm leading-6 text-muted-foreground">
+                {q.body}
+              </p>
+              <div className="mt-5 flex flex-wrap items-center gap-4 border-t border-border/60 pt-4 text-xs text-muted-foreground">
+                <span className="inline-flex items-center gap-1.5">
+                  <MessageSquare className="size-3.5 text-secondary" />
+                  {q.answers_count}
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <Eye className="size-3.5" /> {q.views}
+                </span>
+                <span className="ms-auto">{formatDate(q.created_at, locale)}</span>
+              </div>
+            </Link>
+          ))}
+          {/* Sample questions (demo content) */}
           {visible.map((question) => (
             <QuestionCard key={question.id} question={question} />
           ))}
