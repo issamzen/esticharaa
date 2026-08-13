@@ -72,6 +72,7 @@ export const fr = {
     purchases: "Mes achats",
     settings: "Paramètres",
     signOut: "Se déconnecter",
+    mainLabel: "Navigation principale",
     openMenu: "Ouvrir le menu",
     closeMenu: "Fermer le menu",
   },
@@ -97,6 +98,7 @@ export const fr = {
     answerCount_other: "{{count}} réponses",
     premiumQuestion: "Question premium",
     sampleExpertName: "Nadia Berrada",
+    sampleExpertInitials: "NB",
     sampleExpertRole: "Avocate en droit des affaires · Casablanca",
     sampleAnswer:
       "Pour une petite agence de services, une SARL AU est souvent le choix le plus pratique, car elle sépare la responsabilité personnelle de celle de l'entreprise tout en…",
