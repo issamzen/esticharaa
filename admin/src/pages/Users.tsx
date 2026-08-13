@@ -19,6 +19,8 @@ const ERROR_MESSAGES: Record<string, string> = {
   LAST_ADMIN: "لا يمكن إزالة آخر مشرف في المنصة",
   CANNOT_DELETE_SELF: "لا يمكنك حذف حسابك الخاص",
   CANNOT_DELETE_ADMIN: "لا يمكن حذف مشرف — أزل صلاحياته أولًا",
+  CANNOT_BAN_SELF: "لا يمكنك حظر نفسك",
+  CANNOT_BAN_ADMIN: "لا يمكن حظر مشرف — أزل صلاحياته أولًا",
   ADMIN_ONLY: "هذه العملية للمشرفين فقط",
 };
 
@@ -48,8 +50,10 @@ export function UsersPage() {
   useEffect(() => { load(); }, []);
 
   async function toggleBan(u: Profile) {
+    if (!u.is_banned && !confirm(`حظر «${u.full_name}»؟\nسيُسجَّل خروجه فورًا ولن يستطيع الدخول أو القيام بأي إجراء.`)) return;
     setBusy(u.id);
-    await supabase.from("profiles").update({ is_banned: !u.is_banned }).eq("id", u.id);
+    const { error } = await supabase.rpc("admin_set_ban", { p_user_id: u.id, p_banned: !u.is_banned });
+    if (error) alert(friendlyError(error.message));
     await load(); setBusy("");
   }
 
