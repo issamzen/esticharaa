@@ -44,15 +44,17 @@ export function SitePage() {
   const [nav, setNav] = useState<NavItem[]>([]);
   const [footer, setFooter] = useState<NavItem[]>([]);
   const [methods, setMethods] = useState<PayMethod[]>([]);
+  const [page404, setPage404] = useState<{ image_url: string }>({ image_url: "" });
   const [saved, setSaved] = useState("");
   const logoRef = useRef<HTMLInputElement>(null);
   const favRef = useRef<HTMLInputElement>(null);
+  const img404Ref = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     supabase
       .from("settings")
       .select("key, value")
-      .in("key", ["site_branding", "site_colors", "site_nav", "site_footer", "payment_methods"])
+      .in("key", ["site_branding", "site_colors", "site_nav", "site_footer", "payment_methods", "page_404"])
       .then(({ data }) => {
         const map = Object.fromEntries((data ?? []).map((r) => [r.key, r.value]));
         if (map.site_branding) setBranding(map.site_branding as Branding);
@@ -60,6 +62,7 @@ export function SitePage() {
         if (map.site_nav) setNav(map.site_nav as NavItem[]);
         if (map.site_footer) setFooter(map.site_footer as NavItem[]);
         if (map.payment_methods) setMethods(map.payment_methods as PayMethod[]);
+        if (map.page_404) setPage404(map.page_404 as { image_url: string });
       });
   }, []);
 
@@ -70,11 +73,17 @@ export function SitePage() {
     setTimeout(() => setSaved(""), 2500);
   }
 
-  async function upload(file: File, kind: "logo" | "favicon") {
+  async function upload(file: File, kind: "logo" | "favicon" | "img404") {
     const path = `${kind}-${Date.now()}.${file.name.split(".").pop()}`;
     const { error } = await supabase.storage.from("branding").upload(path, file, { upsert: true });
     if (error) { alert(error.message); return; }
     const { data } = supabase.storage.from("branding").getPublicUrl(path);
+    if (kind === "img404") {
+      const next = { ...page404, image_url: data.publicUrl };
+      setPage404(next);
+      await saveKey("page_404", next, "صورة 404");
+      return;
+    }
     const next = { ...branding, [kind === "logo" ? "logo_url" : "favicon_url"]: data.publicUrl };
     setBranding(next);
     await saveKey("site_branding", next, "الشعار");
@@ -232,6 +241,31 @@ export function SitePage() {
           </div>
         </Card>
       </div>
+
+      {/* 404 page */}
+      <Card className="fade-up p-6">
+        <h2 className="flex items-center gap-2 font-bold"><Image className="size-4.5 text-brand-teal" /> صفحة 404</h2>
+        <p className="mt-1 text-xs text-ink/50">الصورة التي تظهر عندما يفتح زائر رابطًا غير موجود — اتركها فارغة لعرض تصميم 404 الافتراضي الأنيق</p>
+        <div className="mt-4 flex flex-wrap items-center gap-4">
+          {page404.image_url ? (
+            <img src={page404.image_url} alt="404" className="h-24 w-auto rounded-xl border border-ink/10 object-contain" />
+          ) : (
+            <span className="grid h-24 w-36 place-items-center rounded-xl bg-ink/5 text-3xl font-bold text-ink/25">404</span>
+          )}
+          <div className="flex gap-2">
+            <Btn small tone="ghost" onClick={() => img404Ref.current?.click()}>رفع صورة</Btn>
+            {page404.image_url && (
+              <Btn small tone="danger" onClick={async () => {
+                const next = { ...page404, image_url: "" };
+                setPage404(next);
+                await saveKey("page_404", next, "صورة 404");
+              }}>إزالة</Btn>
+            )}
+          </div>
+          <input ref={img404Ref} type="file" accept="image/png,image/jpeg,image/svg+xml,image/webp" hidden
+            onChange={(e) => e.target.files?.[0] && upload(e.target.files[0], "img404")} />
+        </div>
+      </Card>
 
       {/* Payment methods */}
       <Card className="fade-up p-6">
