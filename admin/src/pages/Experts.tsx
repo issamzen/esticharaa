@@ -1,7 +1,18 @@
 import { useEffect, useState } from "react";
-import { BadgeCheck, X, Pause, Star } from "lucide-react";
+import { BadgeCheck, X, Pause, Star, FileText, Download, Loader2 } from "lucide-react";
 import { supabase } from "../supabase";
 import { Card, Badge, Btn, Empty } from "../ui";
+
+type ExpertDoc = { id: string; kind: string; file_url: string; file_name: string };
+
+const DOC_LABELS: Record<string, string> = {
+  cin: "بطاقة التعريف",
+  photo: "صورة شخصية",
+  cv: "السيرة الذاتية",
+  diploma: "دبلوم/شهادة",
+  license: "ترخيص مهني",
+  other: "أخرى",
+};
 
 type Expert = {
   user_id: string; title: string; specialization: string; city: string;
@@ -20,6 +31,30 @@ const STATUS_BADGE: Record<string, { label: string; tone: "warning" | "success" 
 export function ExpertsPage() {
   const [rows, setRows] = useState<Expert[]>([]);
   const [tab, setTab] = useState<"pending" | "approved" | "all">("pending");
+  const [docsFor, setDocsFor] = useState<string | null>(null);
+  const [docs, setDocs] = useState<ExpertDoc[]>([]);
+  const [loadingDocs, setLoadingDocs] = useState(false);
+
+  async function showDocs(userId: string) {
+    if (docsFor === userId) { setDocsFor(null); return; }
+    setDocsFor(userId);
+    setLoadingDocs(true);
+    const { data } = await supabase
+      .from("expert_documents")
+      .select("id, kind, file_url, file_name")
+      .eq("user_id", userId);
+    setDocs((data as ExpertDoc[]) ?? []);
+    setLoadingDocs(false);
+  }
+
+  async function openDoc(doc: ExpertDoc) {
+    // Private bucket → create a temporary signed link (10 min)
+    const { data, error } = await supabase.storage
+      .from("expert-docs")
+      .createSignedUrl(doc.file_url, 600);
+    if (error || !data) { alert(error?.message ?? "تعذر فتح الملف"); return; }
+    window.open(data.signedUrl, "_blank");
+  }
 
   async function load() {
     const { data } = await supabase
@@ -83,7 +118,35 @@ export function ExpertsPage() {
                 <span>{e.earned_tokens} توكن مكتسب</span>
               </div>
 
+              {docsFor === e.user_id && (
+                <div className="mt-4 rounded-xl bg-ink/4 p-3">
+                  {loadingDocs ? (
+                    <Loader2 className="mx-auto size-5 animate-spin text-brand-teal" />
+                  ) : docs.length === 0 ? (
+                    <p className="text-center text-xs text-ink/45">لا توجد وثائق مرفوعة</p>
+                  ) : (
+                    <div className="space-y-1.5">
+                      {docs.map((d) => (
+                        <button
+                          key={d.id}
+                          onClick={() => openDoc(d)}
+                          className="flex w-full items-center justify-between rounded-lg bg-white px-3 py-2 text-start text-xs transition hover:bg-brand-teal/5"
+                        >
+                          <span className="font-semibold">{DOC_LABELS[d.kind] ?? d.kind}</span>
+                          <span className="flex items-center gap-1.5 text-ink/50" dir="ltr">
+                            {d.file_name.slice(0, 28)} <Download className="size-3.5" />
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
               <div className="mt-4 flex flex-wrap gap-2 border-t border-ink/8 pt-4">
+                <Btn small tone="ghost" onClick={() => showDocs(e.user_id)}>
+                  <FileText className="size-3.5" /> الوثائق
+                </Btn>
                 {e.status !== "approved" && (
                   <Btn small onClick={() => setStatus(e.user_id, "approved", true)}>
                     <BadgeCheck className="size-3.5" /> اعتماد وتوثيق
