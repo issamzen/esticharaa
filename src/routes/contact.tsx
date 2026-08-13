@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, type ChangeEvent } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { Mail, MessageCircle, Phone } from "lucide-react";
+import { Mail, MessageCircle, Phone, Send } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { z } from "zod";
 import { SiteLayout, PageHeader } from "@/components/site/layout";
@@ -14,120 +15,140 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { faqs } from "@/data/platform";
+import { usePageCopy } from "@/i18n/page-copy";
+import { createPageSeo, pageHead } from "@/i18n/route-meta";
+import { getHomeFaqs } from "@/i18n/home-content";
 
 export const Route = createFileRoute("/contact")({
-  head: () => ({
-    meta: [
-      { title: "Contact & Support — Estichara.ma" },
-      {
-        name: "description",
-        content:
-          "Reach the Estichara.ma team for support on tokens, payouts, expert verification or partnerships.",
-      },
-      { property: "og:title", content: "Contact & Support — Estichara.ma" },
-      { property: "og:description", content: "Support, partnerships and expert verification help." },
-    ],
+  loader: ({ context }) => ({
+    seo: createPageSeo(context.localeRouting.getLocale(), "contact"),
   }),
+  head: ({ loaderData }) => pageHead(loaderData?.seo),
   component: ContactPage,
 });
 
-const schema = z.object({
-  name: z.string().trim().min(2, "Please enter your name").max(100),
-  email: z.string().trim().email("Enter a valid email address").max(255),
-  message: z.string().trim().min(10, "Tell us a little more").max(1000),
-});
-
 function ContactPage() {
+  const copy = usePageCopy().contact;
+  const { t } = useTranslation();
+  const faqs = getHomeFaqs(t).slice(0, 4);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
 
-  const submit = () => {
+  function submit() {
+    const schema = z.object({
+      name: z.string().trim().min(2, copy.validationName).max(100),
+      email: z.string().trim().email(copy.validationEmail).max(255),
+      message: z.string().trim().min(10, copy.validationMessage).max(1000),
+    });
     const result = schema.safeParse({ name, email, message });
     if (!result.success) {
-      toast.error(result.error.issues[0]?.message ?? "Please check the form");
+      toast.error(result.error.issues[0]?.message ?? copy.validationGeneric);
       return;
     }
-    toast.success("Message ready to send", {
-      description: "Connect the backend to deliver it to support.",
-    });
+    toast.success(copy.success, { description: copy.successDescription });
     setMessage("");
-  };
+  }
+
+  const contacts = [
+    {
+      icon: Mail,
+      label: "support@estichara.ma",
+      note: copy.support,
+      ltr: true,
+    },
+    {
+      icon: MessageCircle,
+      label: copy.liveChat,
+      note: copy.liveChatHours,
+      ltr: false,
+    },
+    { icon: Phone, label: "+212 5 22 00 00 00", note: copy.office, ltr: true },
+  ];
 
   return (
     <SiteLayout>
       <PageHeader
-        eyebrow="Contact"
-        title="We answer people who answer people"
-        description="Support for tokens, payouts, verification and partnerships. Average first reply under 4 hours on business days."
+        eyebrow={copy.eyebrow}
+        title={copy.title}
+        description={copy.description}
       />
 
-      <section className="mx-auto grid max-w-6xl gap-8 px-4 py-14 lg:grid-cols-[1fr_340px]">
-        <div className="rounded-2xl border border-border/70 bg-card p-6 shadow-soft">
-          <div className="grid gap-4 sm:grid-cols-2">
+      <section className="mx-auto grid max-w-7xl gap-6 px-4 py-14 sm:px-6 lg:grid-cols-[1fr_340px] lg:py-20">
+        <div className="premium-card p-5 sm:p-8">
+          <div className="grid gap-5 sm:grid-cols-2">
             <div>
-              <Label htmlFor="name">Name</Label>
+              <Label htmlFor="name">{copy.name}</Label>
               <Input
                 id="name"
                 value={name}
                 maxLength={100}
-                onChange={(e) => setName(e.target.value)}
-                className="mt-2"
+                onChange={(event: ChangeEvent<HTMLInputElement>) =>
+                  setName(event.target.value)
+                }
+                className="mt-2 h-11 rounded-xl"
               />
             </div>
             <div>
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">{copy.email}</Label>
               <Input
                 id="email"
                 type="email"
                 value={email}
                 maxLength={255}
-                onChange={(e) => setEmail(e.target.value)}
-                className="mt-2"
+                onChange={(event: ChangeEvent<HTMLInputElement>) =>
+                  setEmail(event.target.value)
+                }
+                className="mt-2 h-11 rounded-xl"
               />
             </div>
           </div>
-          <div className="mt-4">
-            <Label htmlFor="message">Message</Label>
+          <div className="mt-5">
+            <Label htmlFor="message">{copy.message}</Label>
             <Textarea
               id="message"
               value={message}
               maxLength={1000}
-              onChange={(e) => setMessage(e.target.value)}
-              className="mt-2 min-h-40"
+              onChange={(event: ChangeEvent<HTMLTextAreaElement>) =>
+                setMessage(event.target.value)
+              }
+              className="mt-2 min-h-44 rounded-xl"
             />
           </div>
-          <Button className="mt-6" onClick={submit}>
-            Send message
+          <Button className="mt-6 rounded-xl" onClick={submit}>
+            <Send className="size-4" /> {copy.send}
           </Button>
         </div>
 
         <aside className="space-y-4">
-          {[
-            { icon: Mail, label: "support@estichara.ma", note: "General & billing support" },
-            { icon: MessageCircle, label: "Live chat", note: "Mon–Fri, 9:00–18:00" },
-            { icon: Phone, label: "+212 5 22 00 00 00", note: "Casablanca office" },
-          ].map((item) => (
-            <div
-              key={item.label}
-              className="rounded-2xl border border-border/70 bg-card p-5 shadow-soft"
-            >
-              <item.icon className="size-4 text-secondary" />
-              <p className="mt-3 font-medium">{item.label}</p>
-              <p className="text-xs text-muted-foreground">{item.note}</p>
-            </div>
+          {contacts.map((item) => (
+            <article key={item.label} className="premium-card p-5">
+              <span className="grid size-10 place-items-center rounded-xl bg-secondary/10 text-secondary">
+                <item.icon className="size-4" />
+              </span>
+              <p
+                className="mt-4 font-semibold"
+                data-ltr={item.ltr ? "" : undefined}
+              >
+                {item.label}
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">{item.note}</p>
+            </article>
           ))}
         </aside>
       </section>
 
-      <section className="mx-auto max-w-3xl px-4 pb-16">
-        <h2 className="text-2xl font-semibold">Before you write</h2>
-        <Accordion type="single" collapsible className="mt-4">
-          {faqs.slice(0, 4).map((faq) => (
-            <AccordionItem key={faq.q} value={faq.q}>
-              <AccordionTrigger className="text-left">{faq.q}</AccordionTrigger>
-              <AccordionContent className="text-muted-foreground">{faq.a}</AccordionContent>
+      <section className="mx-auto max-w-3xl px-4 pb-20 sm:px-6">
+        <h2 className="text-2xl font-semibold sm:text-3xl">{copy.before}</h2>
+        <Accordion type="single" collapsible className="mt-5">
+          {faqs.map((faq, index) => (
+            <AccordionItem key={faq.q} value={`faq-${index}`}>
+              <AccordionTrigger className="text-start hover:no-underline hover:text-primary">
+                {faq.q}
+              </AccordionTrigger>
+              <AccordionContent className="leading-7 text-muted-foreground">
+                {faq.a}
+              </AccordionContent>
             </AccordionItem>
           ))}
         </Accordion>
