@@ -1,6 +1,7 @@
-import { useState, type ChangeEvent } from "react";
-import { createFileRoute } from "@tanstack/react-router";
-import { Paperclip, ShieldCheck, Sparkles, Wand2 } from "lucide-react";
+import { useEffect, useState, type ChangeEvent } from "react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { Loader2, Paperclip, ShieldCheck, Sparkles, Wand2 } from "lucide-react";
+import { useAuth } from "@/lib/auth";
 import { toast } from "sonner";
 import { z } from "zod";
 import { useTranslation } from "react-i18next";
@@ -35,6 +36,8 @@ const rewards = [0, 5, 10, 20, -1] as const;
 
 function AskPage() {
   const copy = usePageCopy().ask;
+  const navigate = useNavigate();
+  const { user, loading } = useAuth();
   const { t } = useTranslation();
   const locale = useLocale();
   const localizedCategories = categories.map((item) =>
@@ -45,6 +48,24 @@ function AskPage() {
   const [category, setCategory] = useState("");
   const [visibility, setVisibility] = useState("public");
   const [reward, setReward] = useState<number>(5);
+
+  // Not logged in → go to register/login first
+  useEffect(() => {
+    if (!loading && !user) {
+      toast.info(t("auth.signInDescription"));
+      navigate({ to: "/auth" });
+    }
+  }, [loading, user, navigate, t]);
+
+  if (loading || !user) {
+    return (
+      <SiteLayout>
+        <div className="grid min-h-[50vh] place-items-center">
+          <Loader2 className="size-8 animate-spin text-primary" />
+        </div>
+      </SiteLayout>
+    );
+  }
 
   function rewardLabel(value: number) {
     if (value === 0) return copy.free;
