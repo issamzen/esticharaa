@@ -297,7 +297,14 @@ function TokensPage() {
                   >
                     <Icon className="size-4.5" />
                   </span>
-                  <span className="flex-1 text-sm font-medium">{method.label}</span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-sm font-medium">{method.label}</span>
+                    {selected && method.details ? (
+                      <span className="mt-2 block whitespace-pre-wrap rounded-lg bg-background/80 p-2.5 text-xs leading-5 text-muted-foreground" dir="auto">
+                        {method.details}
+                      </span>
+                    ) : null}
+                  </span>
                   <span
                     className={`grid size-5 shrink-0 place-items-center rounded-full border-2 ${
                       selected ? "border-primary" : "border-border"
