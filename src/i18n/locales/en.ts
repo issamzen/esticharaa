@@ -72,6 +72,7 @@ export const en = {
     purchases: "My purchases",
     settings: "Settings",
     signOut: "Sign out",
+    mainLabel: "Main navigation",
     openMenu: "Open menu",
     closeMenu: "Close menu",
   },
@@ -97,6 +98,7 @@ export const en = {
     answerCount_other: "{{count}} answers",
     premiumQuestion: "Premium question",
     sampleExpertName: "Nadia Berrada",
+    sampleExpertInitials: "NB",
     sampleExpertRole: "Corporate lawyer · Casablanca",
     sampleAnswer:
       "For a small service agency, an SARL AU is often the most practical choice because it separates personal and company liability while…",
