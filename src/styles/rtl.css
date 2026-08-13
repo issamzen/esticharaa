@@ -1,0 +1,35 @@
+/* Import this after your Tailwind/global stylesheet. Most flex/grid layouts mirror
+   automatically; these rules cover direction-sensitive details. */
+
+html[dir="rtl"] body {
+  text-align: start;
+}
+
+html[dir="rtl"] input,
+html[dir="rtl"] textarea,
+html[dir="rtl"] select {
+  text-align: start;
+}
+
+/* Keep values, email addresses, phone numbers and code readable in RTL pages. */
+[dir="rtl"] [data-ltr],
+[dir="rtl"] input[type="email"],
+[dir="rtl"] input[type="tel"],
+[dir="rtl"] input[type="url"] {
+  direction: ltr;
+  text-align: left;
+}
+
+/* Directional arrows should point toward the reading direction. */
+html[dir="rtl"] [data-directional] {
+  transform: scaleX(-1);
+}
+
+/* Use logical utilities/properties in new components:
+   ms-* / me-* / ps-* / pe-* / start-* / end-* instead of left/right. */
+
+/* Optional: use an Arabic-capable local/system font until your brand font loads. */
+html[lang="ar"] body {
+  font-family:
+    "Noto Sans Arabic", "IBM Plex Sans Arabic", Tahoma, Arial, sans-serif;
+}
