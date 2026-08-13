@@ -121,7 +121,16 @@ function AskPage() {
       toast.error(error.message);
       return;
     }
-    toast.success(copy.success, { description: copy.successDescription });
+    toast.success(
+      t("ask.savedTitle", "تم إرسال سؤالك بنجاح! ✅"),
+      {
+        description: t(
+          "ask.savedDescription",
+          "سيراجعه فريقنا وينشره قريبًا — تابع حالته من حسابك.",
+        ),
+        duration: 7000,
+      },
+    );
     navigate({ to: "/account" });
   }
 
