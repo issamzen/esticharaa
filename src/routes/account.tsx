@@ -27,6 +27,7 @@ import { SiteLayout } from "@/components/site/layout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth";
@@ -39,6 +40,7 @@ export const Route = createFileRoute("/account")({
 type MyQuestion = {
   id: string;
   title: string;
+  body: string;
   status: string;
   tokens: number;
   answers_count: number;
@@ -94,6 +96,12 @@ function AccountPage() {
   const [payoutMethod, setPayoutMethod] = useState("bank_transfer");
   const [payoutDetails, setPayoutDetails] = useState("");
   const [payoutBusy, setPayoutBusy] = useState(false);
+
+  // Question editing state
+  const [editingQ, setEditingQ] = useState<MyQuestion | null>(null);
+  const [eqTitle, setEqTitle] = useState("");
+  const [eqBody, setEqBody] = useState("");
+  const [eqBusy, setEqBusy] = useState(false);
   const [minPayout, setMinPayout] = useState(1000);
   const [rate, setRate] = useState(0.5);
 
@@ -118,7 +126,7 @@ function AccountPage() {
     if (!user) return;
     supabase
       .from("questions")
-      .select("id, title, status, tokens, answers_count, created_at")
+      .select("id, title, body, status, tokens, answers_count, created_at")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
       .limit(20)
@@ -149,6 +157,55 @@ function AccountPage() {
         });
       });
   }, [user]);
+
+  function loadQuestions() {
+    if (!user) return;
+    supabase
+      .from("questions")
+      .select("id, title, body, status, tokens, answers_count, created_at")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(20)
+      .then(({ data }) => setQuestions((data as MyQuestion[]) ?? []));
+  }
+
+  function openQuestionEditor(q: MyQuestion) {
+    setEditingQ(q);
+    setEqTitle(q.title);
+    setEqBody(q.body);
+  }
+
+  async function saveQuestionEdit() {
+    if (!editingQ) return;
+    if (eqTitle.trim().length < 15 || eqBody.trim().length < 30) {
+      toast.error(t("account.editTooShort", "العنوان 15 حرفًا على الأقل والتفاصيل 30 حرفًا على الأقل"));
+      return;
+    }
+    setEqBusy(true);
+    const { error } = await supabase
+      .from("questions")
+      .update({ title: eqTitle.trim(), body: eqBody.trim() })
+      .eq("id", editingQ.id);
+    setEqBusy(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    setEditingQ(null);
+    loadQuestions();
+    toast.success(t("account.editSaved", "تم تعديل سؤالك"));
+  }
+
+  async function deleteQuestion(q: MyQuestion) {
+    if (!confirm(t("account.confirmDeleteQ", "حذف هذا السؤال نهائيًا؟"))) return;
+    const { error } = await supabase.from("questions").delete().eq("id", q.id);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    loadQuestions();
+    toast.success(t("account.deletedQ", "تم حذف السؤال"));
+  }
 
   function loadPayouts() {
     if (!user) return;
@@ -366,6 +423,7 @@ function AccountPage() {
                 )}
                 {questions.map((q) => {
                   const st = questionStatus[q.status] ?? questionStatus.pending;
+                  const editable = q.status === "pending" || q.status === "rejected";
                   return (
                     <div
                       key={q.id}
@@ -381,11 +439,39 @@ function AccountPage() {
                           </Badge>
                         )}
                       </div>
-                      <p className="mt-2 font-medium">{q.title}</p>
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        {new Date(q.created_at).toLocaleDateString()} ·{" "}
-                        {q.answers_count} {t("account.answers", "إجابة")}
-                      </p>
+                      {q.status === "published" ? (
+                        <Link
+                          to="/questions/$questionId"
+                          params={{ questionId: q.id }}
+                          className="mt-2 block font-medium hover:text-primary"
+                        >
+                          {q.title}
+                        </Link>
+                      ) : (
+                        <p className="mt-2 font-medium">{q.title}</p>
+                      )}
+                      <div className="mt-1 flex flex-wrap items-center justify-between gap-2">
+                        <p className="text-xs text-muted-foreground">
+                          {new Date(q.created_at).toLocaleDateString()} ·{" "}
+                          {q.answers_count} {t("account.answers", "إجابة")}
+                        </p>
+                        {editable && (
+                          <div className="flex gap-3">
+                            <button
+                              onClick={() => openQuestionEditor(q)}
+                              className="text-xs font-medium text-primary hover:underline"
+                            >
+                              {t("account.editQ", "تعديل")}
+                            </button>
+                            <button
+                              onClick={() => deleteQuestion(q)}
+                              className="text-xs font-medium text-destructive hover:underline"
+                            >
+                              {t("account.deleteQ", "حذف")}
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   );
                 })}
@@ -611,6 +697,56 @@ function AccountPage() {
           </div>
         </div>
       </div>
+
+      {/* ===== Edit my question dialog ===== */}
+      <Dialog open={!!editingQ} onOpenChange={(o) => !o && setEditingQ(null)}>
+        <DialogContent className="max-w-lg rounded-3xl">
+          <DialogHeader>
+            <DialogTitle className="text-start text-xl">
+              {t("account.editQTitle", "تعديل سؤالي")}
+            </DialogTitle>
+            <DialogDescription className="text-start">
+              {t("account.editQNote", "يمكن التعديل ما دام السؤال قيد المراجعة")}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="eq-title">{t("account.qTitle", "العنوان")}</Label>
+              <Input
+                id="eq-title"
+                value={eqTitle}
+                maxLength={160}
+                onChange={(e) => setEqTitle(e.target.value)}
+                className="rounded-xl"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="eq-body">{t("account.qBody", "التفاصيل")}</Label>
+              <Textarea
+                id="eq-body"
+                value={eqBody}
+                maxLength={4000}
+                rows={6}
+                onChange={(e) => setEqBody(e.target.value)}
+                className="rounded-xl"
+              />
+            </div>
+            <Button
+              className="w-full rounded-xl"
+              disabled={eqBusy}
+              onClick={saveQuestionEdit}
+            >
+              {eqBusy ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <>
+                  <Save className="size-4" /> {t("account.saveChanges")}
+                </>
+              )}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* ===== Fancy token → money conversion dialog ===== */}
       <Dialog open={payoutOpen} onOpenChange={setPayoutOpen}>
