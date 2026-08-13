@@ -9,7 +9,7 @@ import {
   useRouter,
 } from "@tanstack/react-router";
 import { I18nextProvider } from "react-i18next";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import type { RouterContext } from "@/router";
 import { localeDirection } from "@/i18n/config";
 import { LocaleBoundary } from "@/components/site/locale-boundary";
@@ -103,24 +103,79 @@ function RootComponent() {
 
 function NotFoundComponent() {
   const { i18n } = Route.useRouteContext();
+  const [image, setImage] = useState<string>("");
+
+  useEffect(() => {
+    import("@/lib/supabase").then(({ supabase }) => {
+      supabase
+        .from("settings")
+        .select("value")
+        .eq("key", "page_404")
+        .single()
+        .then(({ data }) => {
+          const url = (data?.value as { image_url?: string })?.image_url;
+          if (url) setImage(url);
+        });
+    });
+  }, []);
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="premium-card max-w-md p-8 text-center sm:p-10">
-        <p className="text-sm font-semibold uppercase tracking-[0.22em] text-primary">
-          404
-        </p>
-        <h1 className="mt-3 text-3xl font-semibold">
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-background px-4">
+      {/* Decorative background */}
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 -z-20 opacity-40 [mask-image:radial-gradient(ellipse_at_center,black,transparent_70%)]"
+        style={{
+          backgroundImage: "radial-gradient(var(--border) 1px, transparent 1px)",
+          backgroundSize: "24px 24px",
+        }}
+      />
+      <div
+        aria-hidden="true"
+        className="absolute -left-40 -top-40 -z-10 size-[30rem] rounded-full bg-primary/15 blur-3xl"
+      />
+      <div
+        aria-hidden="true"
+        className="absolute -bottom-40 -right-40 -z-10 size-[30rem] rounded-full bg-accent/15 blur-3xl"
+      />
+
+      <div className="mx-auto max-w-lg text-center">
+        {image ? (
+          <img
+            src={image}
+            alt="404"
+            className="mx-auto max-h-64 w-auto rounded-3xl object-contain drop-shadow-xl"
+          />
+        ) : (
+          <p
+            aria-hidden="true"
+            className="bg-gradient-to-br from-primary via-secondary to-accent bg-clip-text text-[7rem] font-bold leading-none tracking-tighter text-transparent sm:text-[9rem]"
+          >
+            404
+          </p>
+        )}
+
+        <h1 className="mt-6 text-balance text-3xl font-semibold tracking-tight sm:text-4xl">
           {i18n.t("errors.notFoundTitle")}
         </h1>
-        <p className="mt-3 text-sm leading-6 text-muted-foreground">
+        <p className="mx-auto mt-4 max-w-md text-pretty text-sm leading-7 text-muted-foreground sm:text-base">
           {i18n.t("errors.notFoundText")}
         </p>
-        <Link
-          to="/"
-          className="mt-7 inline-flex h-11 items-center justify-center rounded-xl bg-primary px-5 text-sm font-medium text-primary-foreground transition hover:bg-primary/90"
-        >
-          {i18n.t("errors.goHome")}
-        </Link>
+
+        <div className="mt-8 flex flex-wrap justify-center gap-3">
+          <Link
+            to="/"
+            className="inline-flex h-11 items-center justify-center rounded-xl bg-primary px-6 text-sm font-medium text-primary-foreground shadow-lg shadow-primary/20 transition hover:-translate-y-0.5 hover:bg-primary/90"
+          >
+            {i18n.t("errors.goHome")}
+          </Link>
+          <Link
+            to="/questions"
+            className="inline-flex h-11 items-center justify-center rounded-xl border border-border bg-background px-6 text-sm font-medium transition hover:-translate-y-0.5 hover:border-primary/30"
+          >
+            {i18n.t("nav.questions")}
+          </Link>
+        </div>
       </div>
     </div>
   );
