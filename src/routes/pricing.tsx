@@ -1,5 +1,7 @@
+import { useEffect, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowRight, Coins, TrendingUp, Wallet } from "lucide-react";
+import { supabase } from "@/lib/supabase";
 import { useTranslation } from "react-i18next";
 import { SiteLayout, PageHeader } from "@/components/site/layout";
 import { Button } from "@/components/ui/button";
@@ -25,9 +27,28 @@ export const Route = createFileRoute("/pricing")({
   component: PricingPage,
 });
 
+type DbPack = {
+  id: string;
+  name_ar: string;
+  tokens: number;
+  price_mad: number;
+};
+
 function PricingPage() {
   const copy = usePageCopy().pricing;
   const { t } = useTranslation();
+  const [dbPacks, setDbPacks] = useState<DbPack[] | null>(null);
+
+  useEffect(() => {
+    supabase
+      .from("token_packs")
+      .select("id, name_ar, tokens, price_mad")
+      .eq("active", true)
+      .order("sort")
+      .then(({ data }) => {
+        if (data && data.length > 0) setDbPacks(data as DbPack[]);
+      });
+  }, []);
   const locale = useLocale();
   const faqs = getHomeFaqs(t);
 
@@ -94,22 +115,39 @@ function PricingPage() {
             </Button>
           </div>
           <div className="mt-7 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {tokenPacks.map((pack) => (
-              <article
-                key={pack.name}
-                className="rounded-2xl border border-border/70 bg-background/60 p-5"
-              >
-                <p className="text-sm font-semibold text-muted-foreground">
-                  {tokenPackName(pack.name, locale)}
-                </p>
-                <p className="mt-3 text-3xl font-semibold">
-                  {formatNumber(pack.tokens, locale)}
-                </p>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  {formatNumber(pack.price, locale)} {t("common.mad")}
-                </p>
-              </article>
-            ))}
+            {dbPacks
+              ? dbPacks.map((pack) => (
+                  <article
+                    key={pack.id}
+                    className="rounded-2xl border border-border/70 bg-background/60 p-5"
+                  >
+                    <p className="text-sm font-semibold text-muted-foreground">
+                      {pack.name_ar}
+                    </p>
+                    <p className="mt-3 text-3xl font-semibold">
+                      {formatNumber(pack.tokens, locale)}
+                    </p>
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      {formatNumber(pack.price_mad, locale)} {t("common.mad")}
+                    </p>
+                  </article>
+                ))
+              : tokenPacks.map((pack) => (
+                  <article
+                    key={pack.name}
+                    className="rounded-2xl border border-border/70 bg-background/60 p-5"
+                  >
+                    <p className="text-sm font-semibold text-muted-foreground">
+                      {tokenPackName(pack.name, locale)}
+                    </p>
+                    <p className="mt-3 text-3xl font-semibold">
+                      {formatNumber(pack.tokens, locale)}
+                    </p>
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      {formatNumber(pack.price, locale)} {t("common.mad")}
+                    </p>
+                  </article>
+                ))}
           </div>
         </div>
 
