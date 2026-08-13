@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { Coins, Menu, MessagesSquare } from "lucide-react";
+import { Coins, LogIn, Menu, MessagesSquare, UserRound } from "lucide-react";
+import { useAuth } from "@/lib/auth";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -22,6 +23,7 @@ export function Header() {
   const [open, setOpen] = useState(false);
   const { t } = useTranslation();
   const locale = useLocale();
+  const { user, profile } = useAuth();
   const sheetSide = localeDirection(locale) === "rtl" ? "left" : "right";
 
   return (
@@ -69,7 +71,10 @@ export function Header() {
             className="hidden md:inline-flex"
           >
             <Link to="/tokens">
-              <Coins className="size-4 text-accent" /> {t("common.tokens")}
+              <Coins className="size-4 text-accent" />{" "}
+              {user && profile
+                ? profile.tokens_balance.toLocaleString()
+                : t("common.tokens")}
             </Link>
           </Button>
           <Button
@@ -79,6 +84,34 @@ export function Header() {
           >
             <Link to="/ask">{t("common.askQuestion")}</Link>
           </Button>
+          {user ? (
+            <Button
+              asChild
+              variant="outline"
+              size="sm"
+              className="rounded-xl"
+              aria-label={t("nav.account")}
+            >
+              <Link to="/account">
+                <UserRound className="size-4" />
+                <span className="hidden lg:inline">
+                  {profile?.full_name?.split(" ")[0] || t("nav.account")}
+                </span>
+              </Link>
+            </Button>
+          ) : (
+            <Button
+              asChild
+              variant="outline"
+              size="sm"
+              className="rounded-xl"
+            >
+              <Link to="/auth">
+                <LogIn className="size-4" />
+                <span className="hidden lg:inline">{t("nav.signIn")}</span>
+              </Link>
+            </Button>
+          )}
 
           <Sheet open={open} onOpenChange={setOpen}>
             <SheetTrigger asChild>
@@ -132,6 +165,27 @@ export function Header() {
                     {t("common.askQuestion")}
                   </Link>
                 </Button>
+                {user ? (
+                  <Button
+                    asChild
+                    variant="outline"
+                    className="mt-2 w-full rounded-xl"
+                  >
+                    <Link to="/account" onClick={() => setOpen(false)}>
+                      <UserRound className="size-4" /> {t("nav.account")}
+                    </Link>
+                  </Button>
+                ) : (
+                  <Button
+                    asChild
+                    variant="outline"
+                    className="mt-2 w-full rounded-xl"
+                  >
+                    <Link to="/auth" onClick={() => setOpen(false)}>
+                      <LogIn className="size-4" /> {t("nav.signIn")}
+                    </Link>
+                  </Button>
+                )}
                 <Button
                   asChild
                   variant="outline"
