@@ -2,10 +2,19 @@ import { Link } from "@tanstack/react-router";
 import { ArrowUpRight, MessagesSquare, ShieldCheck } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { usePageCopy } from "@/i18n/page-copy";
+import { useSiteSettings } from "@/lib/site-settings";
 
 export function Footer() {
   const { t } = useTranslation();
   const copy = usePageCopy();
+  const site = useSiteSettings();
+
+  // Admin can hide any footer link from the dashboard
+  const hidden = new Set(
+    site.loaded
+      ? site.footer.filter((i) => !i.visible).map((i) => i.to)
+      : [],
+  );
 
   const groups = [
     {
@@ -47,7 +56,7 @@ export function Footer() {
               <MessagesSquare className="size-5" />
             </span>
             <span className="text-lg" dir="ltr">
-              Estichara.ma
+              {site.branding.site_name || "Estichara.ma"}
             </span>
           </Link>
           <p className="mt-5 max-w-sm text-sm leading-7 text-white/65">
@@ -63,7 +72,9 @@ export function Footer() {
           <div key={group.title}>
             <h2 className="text-sm font-semibold text-white">{group.title}</h2>
             <ul className="mt-5 space-y-3 text-sm text-white/60">
-              {group.links.map((link) => (
+              {group.links
+                .filter((link) => !hidden.has(link.to))
+                .map((link) => (
                 <li key={link.to}>
                   <Link
                     to={link.to}
