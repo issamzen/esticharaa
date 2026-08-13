@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import * as Icons from "lucide-react";
 import {
@@ -6,7 +7,6 @@ import {
   BadgeCheck,
   Check,
   Clock3,
-  Coins,
   Lock,
   MessageSquare,
   Quote,
@@ -15,7 +15,6 @@ import {
   Sparkles,
   Star,
   Users,
-  Zap,
 } from "lucide-react";
 import { SiteLayout } from "@/components/site/layout";
 import { Button } from "@/components/ui/button";
@@ -28,98 +27,37 @@ import {
 } from "@/components/ui/accordion";
 import { QuestionCard } from "@/components/site/question-card";
 import { ExpertCard } from "@/components/site/expert-card";
+import { useLocale } from "@/i18n/use-locale";
+import { formatNumber } from "@/i18n/format";
 import {
-  categories,
-  experts,
-  faqs,
-  questions,
-  stories,
-  tokenPacks,
-} from "@/data/platform";
+  getCategoryLabel,
+  getHomeFaqs,
+  getHomeFeatures,
+  getHomeSteps,
+  getHomeStories,
+  getTokenPackLabel,
+} from "@/i18n/home-content";
+import { categories, experts, questions, tokenPacks } from "@/data/platform";
 
 export const Route = createFileRoute("/")({
-  head: () => ({
+  loader: ({ context }) => {
+    const locale = context.localeRouting.getLocale();
+    const translate = context.i18n.getFixedT(locale);
+    return {
+      title: translate("meta.homeTitle"),
+      description: translate("meta.homeDescription"),
+    };
+  },
+  head: ({ loaderData }) => ({
     meta: [
-      { title: "Estichara.ma — Trusted answers from real experts" },
-      {
-        name: "description",
-        content:
-          "Morocco's trusted question and answer marketplace. Get practical answers from verified professionals and people with real-life experience.",
-      },
-      {
-        property: "og:title",
-        content: "Estichara.ma — Trusted answers from real experts",
-      },
-      {
-        property: "og:description",
-        content:
-          "Ask with confidence. Get clear, practical answers from verified Moroccan experts.",
-      },
+      { title: loaderData?.title ?? "Estichara.ma" },
+      { name: "description", content: loaderData?.description ?? "" },
+      { property: "og:title", content: loaderData?.title ?? "Estichara.ma" },
+      { property: "og:description", content: loaderData?.description ?? "" },
     ],
   }),
   component: Index,
 });
-
-const features = [
-  {
-    icon: BadgeCheck,
-    eyebrow: "Trust",
-    title: "Expertise you can verify",
-    text: "Every professional badge is backed by identity, credentials, and a human review — never a self-declared title.",
-    span: "lg:col-span-3",
-  },
-  {
-    icon: Coins,
-    eyebrow: "Fair pricing",
-    title: "Only pay for useful answers",
-    text: "Preview every response first. Unlock only the answers that are relevant to you, with no recurring subscription.",
-    span: "lg:col-span-3",
-  },
-  {
-    icon: Zap,
-    eyebrow: "Fast",
-    title: "Qualified answers in hours",
-    text: "Most premium questions receive their first expert response in under four hours.",
-    span: "lg:col-span-2",
-  },
-  {
-    icon: ShieldCheck,
-    eyebrow: "Protected",
-    title: "A safer place to ask",
-    text: "Content is moderated before publication. Private details stay private, and every review comes from a real unlock.",
-    span: "lg:col-span-4",
-  },
-];
-
-const steps = [
-  {
-    number: "01",
-    title: "Describe what you need",
-    text: "Add context, choose a category, and attach any helpful files.",
-  },
-  {
-    number: "02",
-    title: "Get matched with experts",
-    text: "Relevant, qualified professionals are invited to answer your question.",
-  },
-  {
-    number: "03",
-    title: "Preview, then unlock",
-    text: "Compare answer previews and spend tokens only on what looks useful.",
-  },
-  {
-    number: "04",
-    title: "Rate your experience",
-    text: "Review the expert on clarity, knowledge, helpfulness, and speed.",
-  },
-];
-
-const stats = [
-  { value: "12.4k+", label: "answers published" },
-  { value: "640+", label: "verified experts" },
-  { value: "3h 12m", label: "median response" },
-  { value: "4.9/5", label: "average rating" },
-];
 
 function SectionHeading({
   eyebrow,
@@ -161,12 +99,28 @@ function TextLink({ to, children }: { to: HomeTextLink; children: ReactNode }) {
       className="group inline-flex shrink-0 items-center gap-2 text-sm font-medium text-foreground transition-colors hover:text-primary"
     >
       {children}
-      <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
+      <ArrowRight
+        data-directional
+        className="size-4 transition-transform group-hover:translate-x-1"
+      />
     </Link>
   );
 }
 
 function Index() {
+  const { t } = useTranslation();
+  const features = getHomeFeatures(t);
+  const steps = getHomeSteps(t);
+  const localizedStories = getHomeStories(t);
+  const localizedFaqs = getHomeFaqs(t);
+  const locale = useLocale();
+  const stats = [
+    { value: "12.4k+", label: t("home.stats.answers") },
+    { value: "640+", label: t("home.stats.experts") },
+    { value: "3h 12m", label: t("home.stats.response") },
+    { value: "4.9/5", label: t("home.stats.rating") },
+  ];
+
   return (
     <SiteLayout>
       {/* Hero */}
@@ -176,7 +130,7 @@ function Index() {
           className="absolute inset-0 -z-20 opacity-45 [mask-image:linear-gradient(to_bottom,black,transparent_85%)]"
           style={{
             backgroundImage:
-              "radial-gradient(hsl(var(--border)) 1px, transparent 1px)",
+              "radial-gradient(var(--border) 1px, transparent 1px)",
             backgroundSize: "26px 26px",
           }}
         />
@@ -195,32 +149,32 @@ function Index() {
               variant="outline"
               className="rounded-full border-primary/20 bg-background/70 px-3 py-1.5 shadow-sm backdrop-blur-md"
             >
-              <span className="mr-1.5 inline-flex size-5 items-center justify-center rounded-full bg-primary/10">
+              <span className="me-1.5 inline-flex size-5 items-center justify-center rounded-full bg-primary/10">
                 <Sparkles className="size-3 text-primary" />
               </span>
-              Morocco&apos;s trusted knowledge marketplace
+              {t("home.badge")}
             </Badge>
 
             <h1 className="mt-7 max-w-3xl text-balance text-4xl font-semibold leading-[1.04] tracking-[-0.035em] sm:text-6xl lg:text-[4.25rem]">
-              A better answer starts with the{" "}
+              {t("home.heroTitleBefore")}{" "}
               <span className="bg-gradient-to-r from-primary via-primary to-accent bg-clip-text text-transparent">
-                right person.
+                {t("home.heroTitleAccent")}
               </span>
             </h1>
             <p className="mt-6 max-w-xl text-pretty text-base leading-7 text-muted-foreground sm:text-lg sm:leading-8">
-              Ask with confidence. Get clear, practical guidance from verified
-              professionals and people with real-world experience.
+              {t("home.heroDescription")}
             </p>
 
             <div className="mt-8 max-w-xl rounded-2xl border border-border/70 bg-background/85 p-2 shadow-xl shadow-primary/5 backdrop-blur-xl">
-              <div className="flex items-center gap-3 rounded-xl pl-3">
+              <div className="flex items-center gap-3 rounded-xl ps-3">
                 <Search className="size-5 shrink-0 text-muted-foreground" />
                 <span className="min-w-0 flex-1 truncate text-sm text-muted-foreground sm:text-base">
-                  What would you like expert help with?
+                  {t("home.heroPrompt")}
                 </span>
                 <Button asChild size="lg" className="shrink-0 rounded-xl px-5">
                   <Link to="/ask">
-                    Ask now <ArrowRight className="size-4" />
+                    {t("home.askNow")}{" "}
+                    <ArrowRight data-directional className="size-4" />
                   </Link>
                 </Button>
               </div>
@@ -231,22 +185,25 @@ function Index() {
                 to="/questions"
                 className="group inline-flex items-center gap-2 font-medium text-foreground transition-colors hover:text-primary"
               >
-                Browse real questions
-                <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
+                {t("home.browseRealQuestions")}
+                <ArrowRight
+                  data-directional
+                  className="size-4 transition-transform group-hover:translate-x-1"
+                />
               </Link>
               <Link
                 to="/become-expert"
                 className="font-medium text-muted-foreground transition-colors hover:text-foreground"
               >
-                Join as an expert
+                {t("home.joinAsExpert")}
               </Link>
             </div>
 
             <div className="mt-8 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-muted-foreground">
               {[
-                "No subscription",
-                "Private by design",
-                "Human-verified experts",
+                t("home.assuranceNoSubscription"),
+                t("home.assurancePrivate"),
+                t("home.assuranceVerified"),
               ].map((item) => (
                 <span key={item} className="inline-flex items-center gap-1.5">
                   <Check className="size-3.5 text-primary" /> {item}
@@ -272,46 +229,46 @@ function Index() {
                   </div>
                   <span className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
                     <span className="size-1.5 rounded-full bg-emerald-500" />
-                    Expert online
+                    {t("home.expertOnline")}
                   </span>
                 </div>
 
                 <div className="p-5 sm:p-6">
                   <div className="flex items-center justify-between gap-3">
                     <Badge variant="secondary" className="rounded-full">
-                      Business &amp; Legal
+                      {t("home.previewCategory")}
                     </Badge>
                     <span className="text-xs text-muted-foreground">
-                      Asked 18 min ago
+                      {t("home.askedMinutesAgo", { count: 18 })}
                     </span>
                   </div>
 
                   <h2 className="mt-4 text-balance text-xl font-semibold leading-snug sm:text-2xl">
-                    What is the best legal structure for starting a small agency
-                    in Morocco?
+                    {t("home.previewQuestion")}
                   </h2>
                   <div className="mt-4 flex items-center gap-3 text-xs text-muted-foreground">
                     <span className="inline-flex items-center gap-1.5">
-                      <MessageSquare className="size-3.5" /> 3 answers
+                      <MessageSquare className="size-3.5" />{" "}
+                      {t("home.answerCount", { count: 3 })}
                     </span>
                     <span className="size-1 rounded-full bg-border" />
-                    <span>Premium question</span>
+                    <span>{t("home.premiumQuestion")}</span>
                   </div>
 
                   <div className="mt-6 rounded-2xl border border-primary/20 bg-primary/[0.04] p-4">
                     <div className="flex items-center gap-3">
                       <div className="grid size-11 shrink-0 place-items-center rounded-full bg-gradient-to-br from-primary to-accent text-sm font-semibold text-primary-foreground shadow-sm">
-                        NB
+                        {t("home.sampleExpertInitials")}
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-1.5">
                           <p className="truncate text-sm font-semibold">
-                            Nadia Berrada
+                            {t("home.sampleExpertName")}
                           </p>
                           <BadgeCheck className="size-4 shrink-0 fill-primary text-primary-foreground" />
                         </div>
                         <p className="truncate text-xs text-muted-foreground">
-                          Corporate lawyer · Casablanca
+                          {t("home.sampleExpertRole")}
                         </p>
                       </div>
                       <div className="inline-flex items-center gap-1 text-xs font-medium">
@@ -322,9 +279,7 @@ function Index() {
 
                     <div className="relative mt-4 overflow-hidden">
                       <p className="text-sm leading-6 text-foreground/80">
-                        For a small service agency, an SARL AU is often the most
-                        practical choice because it separates personal and
-                        company liability while…
+                        {t("home.sampleAnswer")}
                       </p>
                       <div className="absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-card/95 to-transparent" />
                     </div>
@@ -332,13 +287,16 @@ function Index() {
                     <div className="mt-4 flex items-center justify-between gap-3 border-t border-border/60 pt-4">
                       <div>
                         <p className="text-xs text-muted-foreground">
-                          Full expert answer
+                          {t("home.fullExpertAnswer")}
                         </p>
-                        <p className="text-sm font-semibold">24 tokens</p>
+                        <p className="text-sm font-semibold">
+                          {t("pricing.packTokens", { count: 24 })}
+                        </p>
                       </div>
                       <Button asChild size="sm" className="rounded-lg">
                         <Link to="/questions">
-                          Preview answer <ArrowRight className="size-3.5" />
+                          {t("home.previewAnswer")}{" "}
+                          <ArrowRight data-directional className="size-3.5" />
                         </Link>
                       </Button>
                     </div>
@@ -352,9 +310,11 @@ function Index() {
                 <Users className="size-4" />
               </span>
               <div>
-                <p className="text-xs font-semibold">640+ verified</p>
+                <p className="text-xs font-semibold">
+                  {t("home.verifiedProfessionals", { count: 640 })}
+                </p>
                 <p className="text-[10px] text-muted-foreground">
-                  professionals
+                  {t("home.professionals")}
                 </p>
               </div>
             </div>
@@ -364,9 +324,11 @@ function Index() {
                 <Clock3 className="size-4" />
               </span>
               <div>
-                <p className="text-xs font-semibold">Fast response</p>
+                <p className="text-xs font-semibold">
+                  {t("home.fastResponse")}
+                </p>
                 <p className="text-[10px] text-muted-foreground">
-                  median 3h 12m
+                  {t("home.medianTime", { time: "3h 12m" })}
                 </p>
               </div>
             </div>
@@ -392,9 +354,9 @@ function Index() {
       {/* Value proposition */}
       <section className="mx-auto max-w-6xl px-4 py-20 sm:py-28">
         <SectionHeading
-          eyebrow="Why Estichara"
-          title="Built for decisions that deserve a trustworthy answer"
-          description="The speed of the internet, with the confidence of knowing exactly who is answering you."
+          eyebrow={t("home.why.eyebrow")}
+          title={t("home.why.title")}
+          description={t("home.why.description")}
         />
 
         <div className="mt-10 grid gap-4 lg:grid-cols-6">
@@ -436,10 +398,12 @@ function Index() {
       <section className="border-y border-border/60 bg-muted/30">
         <div className="mx-auto max-w-6xl px-4 py-20 sm:py-28">
           <SectionHeading
-            eyebrow="How it works"
-            title="From question to clarity in four simple steps"
-            description="No complicated plans or long-term commitment. Start free and unlock only what helps."
-            action={<TextLink to="/questions">See how others ask</TextLink>}
+            eyebrow={t("home.how.eyebrow")}
+            title={t("home.how.title")}
+            description={t("home.how.description")}
+            action={
+              <TextLink to="/questions">{t("home.how.seeOthers")}</TextLink>
+            }
           />
 
           <div className="relative mt-12 grid gap-8 sm:grid-cols-2 lg:grid-cols-4 lg:gap-6">
@@ -463,7 +427,8 @@ function Index() {
           <div className="mt-12 flex flex-wrap gap-3">
             <Button asChild size="lg" className="rounded-xl">
               <Link to="/ask">
-                Ask your first question <ArrowRight className="size-4" />
+                {t("home.how.firstQuestion")}{" "}
+                <ArrowRight data-directional className="size-4" />
               </Link>
             </Button>
             <Button
@@ -472,7 +437,7 @@ function Index() {
               variant="outline"
               className="rounded-xl bg-background"
             >
-              <Link to="/pricing">Explore token pricing</Link>
+              <Link to="/pricing">{t("home.how.explorePricing")}</Link>
             </Button>
           </div>
         </div>
@@ -481,10 +446,14 @@ function Index() {
       {/* Trending questions */}
       <section className="mx-auto max-w-6xl px-4 py-20 sm:py-28">
         <SectionHeading
-          eyebrow="Explore"
-          title="Questions people are asking now"
-          description="Discover practical conversations across business, law, health, careers, technology, and everyday life."
-          action={<TextLink to="/questions">View all questions</TextLink>}
+          eyebrow={t("home.explore.eyebrow")}
+          title={t("home.explore.title")}
+          description={t("home.explore.description")}
+          action={
+            <TextLink to="/questions">
+              {t("home.explore.allQuestions")}
+            </TextLink>
+          }
         />
         <div className="mt-10 grid gap-4 lg:grid-cols-2">
           {questions.slice(0, 4).map((question) => (
@@ -501,10 +470,14 @@ function Index() {
         />
         <div className="relative mx-auto max-w-6xl px-4 py-20 sm:py-28">
           <SectionHeading
-            eyebrow="Meet the experts"
-            title="Real people. Proven experience."
-            description="Profiles show credentials, specialties, response times, and reviews so you can choose with confidence."
-            action={<TextLink to="/experts">Browse the directory</TextLink>}
+            eyebrow={t("home.expertSection.eyebrow")}
+            title={t("home.expertSection.title")}
+            description={t("home.expertSection.description")}
+            action={
+              <TextLink to="/experts">
+                {t("home.expertSection.directory")}
+              </TextLink>
+            }
           />
           <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {experts.slice(0, 3).map((expert) => (
@@ -518,11 +491,10 @@ function Index() {
             </span>
             <div>
               <p className="text-sm font-medium">
-                Verification is handled by people, not algorithms.
+                {t("home.expertSection.verificationTitle")}
               </p>
               <p className="mt-0.5 text-xs text-muted-foreground">
-                Identity and credentials are reviewed before a professional
-                badge is issued.
+                {t("home.expertSection.verificationText")}
               </p>
             </div>
           </div>
@@ -532,10 +504,12 @@ function Index() {
       {/* Categories */}
       <section className="mx-auto max-w-6xl px-4 py-20 sm:py-28">
         <SectionHeading
-          eyebrow="Categories"
-          title="Find expertise for every part of life"
+          eyebrow={t("home.categorySection.eyebrow")}
+          title={t("home.categorySection.title")}
           action={
-            <TextLink to="/categories">Explore all 20 categories</TextLink>
+            <TextLink to="/categories">
+              {t("home.categorySection.exploreAll", { count: 20 })}
+            </TextLink>
           }
         />
         <div className="mt-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -555,13 +529,19 @@ function Index() {
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-sm font-semibold">
-                    {category.name}
+                    {getCategoryLabel(t, category.slug, category.name)}
                   </span>
                   <span className="mt-0.5 block text-xs text-muted-foreground">
-                    {category.questions.toLocaleString()} questions
+                    {t("home.categorySection.questionCount", {
+                      count: category.questions,
+                      formattedCount: formatNumber(category.questions, locale),
+                    })}
                   </span>
                 </span>
-                <ArrowRight className="size-4 -translate-x-1 text-muted-foreground opacity-0 transition-all group-hover:translate-x-0 group-hover:opacity-100" />
+                <ArrowRight
+                  data-directional
+                  className="size-4 -translate-x-1 text-muted-foreground opacity-0 transition-all group-hover:translate-x-0 group-hover:opacity-100"
+                />
               </Link>
             );
           })}
@@ -572,13 +552,13 @@ function Index() {
       <section className="border-y border-border/60 bg-muted/30">
         <div className="mx-auto max-w-6xl px-4 py-20 sm:py-28">
           <SectionHeading
-            eyebrow="Success stories"
-            title="Useful answers create real momentum"
-            description="A trusted perspective can save hours of research, prevent an expensive mistake, or simply make the next step clearer."
+            eyebrow={t("home.stories.eyebrow")}
+            title={t("home.stories.title")}
+            description={t("home.stories.description")}
           />
 
           <div className="mt-10 grid gap-5 lg:grid-cols-3">
-            {stories.map((story, index) => (
+            {localizedStories.map((story, index) => (
               <figure
                 key={story.name}
                 className={`relative flex min-h-64 flex-col overflow-hidden rounded-3xl border p-7 sm:p-8 ${
@@ -620,14 +600,16 @@ function Index() {
       {/* Pricing */}
       <section className="mx-auto max-w-6xl px-4 py-20 sm:py-28">
         <SectionHeading
-          eyebrow="Simple pricing"
-          title="Buy tokens once. Use them whenever you need."
-          description="No monthly fee and no expiring plan. Choose a pack, preview answers, and unlock only what helps."
-          action={<TextLink to="/pricing">How tokens work</TextLink>}
+          eyebrow={t("home.pricing.eyebrow")}
+          title={t("home.pricing.title")}
+          description={t("home.pricing.description")}
+          action={
+            <TextLink to="/pricing">{t("home.pricing.howTokensWork")}</TextLink>
+          }
         />
 
         <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-4 lg:items-start">
-          {tokenPacks.map((pack) => (
+          {tokenPacks.map((pack, index) => (
             <article
               key={pack.name}
               className={`relative rounded-3xl border bg-card p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl ${
@@ -638,29 +620,36 @@ function Index() {
             >
               {pack.popular ? (
                 <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full px-3 shadow-sm">
-                  <Sparkles className="mr-1 size-3" /> Most popular
+                  <Sparkles className="me-1 size-3" />{" "}
+                  {t("home.pricing.mostPopular")}
                 </Badge>
               ) : null}
               <h3 className="text-sm font-semibold text-muted-foreground">
-                {pack.name}
+                {getTokenPackLabel(t, index, pack.name)}
               </h3>
               <div className="mt-5 flex items-end gap-2">
                 <p className="text-4xl font-semibold tracking-tight">
-                  {pack.tokens.toLocaleString()}
+                  {formatNumber(pack.tokens, locale)}
                 </p>
-                <p className="pb-1 text-sm text-muted-foreground">tokens</p>
+                <p className="pb-1 text-sm text-muted-foreground">
+                  {t("common.tokens")}
+                </p>
               </div>
-              <p className="mt-5 text-xl font-semibold">{pack.price} MAD</p>
+              <p className="mt-5 text-xl font-semibold">
+                {formatNumber(pack.price, locale)} {t("common.mad")}
+              </p>
               <p className="mt-1 text-xs text-muted-foreground">
-                One-time payment
+                {t("home.pricing.oneTimePayment")}
               </p>
               <div className="my-5 h-px bg-border/70" />
               <div className="space-y-2 text-xs text-muted-foreground">
                 <p className="flex items-center gap-2">
-                  <Check className="size-3.5 text-primary" /> Never expires
+                  <Check className="size-3.5 text-primary" />{" "}
+                  {t("home.pricing.neverExpires")}
                 </p>
                 <p className="flex items-center gap-2">
-                  <Check className="size-3.5 text-primary" /> Secure checkout
+                  <Check className="size-3.5 text-primary" />{" "}
+                  {t("home.pricing.secureCheckout")}
                 </p>
               </div>
               <Button
@@ -668,7 +657,7 @@ function Index() {
                 variant={pack.popular ? "default" : "outline"}
                 className="mt-6 w-full rounded-xl"
               >
-                <Link to="/tokens">Choose this pack</Link>
+                <Link to="/tokens">{t("home.pricing.choosePack")}</Link>
               </Button>
             </article>
           ))}
@@ -680,31 +669,31 @@ function Index() {
         <div className="mx-auto grid max-w-6xl gap-12 px-4 py-20 sm:py-28 lg:grid-cols-[.75fr_1.25fr] lg:gap-20">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">
-              FAQ
+              {t("home.faq.eyebrow")}
             </p>
             <h2 className="mt-3 text-balance text-3xl font-semibold tracking-tight sm:text-4xl">
-              Questions about Estichara?
+              {t("home.faq.title")}
             </h2>
             <p className="mt-4 leading-7 text-muted-foreground">
-              Everything you need to know before asking your first question.
+              {t("home.faq.description")}
             </p>
             <Button
               asChild
               variant="outline"
               className="mt-7 rounded-xl bg-background"
             >
-              <Link to="/questions">Browse all questions</Link>
+              <Link to="/questions">{t("home.faq.browse")}</Link>
             </Button>
           </div>
 
           <Accordion type="single" collapsible className="w-full">
-            {faqs.map((faq, index) => (
+            {localizedFaqs.map((faq, index) => (
               <AccordionItem
                 key={faq.q}
                 value={`faq-${index}`}
                 className="border-border/70"
               >
-                <AccordionTrigger className="py-5 text-left text-base font-medium hover:no-underline hover:text-primary">
+                <AccordionTrigger className="py-5 text-start text-base font-medium hover:no-underline hover:text-primary">
                   {faq.q}
                 </AccordionTrigger>
                 <AccordionContent className="max-w-2xl pb-5 leading-7 text-muted-foreground">
@@ -742,11 +731,10 @@ function Index() {
               <Lock className="size-5" />
             </span>
             <h2 className="mt-6 text-balance text-3xl font-semibold tracking-tight sm:text-5xl">
-              The clarity you need could be one question away.
+              {t("home.cta.title")}
             </h2>
             <p className="mx-auto mt-5 max-w-xl text-pretty leading-7 text-primary-foreground/75">
-              Post for free, or add tokens to reach a verified expert faster.
-              You stay in control from question to answer.
+              {t("home.cta.description")}
             </p>
             <div className="mt-8 flex flex-wrap justify-center gap-3">
               <Button
@@ -756,7 +744,7 @@ function Index() {
                 className="rounded-xl"
               >
                 <Link to="/ask">
-                  <MessageSquare className="size-4" /> Ask a question
+                  <MessageSquare className="size-4" /> {t("common.askQuestion")}
                 </Link>
               </Button>
               <Button
@@ -765,7 +753,7 @@ function Index() {
                 variant="outline"
                 className="rounded-xl border-white/20 bg-white/10 text-white hover:bg-white/15 hover:text-white"
               >
-                <Link to="/become-expert">Become an expert</Link>
+                <Link to="/become-expert">{t("home.cta.becomeExpert")}</Link>
               </Button>
             </div>
           </div>
