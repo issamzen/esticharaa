@@ -1,97 +1,107 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ChangeEvent } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { Search } from "lucide-react";
+import { Search, ShieldCheck } from "lucide-react";
 import { SiteLayout, PageHeader } from "@/components/site/layout";
 import { ExpertCard } from "@/components/site/expert-card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { experts } from "@/data/platform";
-
-const professions = ["All", ...new Set(experts.map((e) => e.specialization))];
+import { usePageCopy } from "@/i18n/page-copy";
+import { createPageSeo, pageHead } from "@/i18n/route-meta";
+import { localizeExpert } from "@/i18n/platform";
+import { useLocale } from "@/i18n/use-locale";
 
 export const Route = createFileRoute("/experts/")({
-  head: () => ({
-    meta: [
-      { title: "Expert Directory — Estichara.ma" },
-      {
-        name: "description",
-        content:
-          "Browse verified Moroccan doctors, lawyers, accountants and consultants answering real questions every day.",
-      },
-      { property: "og:title", content: "Expert Directory — Estichara.ma" },
-      {
-        property: "og:description",
-        content: "Verified professionals ranked by rating, response time and answers delivered.",
-      },
-    ],
+  loader: ({ context }) => ({
+    seo: createPageSeo(context.localeRouting.getLocale(), "experts"),
   }),
+  head: ({ loaderData }) => pageHead(loaderData?.seo),
   component: ExpertsPage,
 });
 
 function ExpertsPage() {
+  const copy = usePageCopy().experts;
+  const locale = useLocale();
+  const localized = useMemo(
+    () => experts.map((item) => localizeExpert(item, locale)),
+    [locale],
+  );
+  const professions = useMemo(
+    () => [copy.all, ...new Set(localized.map((item) => item.specialization))],
+    [copy.all, localized],
+  );
   const [query, setQuery] = useState("");
-  const [profession, setProfession] = useState("All");
+  const [profession, setProfession] = useState(copy.all);
   const [verifiedOnly, setVerifiedOnly] = useState(false);
 
-  const visible = useMemo(
-    () =>
-      experts.filter(
-        (e) =>
-          (profession === "All" || e.specialization === profession) &&
-          (!verifiedOnly || e.verified) &&
-          (e.name.toLowerCase().includes(query.toLowerCase()) ||
-            e.title.toLowerCase().includes(query.toLowerCase()) ||
-            e.city.toLowerCase().includes(query.toLowerCase())),
-      ),
-    [query, profession, verifiedOnly],
-  );
+  useEffect(() => setProfession(copy.all), [copy.all]);
+
+  const visible = useMemo(() => {
+    const needle = query.toLocaleLowerCase();
+    return localized.filter(
+      (item) =>
+        (profession === copy.all || item.specialization === profession) &&
+        (!verifiedOnly || item.verified) &&
+        [item.name, item.title, item.city].some((value) =>
+          value.toLocaleLowerCase().includes(needle),
+        ),
+    );
+  }, [copy.all, localized, profession, query, verifiedOnly]);
 
   return (
     <SiteLayout>
       <PageHeader
-        eyebrow="Experts"
-        title="People who actually know"
-        description="Doctors, lawyers, accountants, consultants and practitioners — each verified against their diplomas and professional records."
+        eyebrow={copy.eyebrow}
+        title={copy.title}
+        description={copy.description}
       >
         <div className="relative max-w-xl">
-          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Search className="absolute start-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search by name, profession or city…"
-            className="h-12 rounded-full pl-10"
+            onChange={(event: ChangeEvent<HTMLInputElement>) =>
+              setQuery(event.target.value)
+            }
+            placeholder={copy.search}
+            className="h-12 rounded-full bg-background/80 ps-11 shadow-soft"
           />
         </div>
       </PageHeader>
 
-      <section className="mx-auto max-w-6xl px-4 py-10">
+      <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16">
         <div className="flex flex-wrap gap-2">
-          {professions.map((p) => (
+          {professions.map((item) => (
             <Button
-              key={p}
+              key={item}
               size="sm"
-              variant={profession === p ? "default" : "outline"}
+              variant={profession === item ? "default" : "outline"}
               className="rounded-full"
-              onClick={() => setProfession(p)}
+              onClick={() => setProfession(item)}
             >
-              {p}
+              {item}
             </Button>
           ))}
           <Button
             size="sm"
             variant={verifiedOnly ? "default" : "outline"}
             className="rounded-full"
-            onClick={() => setVerifiedOnly((v) => !v)}
+            onClick={() => setVerifiedOnly((value) => !value)}
           >
-            Verified only
+            <ShieldCheck className="size-3.5" /> {copy.verifiedOnly}
           </Button>
         </div>
 
-        <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {visible.map((expert) => (
             <ExpertCard key={expert.slug} expert={expert} />
           ))}
         </div>
+
+        {visible.length === 0 ? (
+          <div className="premium-card mt-8 py-16 text-center text-sm text-muted-foreground">
+            {copy.empty}
+          </div>
+        ) : null}
       </section>
     </SiteLayout>
   );
