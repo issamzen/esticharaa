@@ -144,7 +144,7 @@ function Index() {
         />
 
         <div className="mx-auto grid max-w-6xl gap-14 px-4 py-16 sm:py-24 lg:grid-cols-[1.08fr_.92fr] lg:items-center lg:gap-16 lg:py-28">
-          <div>
+          <div className="min-w-0">
             <Badge
               variant="outline"
               className="rounded-full border-primary/20 bg-background/70 px-3 py-1.5 shadow-sm backdrop-blur-md"
@@ -213,7 +213,7 @@ function Index() {
           </div>
 
           {/* Product preview */}
-          <div className="relative mx-auto w-full max-w-lg lg:mx-0">
+          <div className="relative mx-auto w-full min-w-0 max-w-lg lg:mx-0">
             <div
               aria-hidden="true"
               className="absolute inset-x-8 inset-y-10 -z-10 rounded-[2rem] bg-primary/20 blur-3xl"
