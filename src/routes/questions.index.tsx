@@ -176,10 +176,11 @@ function QuestionsPage() {
               </div>
             </Link>
           ))}
-          {/* Sample questions (demo content) */}
-          {visible.map((question) => (
-            <QuestionCard key={question.id} question={question} />
-          ))}
+          {/* Sample questions — shown only while there is no real content yet */}
+          {liveVisible.length === 0 &&
+            visible.map((question) => (
+              <QuestionCard key={question.id} question={question} />
+            ))}
         </div>
 
         <div className="mt-8 rounded-2xl border border-border/60 bg-muted/35 px-4 py-5 text-center text-sm text-muted-foreground">
