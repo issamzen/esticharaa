@@ -5,155 +5,187 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { QuestionCard } from "@/components/site/question-card";
 import { experts, questions } from "@/data/platform";
+import { usePageCopy } from "@/i18n/page-copy";
+import { formatNumber } from "@/i18n/format";
+import { localizeExpert } from "@/i18n/platform";
+import { useLocale } from "@/i18n/use-locale";
 
 export const Route = createFileRoute("/experts/$expertSlug")({
-  loader: ({ params }) => {
-    const expert = experts.find((e) => e.slug === params.expertSlug);
-    if (!expert) throw notFound();
+  loader: ({ params, context }) => {
+    const base = experts.find((item) => item.slug === params.expertSlug);
+    if (!base) throw notFound();
+    const expert = localizeExpert(base, context.localeRouting.getLocale());
     return { expert };
   },
-  head: ({ loaderData }) => {
-    if (!loaderData) {
-      return {
-        meta: [{ title: "Expert not found — Estichara.ma" }, { name: "robots", content: "noindex" }],
-      };
-    }
-    const { expert } = loaderData;
-    return {
-      meta: [
-        { title: `${expert.name}, ${expert.title} — Estichara.ma` },
-        { name: "description", content: expert.bio.slice(0, 155) },
-        { property: "og:title", content: `${expert.name} — ${expert.title}` },
-        { property: "og:description", content: expert.bio.slice(0, 155) },
-      ],
-    };
-  },
-  notFoundComponent: () => (
-    <SiteLayout>
-      <div className="mx-auto max-w-2xl px-4 py-32 text-center">
-        <h1 className="text-2xl font-semibold">Expert not found</h1>
-        <Button asChild className="mt-6">
-          <Link to="/experts">Back to directory</Link>
-        </Button>
-      </div>
-    </SiteLayout>
-  ),
-  errorComponent: () => (
-    <SiteLayout>
-      <div className="mx-auto max-w-2xl px-4 py-32 text-center">
-        <h1 className="text-2xl font-semibold">This profile didn&apos;t load</h1>
-      </div>
-    </SiteLayout>
-  ),
+  head: ({ loaderData }) => ({
+    meta: loaderData
+      ? [
+          {
+            title: `${loaderData.expert.name}, ${loaderData.expert.title} — Estichara.ma`,
+          },
+          { name: "description", content: loaderData.expert.bio.slice(0, 155) },
+        ]
+      : [{ title: "Estichara.ma" }],
+  }),
+  notFoundComponent: ExpertNotFound,
+  errorComponent: ExpertLoadError,
   component: ExpertProfile,
 });
 
-const achievements = ["Top contributor 2026", "100 answers milestone", "5-star streak ×12"];
+function ExpertNotFound() {
+  const copy = usePageCopy().expert;
+  return (
+    <SiteLayout>
+      <div className="mx-auto max-w-2xl px-4 py-32 text-center">
+        <h1 className="text-3xl font-semibold">{copy.notFound}</h1>
+        <Button asChild className="mt-6 rounded-xl">
+          <Link to="/experts">{copy.back}</Link>
+        </Button>
+      </div>
+    </SiteLayout>
+  );
+}
+
+function ExpertLoadError() {
+  const copy = usePageCopy().expert;
+  return (
+    <SiteLayout>
+      <div className="mx-auto max-w-2xl px-4 py-32 text-center">
+        <h1 className="text-3xl font-semibold">{copy.loadError}</h1>
+      </div>
+    </SiteLayout>
+  );
+}
 
 function ExpertProfile() {
   const { expert } = Route.useLoaderData();
+  const copy = usePageCopy().expert;
+  const locale = useLocale();
   const answered = questions.slice(0, 3);
+
+  const stats = [
+    { label: copy.rating, value: `${expert.rating} / 5`, icon: Star },
+    {
+      label: copy.answersDelivered,
+      value: formatNumber(expert.answered, locale),
+      icon: MessageSquare,
+    },
+    {
+      label: copy.tokensEarned,
+      value: formatNumber(expert.tokens, locale),
+      icon: Coins,
+    },
+    { label: copy.responseTime, value: expert.responseTime, icon: Clock },
+  ];
 
   return (
     <SiteLayout>
-      <section className="bg-hero border-b border-border/60">
-        <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-14 sm:flex-row sm:items-center">
-          <span className="grid size-24 shrink-0 place-items-center rounded-3xl bg-brand text-3xl font-semibold text-primary-foreground shadow-lift">
+      <section className="bg-hero relative overflow-hidden border-b border-border/60">
+        <div className="absolute -end-28 -top-28 size-80 rounded-full bg-accent/15 blur-3xl" />
+        <div className="relative mx-auto flex max-w-7xl flex-col gap-6 px-4 py-14 sm:flex-row sm:items-center sm:px-6 sm:py-20">
+          <span className="bg-brand grid size-24 shrink-0 place-items-center rounded-[2rem] text-3xl font-semibold text-primary-foreground shadow-lift">
             {expert.initials}
           </span>
-          <div>
+          <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-3xl font-semibold">{expert.name}</h1>
+              <h1 className="text-3xl font-semibold sm:text-5xl">
+                {expert.name}
+              </h1>
               {expert.verified ? (
-                <Badge className="bg-secondary text-secondary-foreground">
-                  <BadgeCheck className="size-3.5" /> Verified level 2
+                <Badge className="rounded-full bg-secondary text-secondary-foreground">
+                  <BadgeCheck className="size-3.5" /> {copy.verifiedLevel}
                 </Badge>
               ) : (
-                <Badge variant="outline">Pending verification</Badge>
+                <Badge variant="outline" className="rounded-full">
+                  {copy.pending}
+                </Badge>
               )}
             </div>
-            <p className="mt-1 text-muted-foreground">
+            <p className="mt-2 text-muted-foreground">
               {expert.title} · {expert.specialization} · {expert.city}
             </p>
-            <div className="mt-4 flex flex-wrap gap-2">
-              <Button>
-                <MessageSquare className="size-4" /> Contact for 10 tokens
+            <div className="mt-6 flex flex-wrap gap-2">
+              <Button className="rounded-xl">
+                <MessageSquare className="size-4" /> {copy.contact}
               </Button>
-              <Button asChild variant="outline">
-                <Link to="/ask">Ask this expert</Link>
+              <Button
+                asChild
+                variant="outline"
+                className="rounded-xl bg-background/70"
+              >
+                <Link to="/ask">{copy.ask}</Link>
               </Button>
             </div>
           </div>
         </div>
       </section>
 
-      <section className="mx-auto max-w-6xl px-4 py-10">
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {[
-            { label: "Rating", value: `${expert.rating} / 5`, icon: Star },
-            { label: "Answers delivered", value: expert.answered, icon: MessageSquare },
-            { label: "Tokens earned", value: expert.tokens.toLocaleString(), icon: Coins },
-            { label: "Response time", value: expert.responseTime, icon: Clock },
-          ].map((stat) => (
-            <div
-              key={stat.label}
-              className="rounded-2xl border border-border/70 bg-card p-5 shadow-soft"
-            >
-              <stat.icon className="size-4 text-secondary" />
-              <p className="mt-3 text-2xl font-semibold">{stat.value}</p>
-              <p className="text-xs text-muted-foreground">{stat.label}</p>
-            </div>
+      <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16">
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          {stats.map((stat) => (
+            <article key={stat.label} className="premium-card p-5 sm:p-6">
+              <stat.icon className="size-5 text-secondary" />
+              <p className="mt-4 text-xl font-semibold sm:text-2xl">
+                {stat.value}
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">{stat.label}</p>
+            </article>
           ))}
         </div>
 
-        <div className="mt-10 grid gap-10 lg:grid-cols-[1fr_320px]">
+        <div className="mt-12 grid gap-10 lg:grid-cols-[1fr_320px]">
           <div>
-            <h2 className="text-lg font-semibold">Biography</h2>
-            <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{expert.bio}</p>
+            <h2 className="text-2xl font-semibold">{copy.biography}</h2>
+            <p className="mt-4 max-w-3xl text-sm leading-7 text-muted-foreground">
+              {expert.bio}
+            </p>
 
-            <h2 className="mt-10 text-lg font-semibold">Recent answers</h2>
-            <div className="mt-4 grid gap-4">
-              {answered.map((q) => (
-                <QuestionCard key={q.id} question={q} />
+            <h2 className="mt-12 text-2xl font-semibold">
+              {copy.recentAnswers}
+            </h2>
+            <div className="mt-5 grid gap-4">
+              {answered.map((question) => (
+                <QuestionCard key={question.id} question={question} />
               ))}
             </div>
 
-            <h2 className="mt-10 text-lg font-semibold">Reviews ({expert.reviews})</h2>
-            <div className="mt-4 space-y-4">
-              {[
-                "Clear, structured and referenced. Saved me two trips to the administration.",
-                "Answered in under an hour and followed up on my second question for free.",
-              ].map((review) => (
-                <div
-                  key={review}
-                  className="rounded-2xl border border-border/70 bg-card p-5 text-sm shadow-soft"
-                >
+            <h2 className="mt-12 text-2xl font-semibold">
+              {copy.reviews} ({formatNumber(expert.reviews, locale)})
+            </h2>
+            <div className="mt-5 grid gap-4 sm:grid-cols-2">
+              {copy.reviewItems.map((review) => (
+                <article key={review} className="premium-card p-5 text-sm">
                   <div className="flex gap-0.5 text-accent">
-                    {Array.from({ length: 5 }).map((_, i) => (
-                      <Star key={i} className="size-3.5 fill-current" />
+                    {Array.from({ length: 5 }).map((_, index) => (
+                      <Star key={index} className="size-3.5 fill-current" />
                     ))}
                   </div>
-                  <p className="mt-2 text-muted-foreground">{review}</p>
-                </div>
+                  <p className="mt-3 leading-6 text-muted-foreground">
+                    {review}
+                  </p>
+                </article>
               ))}
             </div>
           </div>
 
-          <aside className="space-y-6">
-            <div className="rounded-2xl border border-border/70 bg-card p-5 shadow-soft">
-              <h3 className="text-sm font-semibold">Certificates</h3>
-              <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
-                <li>State diploma verified</li>
-                <li>Professional order registration</li>
-                <li>Identity document verified</li>
+          <aside className="space-y-5">
+            <div className="premium-card p-6">
+              <h3 className="font-semibold">{copy.certificates}</h3>
+              <ul className="mt-4 space-y-3 text-sm text-muted-foreground">
+                {copy.certificateItems.map((item) => (
+                  <li key={item} className="flex items-start gap-2">
+                    <BadgeCheck className="mt-0.5 size-4 shrink-0 text-secondary" />{" "}
+                    {item}
+                  </li>
+                ))}
               </ul>
             </div>
-            <div className="rounded-2xl border border-border/70 bg-card p-5 shadow-soft">
-              <h3 className="text-sm font-semibold">Achievements</h3>
-              <div className="mt-3 flex flex-wrap gap-2">
-                {achievements.map((a) => (
-                  <Badge key={a} variant="outline">
-                    {a}
+            <div className="premium-card p-6">
+              <h3 className="font-semibold">{copy.achievements}</h3>
+              <div className="mt-4 flex flex-wrap gap-2">
+                {copy.achievementItems.map((item) => (
+                  <Badge key={item} variant="outline" className="rounded-full">
+                    {item}
                   </Badge>
                 ))}
               </div>
