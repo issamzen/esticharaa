@@ -1,21 +1,20 @@
-import { useLayoutEffect, type ReactNode } from "react";
-import { i18n } from "@/i18n";
-import { getActiveLocale } from "@/i18n/routing";
-import { useDocumentLocale } from "@/i18n/use-document-locale";
+import { useEffect, type ReactNode } from "react";
+import { localeDirection, type Locale } from "@/i18n/config";
 
-/** Place this once in the root route, around <Outlet />. */
-export function LocaleBoundary({ children }: { children: ReactNode }) {
-  const locale = getActiveLocale();
-
-  // Bundled translations make this switch synchronous in practice. A layout effect
-  // prevents an Arabic/English flash during client-side startup.
-  useLayoutEffect(() => {
-    if (i18n.resolvedLanguage !== locale) {
-      void i18n.changeLanguage(locale);
-    }
+export function LocaleBoundary({
+  locale,
+  children,
+}: {
+  locale: Locale;
+  children: ReactNode;
+}) {
+  useEffect(() => {
+    const direction = localeDirection(locale);
+    document.documentElement.lang = locale;
+    document.documentElement.dir = direction;
+    document.documentElement.dataset.locale = locale;
+    document.body.dir = direction;
   }, [locale]);
-
-  useDocumentLocale(locale);
 
   return children;
 }
