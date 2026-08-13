@@ -72,6 +72,7 @@ export const ar = {
     purchases: "مشترياتي",
     settings: "الإعدادات",
     signOut: "تسجيل الخروج",
+    mainLabel: "التنقل الرئيسي",
     openMenu: "فتح القائمة",
     closeMenu: "إغلاق القائمة",
   },
@@ -100,6 +101,7 @@ export const ar = {
     answerCount_other: "{{count}} إجابة",
     premiumQuestion: "سؤال مميّز",
     sampleExpertName: "نادية برادة",
+    sampleExpertInitials: "ن ب",
     sampleExpertRole: "محامية في قانون الشركات · الدار البيضاء",
     sampleAnswer:
       "بالنسبة إلى وكالة خدمات صغيرة، غالبًا ما تكون شركة ذات مسؤولية محدودة بشريك وحيد خيارًا عمليًا، لأنها تفصل بين المسؤولية الشخصية ومسؤولية الشركة مع…",
