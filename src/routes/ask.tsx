@@ -38,7 +38,7 @@ const rewards = [0, 5, 10, 20, -1] as const;
 function AskPage() {
   const copy = usePageCopy().ask;
   const navigate = useNavigate();
-  const { user, loading } = useAuth();
+  const { user, profile, loading, refreshProfile } = useAuth();
   const { t } = useTranslation();
   const locale = useLocale();
   const localizedCategories = categories.map((item) =>
@@ -107,27 +107,40 @@ function AskPage() {
       .eq("slug", result.data.category)
       .maybeSingle();
 
-    const { error } = await supabase.from("questions").insert({
-      user_id: user!.id,
-      category_id: cat?.id ?? null,
-      title: result.data.title,
-      body: result.data.body,
-      tokens: reward > 0 ? reward : 0,
-      status: "pending",
-      tags: [],
+    const rewardTokens = reward > 0 ? reward : 0;
+    // Paid question → tokens are deducted from the asker immediately (escrow)
+    const { error } = await supabase.rpc("create_question", {
+      p_title: result.data.title,
+      p_body: result.data.body,
+      p_category_id: cat?.id ?? null,
+      p_tokens: rewardTokens,
     });
     setSubmitting(false);
     if (error) {
+      if (error.message.includes("INSUFFICIENT_TOKENS")) {
+        toast.error(
+          t("ask.insufficient", "رصيدك غير كافٍ لهذه المكافأة — اشترِ توكن أولًا"),
+        );
+        navigate({ to: "/tokens" });
+        return;
+      }
       toast.error(error.message);
       return;
     }
+    await refreshProfile();
     toast.success(
       t("ask.savedTitle", "تم إرسال سؤالك بنجاح! ✅"),
       {
-        description: t(
-          "ask.savedDescription",
-          "سيراجعه فريقنا وينشره قريبًا — تابع حالته من حسابك.",
-        ),
+        description:
+          rewardTokens > 0
+            ? t(
+                "ask.savedPaidDescription",
+                `خُصمت ${rewardTokens} توكن كمكافأة للخبراء. سيراجع فريقنا سؤالك وينشره قريبًا.`,
+              )
+            : t(
+                "ask.savedDescription",
+                "سيراجعه فريقنا وينشره قريبًا — تابع حالته من حسابك.",
+              ),
         duration: 7000,
       },
     );
@@ -217,21 +230,44 @@ function AskPage() {
             </div>
 
             <div>
-              <Label>{copy.answerPrice}</Label>
-              <div className="mt-3 flex flex-wrap gap-2">
-                {rewards.map((value) => (
-                  <Button
-                    key={value}
-                    type="button"
-                    size="sm"
-                    variant={reward === value ? "default" : "outline"}
-                    className="rounded-full"
-                    onClick={() => setReward(value)}
-                  >
-                    {rewardLabel(value)}
-                  </Button>
-                ))}
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <Label>{copy.answerPrice}</Label>
+                <span className="text-xs text-muted-foreground">
+                  {t("ask.yourBalance", "رصيدك")}:{" "}
+                  <b className="text-foreground">
+                    {profile?.tokens_balance ?? 0}
+                  </b>{" "}
+                  {t("common.tokens")}
+                </span>
               </div>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {rewards.map((value) => {
+                  const unaffordable =
+                    value > 0 && value > (profile?.tokens_balance ?? 0);
+                  return (
+                    <Button
+                      key={value}
+                      type="button"
+                      size="sm"
+                      variant={reward === value ? "default" : "outline"}
+                      className={`rounded-full ${unaffordable ? "opacity-40" : ""}`}
+                      disabled={unaffordable}
+                      onClick={() => setReward(value)}
+                    >
+                      {rewardLabel(value)}
+                    </Button>
+                  );
+                })}
+              </div>
+              {reward > 0 && (
+                <p className="mt-2 text-xs leading-5 text-muted-foreground">
+                  ⚠️{" "}
+                  {t(
+                    "ask.escrowNote",
+                    `ستُخصم ${reward} توكن من رصيدك فور الإرسال — تُسترجع تلقائيًا إذا رُفض السؤال أو حذفته قبل النشر.`,
+                  )}
+                </p>
+              )}
             </div>
 
             <button
