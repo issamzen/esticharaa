@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { Coins, LogIn, Menu, MessagesSquare, UserRound } from "lucide-react";
 import { useAuth } from "@/lib/auth";
+import { useSiteSettings } from "@/lib/site-settings";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -24,6 +25,11 @@ export function Header() {
   const { t } = useTranslation();
   const locale = useLocale();
   const { user, profile } = useAuth();
+  const site = useSiteSettings();
+  // Admin-controlled menu (falls back to the default list before load)
+  const navItems = site.loaded
+    ? site.nav.filter((i) => i.visible)
+    : [...navigation];
   const sheetSide = localeDirection(locale) === "rtl" ? "left" : "right";
 
   return (
@@ -34,11 +40,25 @@ export function Header() {
           to="/"
           className="group flex shrink-0 items-center gap-2.5 font-semibold"
         >
-          <span className="bg-brand grid size-10 place-items-center rounded-2xl text-primary-foreground shadow-lg shadow-primary/15 transition-transform group-hover:-rotate-3 group-hover:scale-105">
-            <MessagesSquare className="size-5" />
-          </span>
+          {site.branding.logo_url ? (
+            <img
+              src={site.branding.logo_url}
+              alt={site.branding.site_name}
+              className="size-10 rounded-2xl object-contain"
+            />
+          ) : (
+            <span className="bg-brand grid size-10 place-items-center rounded-2xl text-primary-foreground shadow-lg shadow-primary/15 transition-transform group-hover:-rotate-3 group-hover:scale-105">
+              <MessagesSquare className="size-5" />
+            </span>
+          )}
           <span className="text-lg tracking-tight" dir="ltr">
-            Estichara<span className="text-secondary">.ma</span>
+            {site.branding.site_name !== "Estichara.ma" ? (
+              site.branding.site_name
+            ) : (
+              <>
+                Estichara<span className="text-secondary">.ma</span>
+              </>
+            )}
           </span>
         </Link>
 
@@ -46,7 +66,7 @@ export function Header() {
           className="mx-auto hidden items-center gap-1 xl:flex"
           aria-label={t("nav.mainLabel")}
         >
-          {navigation.map((item) => (
+          {navItems.map((item) => (
             <Link
               key={item.to}
               to={item.to}
@@ -147,7 +167,7 @@ export function Header() {
                 <LanguageSwitcher onLocaleChange={() => setOpen(false)} />
 
                 <nav className="mt-7 flex flex-col gap-1">
-                  {navigation.map((item) => (
+                  {navItems.map((item) => (
                     <Link
                       key={item.to}
                       to={item.to}
