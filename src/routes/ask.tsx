@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, type ChangeEvent } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { Paperclip, Sparkles, Wand2 } from "lucide-react";
+import { Paperclip, ShieldCheck, Sparkles, Wand2 } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
+import { useTranslation } from "react-i18next";
 import { SiteLayout, PageHeader } from "@/components/site/layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,154 +18,180 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { categories } from "@/data/platform";
+import { usePageCopy } from "@/i18n/page-copy";
+import { createPageSeo, pageHead } from "@/i18n/route-meta";
+import { localizeCategory } from "@/i18n/platform";
+import { useLocale } from "@/i18n/use-locale";
 
 export const Route = createFileRoute("/ask")({
-  head: () => ({
-    meta: [
-      { title: "Ask a Question — Estichara.ma" },
-      {
-        name: "description",
-        content:
-          "Describe your situation and get answers from verified Moroccan professionals. Free or premium, you choose the token price.",
-      },
-      { property: "og:title", content: "Ask a Question — Estichara.ma" },
-      { property: "og:description", content: "Post your question and reach the right expert." },
-    ],
+  loader: ({ context }) => ({
+    seo: createPageSeo(context.localeRouting.getLocale(), "ask"),
   }),
+  head: ({ loaderData }) => pageHead(loaderData?.seo),
   component: AskPage,
 });
 
-const schema = z.object({
-  title: z.string().trim().min(15, "Give your question at least 15 characters of context").max(160),
-  body: z.string().trim().min(30, "Add a bit more detail so experts can answer precisely").max(4000),
-  category: z.string().min(1, "Pick a category"),
-});
-
-const prices = ["Free", "5 tokens", "10 tokens", "20 tokens", "Custom"];
+const rewards = [0, 5, 10, 20, -1] as const;
 
 function AskPage() {
+  const copy = usePageCopy().ask;
+  const { t } = useTranslation();
+  const locale = useLocale();
+  const localizedCategories = categories.map((item) =>
+    localizeCategory(item, locale),
+  );
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [category, setCategory] = useState("");
-  const [visibility, setVisibility] = useState("Public");
-  const [price, setPrice] = useState("5 tokens");
+  const [visibility, setVisibility] = useState("public");
+  const [reward, setReward] = useState<number>(5);
 
-  const submit = () => {
+  function rewardLabel(value: number) {
+    if (value === 0) return copy.free;
+    if (value === -1) return copy.custom;
+    return `${value} ${t("common.tokens")}`;
+  }
+
+  function submit() {
+    const schema = z.object({
+      title: z.string().trim().min(15, copy.validationTitle).max(160),
+      body: z.string().trim().min(30, copy.validationBody).max(4000),
+      category: z.string().min(1, copy.validationCategory),
+    });
     const result = schema.safeParse({ title, body, category });
     if (!result.success) {
-      toast.error(result.error.issues[0]?.message ?? "Please check the form");
+      toast.error(result.error.issues[0]?.message ?? copy.validationGeneric);
       return;
     }
-    toast.success("Question ready to publish", {
-      description: "Connect the backend to save it and charge tokens.",
-    });
-  };
+    toast.success(copy.success, { description: copy.successDescription });
+  }
 
   return (
     <SiteLayout>
       <PageHeader
-        eyebrow="Ask"
-        title="Describe your situation"
-        description="The clearer the context, the faster a qualified expert can answer. Our assistant helps you sharpen the title and pick the right category."
+        eyebrow={copy.eyebrow}
+        title={copy.title}
+        description={copy.description}
       />
 
-      <section className="mx-auto max-w-3xl px-4 py-12">
-        <div className="rounded-2xl border border-border/70 bg-card p-6 shadow-soft">
-          <div className="space-y-6">
+      <section className="mx-auto grid max-w-6xl gap-7 px-4 py-12 sm:px-6 lg:grid-cols-[1fr_280px] lg:py-16">
+        <div className="premium-card p-5 sm:p-8">
+          <div className="space-y-7">
             <div>
-              <Label htmlFor="title">Question title</Label>
+              <Label htmlFor="title">{copy.titleLabel}</Label>
               <Input
                 id="title"
                 value={title}
                 maxLength={160}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="How do I register as a freelancer with CNSS?"
-                className="mt-2 h-12"
+                onChange={(event: ChangeEvent<HTMLInputElement>) =>
+                  setTitle(event.target.value)
+                }
+                placeholder={copy.titlePlaceholder}
+                className="mt-2 h-12 rounded-xl"
               />
               <p className="mt-2 inline-flex items-center gap-1.5 text-xs text-secondary">
-                <Wand2 className="size-3.5" /> AI suggestion: add your city and your current status.
+                <Wand2 className="size-3.5" /> {copy.suggestion}
               </p>
             </div>
 
             <div>
-              <Label htmlFor="body">Details</Label>
+              <Label htmlFor="body">{copy.detailsLabel}</Label>
               <Textarea
                 id="body"
                 value={body}
                 maxLength={4000}
-                onChange={(e) => setBody(e.target.value)}
-                placeholder="Explain your situation, what you already tried, and what outcome you need."
-                className="mt-2 min-h-40"
+                onChange={(event: ChangeEvent<HTMLTextAreaElement>) =>
+                  setBody(event.target.value)
+                }
+                placeholder={copy.detailsPlaceholder}
+                className="mt-2 min-h-44 rounded-xl"
               />
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-5 sm:grid-cols-2">
               <div>
-                <Label>Category</Label>
+                <Label>{copy.category}</Label>
                 <Select value={category} onValueChange={setCategory}>
-                  <SelectTrigger className="mt-2 w-full">
-                    <SelectValue placeholder="Select a category" />
+                  <SelectTrigger className="mt-2 h-11 w-full rounded-xl">
+                    <SelectValue placeholder={copy.selectCategory} />
                   </SelectTrigger>
                   <SelectContent>
-                    {categories.map((c) => (
-                      <SelectItem key={c.slug} value={c.slug}>
-                        {c.name}
+                    {localizedCategories.map((item) => (
+                      <SelectItem key={item.slug} value={item.slug}>
+                        {item.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
               <div>
-                <Label>Visibility</Label>
+                <Label>{copy.visibility}</Label>
                 <Select value={visibility} onValueChange={setVisibility}>
-                  <SelectTrigger className="mt-2 w-full">
+                  <SelectTrigger className="mt-2 h-11 w-full rounded-xl">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Public">Public</SelectItem>
-                    <SelectItem value="Private Premium">Private premium</SelectItem>
+                    <SelectItem value="public">{copy.public}</SelectItem>
+                    <SelectItem value="private">{copy.private}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
 
             <div>
-              <Label>Answer price</Label>
-              <div className="mt-2 flex flex-wrap gap-2">
-                {prices.map((p) => (
+              <Label>{copy.answerPrice}</Label>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {rewards.map((value) => (
                   <Button
-                    key={p}
+                    key={value}
                     type="button"
                     size="sm"
-                    variant={price === p ? "default" : "outline"}
+                    variant={reward === value ? "default" : "outline"}
                     className="rounded-full"
-                    onClick={() => setPrice(p)}
+                    onClick={() => setReward(value)}
                   >
-                    {p}
+                    {rewardLabel(value)}
                   </Button>
                 ))}
               </div>
             </div>
 
-            <div className="rounded-xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
-              <Paperclip className="mx-auto size-5" />
-              <p className="mt-2">Attach images or a PDF (max 10 MB)</p>
-            </div>
+            <button
+              type="button"
+              className="w-full rounded-2xl border border-dashed border-secondary/35 bg-secondary/[0.04] p-7 text-center text-sm text-muted-foreground transition hover:border-secondary hover:bg-secondary/[0.07]"
+            >
+              <Paperclip className="mx-auto size-5 text-secondary" />
+              <span className="mt-2 block">{copy.attach}</span>
+            </button>
 
-            <div className="flex flex-wrap items-center gap-2 rounded-xl bg-muted/60 p-4 text-xs text-muted-foreground">
-              <Sparkles className="size-4 text-secondary" />
-              Assistant checks for duplicates, suggests a category and recommends experts before you
-              publish.
-              <Badge variant="outline" className="ml-auto">
-                Beta
+            <div className="flex flex-wrap items-center gap-2 rounded-2xl bg-muted/55 p-4 text-xs leading-6 text-muted-foreground">
+              <Sparkles className="size-4 shrink-0 text-accent" />
+              <span className="flex-1">{copy.assistant}</span>
+              <Badge variant="outline" className="rounded-full">
+                {copy.beta}
               </Badge>
             </div>
 
-            <Button size="lg" className="w-full" onClick={submit}>
-              Publish question
+            <Button size="lg" className="w-full rounded-xl" onClick={submit}>
+              {copy.publish}
             </Button>
           </div>
         </div>
+
+        <aside className="space-y-4 lg:sticky lg:top-24 lg:self-start">
+          {[copy.suggestion, copy.assistant].map((text, index) => (
+            <div key={text} className="premium-card p-5">
+              {index === 0 ? (
+                <Wand2 className="size-5 text-secondary" />
+              ) : (
+                <ShieldCheck className="size-5 text-accent" />
+              )}
+              <p className="mt-3 text-sm leading-6 text-muted-foreground">
+                {text}
+              </p>
+            </div>
+          ))}
+        </aside>
       </section>
     </SiteLayout>
   );
