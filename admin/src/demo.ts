@@ -81,6 +81,28 @@ const settings = [
   { key: "min_payout_tokens", value: "1000" },
   { key: "token_to_mad", value: "0.5" },
   { key: "maintenance_mode", value: false },
+  { key: "site_branding", value: { site_name: "Estichara.ma", logo_url: "", favicon_url: "" } },
+  { key: "site_colors", value: { primary: "#0D4B4B", secondary: "#1E8C85", accent: "#D4AF37", muted: "#F2E8D6" } },
+  { key: "site_nav", value: [
+    { to: "/questions", key: "nav.questions", visible: true },
+    { to: "/categories", key: "nav.categories", visible: true },
+    { to: "/experts", key: "nav.experts", visible: true },
+    { to: "/tokens", key: "tokens.buyTokens", visible: true },
+    { to: "/pricing", key: "nav.pricing", visible: true },
+    { to: "/about", key: "footer.about", visible: false },
+  ] },
+  { key: "site_footer", value: [
+    { to: "/questions", key: "nav.questions", visible: true },
+    { to: "/blog", key: "nav.blog", visible: false },
+    { to: "/tokens", key: "tokens.buyTokens", visible: true },
+    { to: "/about", key: "footer.about", visible: true },
+    { to: "/contact", key: "footer.contact", visible: true },
+  ] },
+  { key: "payment_methods", value: [
+    { id: "card", label: "بطاقة بنكية (CMI)", icon: "CreditCard", active: true },
+    { id: "transfer", label: "تحويل بنكي", icon: "Landmark", active: true },
+    { id: "cash", label: "كاش بلص / وفاكاش", icon: "Wallet", active: false },
+  ] },
 ];
 
 const TABLES: Record<string, unknown[]> = {
@@ -110,6 +132,11 @@ function chain(table: string) {
       rows = rows.filter((r) => (r as Record<string, unknown>)[col] === val);
       return api;
     },
+    in: (col: string, vals: unknown[]) => {
+      rows = rows.filter((r) => vals.includes((r as Record<string, unknown>)[col]));
+      return api;
+    },
+    is: () => api,
     single: () => Promise.resolve({ data: rows[0] ?? null, error: null }),
     update: () => ({ eq: () => Promise.resolve({ data: null, error: null }) }),
     insert: () => Promise.resolve({ data: null, error: null }),
