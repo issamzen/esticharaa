@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Check, X, Package, Plus, Pencil } from "lucide-react";
+import { Check, X, Package, Plus, Pencil, Trash2, Undo2 } from "lucide-react";
 import { supabase } from "../supabase";
 import { Card, Badge, Btn, Empty, Th, Td } from "../ui";
 
@@ -32,7 +32,38 @@ export function OrdersPage() {
     await load();
   }
   async function cancelOrder(id: string) {
+    if (!confirm("إلغاء هذا الطلب؟ (لن تُضاف أي توكن)")) return;
     await supabase.from("orders").update({ status: "cancelled" }).eq("id", id);
+    await load();
+  }
+  async function reopenOrder(id: string) {
+    await supabase.from("orders").update({ status: "pending" }).eq("id", id);
+    await load();
+  }
+  async function revokeOrder(o: Order) {
+    const note = prompt(
+      `⚠️ استرجاع طلب مدفوع!\nسيُخصم ${o.tokens + o.bonus} توكن من رصيد «${o.profiles?.full_name}» ويُلغى الطلب.\nيفشل الاسترجاع إذا كان المستخدم قد أنفق التوكن بالفعل.\n\nسبب الاسترجاع:`,
+      "",
+    );
+    if (note === null) return;
+    const { error } = await supabase.rpc("revoke_order", { p_order_id: o.id, p_note: note });
+    if (error) {
+      alert(
+        error.message.includes("TOKENS_ALREADY_SPENT")
+          ? "لا يمكن الاسترجاع — المستخدم أنفق التوكن بالفعل. عدّل رصيده يدويًا من صفحة المستخدمين إن لزم."
+          : error.message,
+      );
+    }
+    await load();
+  }
+  async function deleteOrder(o: Order) {
+    if (o.status === "paid") {
+      alert("لا يمكن حذف طلب مدفوع مباشرة — استخدم «استرجاع» أولًا ثم احذفه.");
+      return;
+    }
+    if (!confirm(`حذف الطلب نهائيًا من السجل؟\n(${o.profiles?.full_name} — ${o.tokens} توكن — ${o.price_mad} د.م)`)) return;
+    const { error } = await supabase.from("orders").delete().eq("id", o.id);
+    if (error) alert(error.message);
     await load();
   }
 
@@ -51,6 +82,8 @@ export function OrdersPage() {
   }
 
   const pending = orders.filter((o) => o.status === "pending");
+  const [statusFilter, setStatusFilter] = useState<"all" | "pending" | "paid" | "cancelled">("all");
+  const visibleOrders = statusFilter === "all" ? orders : orders.filter((o) => o.status === statusFilter);
 
   return (
     <div className="space-y-5">
@@ -69,13 +102,25 @@ export function OrdersPage() {
       </div>
 
       {tab === "orders" && (
+        <>
+        <div className="flex gap-2">
+          {([["all", "الكل"], ["pending", "معلّق"], ["paid", "مدفوع"], ["cancelled", "ملغى"]] as const).map(([id, label]) => (
+            <button
+              key={id}
+              onClick={() => setStatusFilter(id)}
+              className={`rounded-full px-3.5 py-1.5 text-xs font-semibold transition ${statusFilter === id ? "bg-brand-teal text-white" : "bg-ink/5 text-ink/60 hover:bg-ink/10"}`}
+            >
+              {label} ({id === "all" ? orders.length : orders.filter((o) => o.status === id).length})
+            </button>
+          ))}
+        </div>
         <Card className="fade-up overflow-x-auto">
           <table className="w-full min-w-[720px]">
             <thead className="border-b border-ink/8">
               <tr><Th>المستخدم</Th><Th>التوكن</Th><Th>السعر</Th><Th>الطريقة</Th><Th>المرجع</Th><Th>الحالة</Th><Th>إجراء</Th></tr>
             </thead>
             <tbody className="divide-y divide-ink/5">
-              {orders.map((o) => (
+              {visibleOrders.map((o) => (
                 <tr key={o.id} className="transition hover:bg-brand-cream/30">
                   <Td className="font-semibold">{o.profiles?.full_name ?? "—"}</Td>
                   <Td>{o.tokens}{o.bonus > 0 && <span className="text-xs text-brand-teal"> +{o.bonus}</span>}</Td>
@@ -88,19 +133,39 @@ export function OrdersPage() {
                     {o.status === "cancelled" && <Badge tone="danger">ملغى</Badge>}
                   </Td>
                   <Td>
-                    {o.status === "pending" && (
-                      <div className="flex gap-2">
-                        <Btn small onClick={() => confirmOrder(o.id)}><Check className="size-3.5" /> تأكيد الدفع</Btn>
-                        <Btn small tone="danger" onClick={() => cancelOrder(o.id)}><X className="size-3.5" /></Btn>
-                      </div>
-                    )}
+                    <div className="flex flex-wrap gap-1.5">
+                      {o.status === "pending" && (
+                        <>
+                          <Btn small onClick={() => confirmOrder(o.id)}><Check className="size-3.5" /> تأكيد الدفع</Btn>
+                          <Btn small tone="ghost" onClick={() => cancelOrder(o.id)}><X className="size-3.5" /> إلغاء</Btn>
+                        </>
+                      )}
+                      {o.status === "paid" && (
+                        <Btn small tone="danger" onClick={() => revokeOrder(o)}><Undo2 className="size-3.5" /> استرجاع</Btn>
+                      )}
+                      {o.status === "cancelled" && (
+                        <Btn small tone="ghost" onClick={() => reopenOrder(o.id)}><Undo2 className="size-3.5" /> إعادة فتح</Btn>
+                      )}
+                      {o.status !== "paid" && (
+                        <Btn small tone="danger" onClick={() => deleteOrder(o)}><Trash2 className="size-3.5" /></Btn>
+                      )}
+                    </div>
                   </Td>
                 </tr>
               ))}
             </tbody>
           </table>
-          {orders.length === 0 && <Empty text="لا توجد طلبات بعد" />}
+          {visibleOrders.length === 0 && <Empty text="لا توجد طلبات في هذه الفئة" />}
         </Card>
+        <Card className="fade-up border-brand-gold/30 bg-brand-gold/5 p-5">
+          <p className="text-sm leading-7 text-ink/70">
+            🛡️ <b>قواعد الطلبات:</b> «تأكيد الدفع» يضيف التوكن فورًا لرصيد المستخدم ·
+            «استرجاع» يسحب التوكن من طلب مدفوع ويلغيه (يفشل إذا أُنفق الرصيد) ·
+            «إعادة فتح» تعيد طلبًا ملغى إلى قائمة الانتظار ·
+            الحذف نهائي ومتاح فقط للطلبات غير المدفوعة
+          </p>
+        </Card>
+        </>
       )}
 
       {tab === "packs" && (
