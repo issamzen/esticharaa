@@ -2,12 +2,15 @@ import { Link } from "@tanstack/react-router";
 import { ArrowUpRight, MessagesSquare, ShieldCheck } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { usePageCopy } from "@/i18n/page-copy";
-import { useSiteSettings } from "@/lib/site-settings";
+import { useSiteSettings, useSiteName } from "@/lib/site-settings";
+import { useLocale } from "@/i18n/use-locale";
 
 export function Footer() {
   const { t } = useTranslation();
   const copy = usePageCopy();
   const site = useSiteSettings();
+  const locale = useLocale();
+  const siteName = useSiteName(locale);
 
   // Admin can hide any footer link from the dashboard
   const hidden = new Set(
@@ -55,8 +58,11 @@ export function Footer() {
             <span className="grid size-10 place-items-center rounded-2xl bg-white/10 text-brand-gold ring-1 ring-white/15">
               <MessagesSquare className="size-5" />
             </span>
-            <span className="text-lg" dir="ltr">
-              {site.branding.site_name || "Estichara.ma"}
+            <span
+              className="text-lg"
+              dir={locale === "ar" && site.branding.site_name_ar ? "rtl" : "ltr"}
+            >
+              {siteName}
             </span>
           </Link>
           <p className="mt-5 max-w-sm text-sm leading-7 text-white/65">
