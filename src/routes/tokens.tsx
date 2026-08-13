@@ -10,6 +10,13 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { SiteLayout, PageHeader } from "@/components/site/layout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -56,6 +63,8 @@ function TokensPage() {
   const site = useSiteSettings();
   const [dbPacks, setDbPacks] = useState<DbPack[] | null>(null);
   const [ordering, setOrdering] = useState<string | null>(null);
+  const [payingPack, setPayingPack] = useState<DbPack | null>(null);
+  const [chosenMethod, setChosenMethod] = useState<string>("");
 
   useEffect(() => {
     supabase
@@ -68,23 +77,39 @@ function TokensPage() {
       });
   }, []);
 
-  async function orderPack(pack: DbPack) {
+  // Payment methods controlled from admin dashboard (fallback = page copy)
+  const activeMethods = site.loaded && site.paymentMethods.length > 0
+    ? site.paymentMethods.filter((m) => m.active)
+    : null;
+
+  // Step 1: user clicks "buy" → open the payment-method chooser
+  function orderPack(pack: DbPack) {
     if (!user) {
       toast.info(t("auth.signInDescription"));
       navigate({ to: "/auth" });
       return;
     }
-    setOrdering(pack.id);
+    setChosenMethod(activeMethods?.[0]?.id ?? "bank_transfer");
+    setPayingPack(pack);
+  }
+
+  // Step 2: user confirmed a method → create the order
+  async function confirmOrder() {
+    if (!user || !payingPack) return;
+    const methodLabel =
+      activeMethods?.find((m) => m.id === chosenMethod)?.label ?? chosenMethod;
+    setOrdering(payingPack.id);
     const { error } = await supabase.from("orders").insert({
       user_id: user.id,
-      pack_id: pack.id,
-      tokens: pack.tokens,
-      bonus: pack.bonus,
-      price_mad: pack.price_mad,
-      method: "bank_transfer",
+      pack_id: payingPack.id,
+      tokens: payingPack.tokens,
+      bonus: payingPack.bonus,
+      price_mad: payingPack.price_mad,
+      method: methodLabel,
       status: "pending",
     });
     setOrdering(null);
+    setPayingPack(null);
     if (error) {
       toast.error(error.message);
       return;
@@ -98,11 +123,6 @@ function TokensPage() {
     );
     navigate({ to: "/account" });
   }
-
-  // Payment methods controlled from admin dashboard (fallback = page copy)
-  const activeMethods = site.loaded && site.paymentMethods.length > 0
-    ? site.paymentMethods.filter((m) => m.active)
-    : null;
 
   return (
     <SiteLayout>
@@ -232,6 +252,90 @@ function TokensPage() {
           </p>
         </div>
       </section>
+
+      {/* Payment method chooser */}
+      <Dialog open={!!payingPack} onOpenChange={(o) => !o && setPayingPack(null)}>
+        <DialogContent className="max-w-md rounded-3xl">
+          <DialogHeader>
+            <DialogTitle className="text-start text-xl">
+              {t("tokens.choosePayment", "اختر وسيلة الدفع")}
+            </DialogTitle>
+            <DialogDescription className="text-start">
+              {payingPack && (
+                <>
+                  {formatNumber(payingPack.tokens + payingPack.bonus, locale)}{" "}
+                  {t("common.tokens")} —{" "}
+                  <span className="font-semibold text-foreground">
+                    {formatNumber(payingPack.price_mad, locale)} {t("common.mad")}
+                  </span>
+                </>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="mt-2 space-y-2">
+            {(activeMethods ?? []).map((method) => {
+              const Icon = ICONS[method.icon] ?? CreditCard;
+              const selected = chosenMethod === method.id;
+              return (
+                <button
+                  key={method.id}
+                  type="button"
+                  onClick={() => setChosenMethod(method.id)}
+                  className={`flex w-full items-center gap-3 rounded-2xl border p-4 text-start transition ${
+                    selected
+                      ? "border-primary bg-primary/[0.06] ring-2 ring-primary/20"
+                      : "border-border/70 hover:border-primary/30"
+                  }`}
+                >
+                  <span
+                    className={`grid size-10 shrink-0 place-items-center rounded-xl ${
+                      selected
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-muted text-muted-foreground"
+                    }`}
+                  >
+                    <Icon className="size-4.5" />
+                  </span>
+                  <span className="flex-1 text-sm font-medium">{method.label}</span>
+                  <span
+                    className={`grid size-5 shrink-0 place-items-center rounded-full border-2 ${
+                      selected ? "border-primary" : "border-border"
+                    }`}
+                  >
+                    {selected && <span className="size-2.5 rounded-full bg-primary" />}
+                  </span>
+                </button>
+              );
+            })}
+            {(activeMethods ?? []).length === 0 && (
+              <p className="rounded-xl bg-muted p-4 text-center text-sm text-muted-foreground">
+                {t("tokens.noMethods", "لا توجد وسائل دفع متاحة حاليًا — تواصل معنا")}
+              </p>
+            )}
+          </div>
+
+          <p className="mt-1 text-xs leading-5 text-muted-foreground">
+            {t(
+              "tokens.paymentNote",
+              "بعد إرسال الطلب ستجد تعليمات إتمام الدفع في حسابك، ويُضاف الرصيد فور تأكيد فريقنا للدفع.",
+            )}
+          </p>
+
+          <Button
+            size="lg"
+            className="mt-2 w-full rounded-xl"
+            disabled={!chosenMethod || ordering !== null || (activeMethods ?? []).length === 0}
+            onClick={confirmOrder}
+          >
+            {ordering ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              t("tokens.confirmOrder", "تأكيد الطلب")
+            )}
+          </Button>
+        </DialogContent>
+      </Dialog>
     </SiteLayout>
   );
 }
