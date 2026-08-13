@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { Coins, LogIn, Menu, MessagesSquare, UserRound } from "lucide-react";
 import { useAuth } from "@/lib/auth";
-import { useSiteSettings } from "@/lib/site-settings";
+import { useSiteSettings, useSiteName } from "@/lib/site-settings";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -26,6 +26,7 @@ export function Header() {
   const locale = useLocale();
   const { user, profile } = useAuth();
   const site = useSiteSettings();
+  const siteName = useSiteName(locale);
   // Admin-controlled menu (falls back to the default list before load)
   const navItems = site.loaded
     ? site.nav.filter((i) => i.visible)
@@ -43,7 +44,7 @@ export function Header() {
           {site.branding.logo_url ? (
             <img
               src={site.branding.logo_url}
-              alt={site.branding.site_name}
+              alt={siteName}
               className="size-10 rounded-2xl object-contain"
             />
           ) : (
@@ -51,9 +52,12 @@ export function Header() {
               <MessagesSquare className="size-5" />
             </span>
           )}
-          <span className="text-lg tracking-tight" dir="ltr">
-            {site.branding.site_name !== "Estichara.ma" ? (
-              site.branding.site_name
+          <span
+            className="text-lg tracking-tight"
+            dir={locale === "ar" && site.branding.site_name_ar ? "rtl" : "ltr"}
+          >
+            {siteName !== "Estichara.ma" ? (
+              siteName
             ) : (
               <>
                 Estichara<span className="text-secondary">.ma</span>
@@ -160,7 +164,9 @@ export function Header() {
                   <span className="bg-brand grid size-10 place-items-center rounded-2xl text-primary-foreground">
                     <MessagesSquare className="size-5" />
                   </span>
-                  <span dir="ltr">Estichara.ma</span>
+                  <span dir={locale === "ar" && site.branding.site_name_ar ? "rtl" : "ltr"}>
+                    {siteName}
+                  </span>
                 </Link>
 
                 <p className="mb-2 text-xs font-semibold text-muted-foreground">
