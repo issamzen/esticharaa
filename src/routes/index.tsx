@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import * as Icons from "lucide-react";
@@ -107,8 +107,36 @@ function TextLink({ to, children }: { to: HomeTextLink; children: ReactNode }) {
   );
 }
 
+type HomeLiveQuestion = {
+  id: string;
+  title: string;
+  body: string;
+  tokens: number;
+  views: number;
+  answers_count: number;
+  created_at: string;
+  categories: { name_ar: string } | null;
+};
+
 function Index() {
   const { t } = useTranslation();
+  const [liveQuestions, setLiveQuestions] = useState<HomeLiveQuestion[]>([]);
+
+  useEffect(() => {
+    import("@/lib/supabase").then(({ supabase }) => {
+      supabase
+        .from("questions")
+        .select(
+          "id, title, body, tokens, views, answers_count, created_at, categories(name_ar)",
+        )
+        .eq("status", "published")
+        .order("created_at", { ascending: false })
+        .limit(4)
+        .then(({ data }) =>
+          setLiveQuestions((data as unknown as HomeLiveQuestion[]) ?? []),
+        );
+    });
+  }, []);
   const features = getHomeFeatures(t);
   const steps = getHomeSteps(t);
   const localizedStories = getHomeStories(t);
@@ -456,9 +484,48 @@ function Index() {
           }
         />
         <div className="mt-10 grid gap-4 lg:grid-cols-2">
-          {questions.slice(0, 4).map((question) => (
-            <QuestionCard key={question.id} question={question} />
-          ))}
+          {liveQuestions.length > 0
+            ? liveQuestions.map((q) => (
+                <Link
+                  key={q.id}
+                  to="/questions/$questionId"
+                  params={{ questionId: q.id }}
+                  className="group relative block overflow-hidden rounded-3xl border border-border/70 bg-card p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-secondary/35 hover:shadow-xl sm:p-6"
+                >
+                  <div className="flex flex-wrap items-center gap-2">
+                    {q.categories ? (
+                      <Badge variant="secondary" className="rounded-full">
+                        {q.categories.name_ar}
+                      </Badge>
+                    ) : null}
+                    {q.tokens > 0 ? (
+                      <Badge className="rounded-full bg-accent text-accent-foreground">
+                        <Lock className="size-3" /> {q.tokens}{" "}
+                        {t("common.tokens")}
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="rounded-full">
+                        {t("common.free")}
+                      </Badge>
+                    )}
+                  </div>
+                  <h3 className="mt-4 text-lg font-semibold leading-snug transition-colors group-hover:text-primary">
+                    {q.title}
+                  </h3>
+                  <p className="mt-2 line-clamp-2 text-sm leading-6 text-muted-foreground">
+                    {q.body}
+                  </p>
+                  <div className="mt-5 flex items-center gap-4 border-t border-border/60 pt-4 text-xs text-muted-foreground">
+                    <span className="inline-flex items-center gap-1.5">
+                      <MessageSquare className="size-3.5 text-secondary" />{" "}
+                      {q.answers_count}
+                    </span>
+                  </div>
+                </Link>
+              ))
+            : questions.slice(0, 4).map((question) => (
+                <QuestionCard key={question.id} question={question} />
+              ))}
         </div>
       </section>
 
