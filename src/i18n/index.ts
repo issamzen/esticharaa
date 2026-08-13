@@ -1,15 +1,9 @@
-import i18n from "i18next";
+import { createInstance, type i18n as I18nInstance } from "i18next";
 import { initReactI18next } from "react-i18next";
-import { DEFAULT_LOCALE, SUPPORTED_LOCALES } from "@/i18n/config";
-import {
-  getActiveLocale,
-  localeFromPathname,
-  setActiveLocale,
-} from "@/i18n/routing";
 import { ar } from "@/i18n/locales/ar";
 import { fr } from "@/i18n/locales/fr";
 import { en } from "@/i18n/locales/en";
-import type { Locale } from "@/i18n/config";
+import { DEFAULT_LOCALE, SUPPORTED_LOCALES, type Locale } from "@/i18n/config";
 
 export const resources = {
   ar: { translation: ar },
@@ -17,34 +11,22 @@ export const resources = {
   en: { translation: en },
 } as const;
 
-const initialLocale =
-  typeof window === "undefined"
-    ? getActiveLocale()
-    : (localeFromPathname(window.location.pathname) ?? DEFAULT_LOCALE);
+/** A fresh instance is created for every TanStack Start router/request. */
+export function createI18n(locale: Locale = DEFAULT_LOCALE): I18nInstance {
+  const instance = createInstance();
 
-setActiveLocale(initialLocale);
-
-if (!i18n.isInitialized) {
-  void i18n.use(initReactI18next).init({
+  void instance.use(initReactI18next).init({
     resources,
-    lng: initialLocale,
+    lng: locale,
     fallbackLng: DEFAULT_LOCALE,
     supportedLngs: [...SUPPORTED_LOCALES],
     defaultNS: "translation",
     ns: ["translation"],
-    interpolation: {
-      escapeValue: false,
-    },
+    interpolation: { escapeValue: false },
     returnNull: false,
     load: "currentOnly",
-    // Bundled resources make synchronous startup safe and avoid a first-frame flash.
     initAsync: false,
   });
-}
 
-export async function changeLocale(locale: Locale) {
-  setActiveLocale(locale);
-  await i18n.changeLanguage(locale);
+  return instance;
 }
-
-export { i18n };
