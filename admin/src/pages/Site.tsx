@@ -15,7 +15,7 @@ import { Card, Badge, Btn, Empty } from "../ui";
 
 type NavItem = { to: string; key: string; visible: boolean };
 type PayMethod = { id: string; label: string; icon: string; active: boolean };
-type Branding = { site_name: string; logo_url: string; favicon_url: string };
+type Branding = { site_name: string; site_name_ar: string; logo_url: string; favicon_url: string };
 type Colors = { primary: string; secondary: string; accent: string; muted: string };
 
 const NAV_LABELS: Record<string, string> = {
@@ -39,7 +39,7 @@ const COLOR_LABELS: Record<keyof Colors, string> = {
 };
 
 export function SitePage() {
-  const [branding, setBranding] = useState<Branding>({ site_name: "", logo_url: "", favicon_url: "" });
+  const [branding, setBranding] = useState<Branding>({ site_name: "", site_name_ar: "", logo_url: "", favicon_url: "" });
   const [colors, setColors] = useState<Colors>({ primary: "#0D4B4B", secondary: "#1E8C85", accent: "#D4AF37", muted: "#F2E8D6" });
   const [nav, setNav] = useState<NavItem[]>([]);
   const [footer, setFooter] = useState<NavItem[]>([]);
@@ -57,7 +57,7 @@ export function SitePage() {
       .in("key", ["site_branding", "site_colors", "site_nav", "site_footer", "payment_methods", "page_404"])
       .then(({ data }) => {
         const map = Object.fromEntries((data ?? []).map((r) => [r.key, r.value]));
-        if (map.site_branding) setBranding(map.site_branding as Branding);
+        if (map.site_branding) setBranding({ site_name_ar: "", ...(map.site_branding as Branding) });
         if (map.site_colors) setColors(map.site_colors as Colors);
         if (map.site_nav) setNav(map.site_nav as NavItem[]);
         if (map.site_footer) setFooter(map.site_footer as NavItem[]);
@@ -134,12 +134,24 @@ export function SitePage() {
         <h2 className="flex items-center gap-2 font-bold"><Type className="size-4.5 text-brand-teal" /> الهوية</h2>
         <div className="mt-5 grid gap-5 sm:grid-cols-3">
           <div>
-            <label className="text-xs font-semibold text-ink/60">اسم الموقع</label>
+            <label className="text-xs font-semibold text-ink/60">اسم الموقع (فرنسية/إنجليزية)</label>
             <input
+              dir="ltr"
               value={branding.site_name}
               onChange={(e) => setBranding({ ...branding, site_name: e.target.value })}
               className="mt-1.5 w-full rounded-xl border border-ink/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-brand-teal"
             />
+            <label className="mt-3 block text-xs font-semibold text-ink/60">اسم الموقع بالعربية</label>
+            <input
+              dir="rtl"
+              placeholder="استشارة"
+              value={branding.site_name_ar}
+              onChange={(e) => setBranding({ ...branding, site_name_ar: e.target.value })}
+              className="mt-1.5 w-full rounded-xl border border-ink/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-brand-teal"
+            />
+            <p className="mt-1.5 text-[11px] leading-5 text-ink/45">
+              يظهر للزوار باللغة العربية — اتركه فارغًا لعرض الاسم اللاتيني للجميع
+            </p>
           </div>
           <div>
             <label className="text-xs font-semibold text-ink/60">الشعار (PNG — يظهر في الترويسة)</label>
