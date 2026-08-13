@@ -14,7 +14,7 @@ import { supabase } from "../supabase";
 import { Card, Badge, Btn, Empty } from "../ui";
 
 type NavItem = { to: string; key: string; visible: boolean };
-type PayMethod = { id: string; label: string; icon: string; active: boolean };
+type PayMethod = { id: string; label: string; icon: string; active: boolean; details?: string };
 type Branding = { site_name: string; site_name_ar: string; logo_url: string; favicon_url: string };
 type Colors = { primary: string; secondary: string; accent: string; muted: string };
 
@@ -94,19 +94,27 @@ export function SitePage() {
     setList(next);
   }
 
-  async function addMethod() {
-    const label = prompt("اسم وسيلة الدفع (كما ستظهر للزوار):", "بطاقة بنكية");
-    if (!label) return;
-    const next = [...methods, { id: `m-${Date.now()}`, label, icon: "CreditCard", active: true }];
-    setMethods(next);
-    await saveKey("payment_methods", next, "وسائل الدفع");
+  // Payment method editor state (null = closed, -1 = new method)
+  const [editingMethod, setEditingMethod] = useState<number | null>(null);
+  const [mLabel, setMLabel] = useState("");
+  const [mDetails, setMDetails] = useState("");
+
+  function openMethodEditor(i: number) {
+    setEditingMethod(i);
+    if (i === -1) { setMLabel(""); setMDetails(""); }
+    else { setMLabel(methods[i].label); setMDetails(methods[i].details ?? ""); }
   }
 
-  async function editMethod(i: number) {
-    const label = prompt("تعديل الاسم:", methods[i].label);
-    if (!label) return;
-    const next = methods.map((m, idx) => (idx === i ? { ...m, label } : m));
+  async function saveMethod() {
+    if (!mLabel.trim()) { alert("أدخل اسم الوسيلة"); return; }
+    let next: PayMethod[];
+    if (editingMethod === -1) {
+      next = [...methods, { id: `m-${Date.now()}`, label: mLabel.trim(), icon: "CreditCard", active: true, details: mDetails.trim() }];
+    } else {
+      next = methods.map((m, idx) => (idx === editingMethod ? { ...m, label: mLabel.trim(), details: mDetails.trim() } : m));
+    }
     setMethods(next);
+    setEditingMethod(null);
     await saveKey("payment_methods", next, "وسائل الدفع");
   }
 
@@ -283,32 +291,74 @@ export function SitePage() {
       <Card className="fade-up p-6">
         <div className="flex items-center justify-between">
           <h2 className="flex items-center gap-2 font-bold"><Wallet className="size-4.5 text-brand-teal" /> وسائل الدفع</h2>
-          <Btn small onClick={addMethod}><Plus className="size-3.5" /> إضافة وسيلة</Btn>
+          <Btn small onClick={() => openMethodEditor(-1)}><Plus className="size-3.5" /> إضافة وسيلة</Btn>
         </div>
-        <p className="mt-1 text-xs text-ink/50">تظهر في صفحة شراء التوكن — التعطيل يخفيها فورًا</p>
+        <p className="mt-1 text-xs text-ink/50">تظهر في صفحة شراء التوكن — أضف التفاصيل (RIB، اسم البنك…) ليعرف المستخدم كيف يدفع</p>
         <div className="mt-4 space-y-2">
           {methods.length === 0 && <Empty text="لا توجد وسائل دفع — أضف أول وسيلة" />}
           {methods.map((m, i) => (
-            <div key={m.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-ink/4 px-4 py-3">
-              <div className="flex items-center gap-3">
-                <span className={`size-2.5 rounded-full ${m.active ? "bg-emerald-500" : "bg-ink/20"}`} />
-                <span className={`text-sm font-medium ${m.active ? "" : "text-ink/40"}`}>{m.label}</span>
+            <div key={m.id} className="rounded-xl bg-ink/4 px-4 py-3">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <span className={`size-2.5 rounded-full ${m.active ? "bg-emerald-500" : "bg-ink/20"}`} />
+                  <span className={`text-sm font-medium ${m.active ? "" : "text-ink/40"}`}>{m.label}</span>
+                  {!m.details && m.active && (
+                    <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-700">بدون تفاصيل دفع</span>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <Btn small tone="ghost" onClick={() => openMethodEditor(i)}>تعديل</Btn>
+                  <Btn small tone={m.active ? "danger" : "primary"}
+                    onClick={async () => {
+                      const next = methods.map((x, idx) => (idx === i ? { ...x, active: !x.active } : x));
+                      setMethods(next);
+                      await saveKey("payment_methods", next, "وسائل الدفع");
+                    }}>
+                    {m.active ? "تعطيل" : "تفعيل"}
+                  </Btn>
+                  <Btn small tone="danger" onClick={() => deleteMethod(i)}><Trash2 className="size-3.5" /></Btn>
+                </div>
               </div>
-              <div className="flex gap-2">
-                <Btn small tone="ghost" onClick={() => editMethod(i)}>تعديل</Btn>
-                <Btn small tone={m.active ? "danger" : "primary"}
-                  onClick={async () => {
-                    const next = methods.map((x, idx) => (idx === i ? { ...x, active: !x.active } : x));
-                    setMethods(next);
-                    await saveKey("payment_methods", next, "وسائل الدفع");
-                  }}>
-                  {m.active ? "تعطيل" : "تفعيل"}
-                </Btn>
-                <Btn small tone="danger" onClick={() => deleteMethod(i)}><Trash2 className="size-3.5" /></Btn>
-              </div>
+              {m.details && (
+                <p className="mt-2 whitespace-pre-wrap rounded-lg bg-white/70 p-2.5 text-xs leading-5 text-ink/60" dir="auto">
+                  {m.details}
+                </p>
+              )}
             </div>
           ))}
         </div>
+
+        {/* Method editor */}
+        {editingMethod !== null && (
+          <div className="mt-4 rounded-2xl border-2 border-brand-teal/30 bg-white p-5">
+            <h3 className="font-bold">{editingMethod === -1 ? "وسيلة دفع جديدة" : "تعديل وسيلة الدفع"}</h3>
+            <div className="mt-4 space-y-4">
+              <div>
+                <label className="text-xs font-semibold text-ink/60">الاسم (كما يظهر للمستخدم)</label>
+                <input
+                  value={mLabel}
+                  onChange={(e) => setMLabel(e.target.value)}
+                  placeholder="مثال: تحويل بنكي — التجاري وفا بنك"
+                  className="mt-1.5 w-full rounded-xl border border-ink/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-brand-teal"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-ink/60">تفاصيل الدفع (تظهر للمستخدم عند اختيار هذه الوسيلة وبعد إنشاء الطلب)</label>
+                <textarea
+                  value={mDetails}
+                  onChange={(e) => setMDetails(e.target.value)}
+                  rows={5}
+                  placeholder={"مثال:\nالبنك: التجاري وفا بنك\nالاسم: ESTICHARA SARL\nRIB: 007 640 0001234567890123 45\nأرسل وصل التحويل عبر واتساب: 06XXXXXXXX"}
+                  className="mt-1.5 w-full rounded-xl border border-ink/15 bg-white px-3 py-2.5 text-sm leading-6 outline-none focus:border-brand-teal"
+                />
+              </div>
+              <div className="flex gap-2">
+                <Btn onClick={saveMethod}><Save className="size-4" /> حفظ الوسيلة</Btn>
+                <Btn tone="ghost" onClick={() => setEditingMethod(null)}>إلغاء</Btn>
+              </div>
+            </div>
+          </div>
+        )}
       </Card>
 
       <Card className="fade-up border-brand-gold/30 bg-brand-gold/5 p-5">
