@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import {
+  ArrowLeftRight,
+  Banknote,
   Bell,
   Coins,
   Loader2,
@@ -9,7 +11,16 @@ import {
   Save,
   ShoppingBag,
   User,
+  X,
 } from "lucide-react";
+import { Slider } from "@/components/ui/slider";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { SiteLayout } from "@/components/site/layout";
@@ -44,6 +55,15 @@ type MyOrder = {
   created_at: string;
 };
 
+type MyPayout = {
+  id: string;
+  tokens: number;
+  amount_mad: number;
+  method: string;
+  status: string;
+  created_at: string;
+};
+
 type MyNotification = {
   id: string;
   title: string;
@@ -68,6 +88,14 @@ function AccountPage() {
   const [questions, setQuestions] = useState<MyQuestion[]>([]);
   const [orders, setOrders] = useState<MyOrder[]>([]);
   const [notifications, setNotifications] = useState<MyNotification[]>([]);
+  const [payouts, setPayouts] = useState<MyPayout[]>([]);
+  const [payoutOpen, setPayoutOpen] = useState(false);
+  const [payoutTokens, setPayoutTokens] = useState(0);
+  const [payoutMethod, setPayoutMethod] = useState("bank_transfer");
+  const [payoutDetails, setPayoutDetails] = useState("");
+  const [payoutBusy, setPayoutBusy] = useState(false);
+  const [minPayout, setMinPayout] = useState(1000);
+  const [rate, setRate] = useState(0.5);
 
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
@@ -109,7 +137,75 @@ function AccountPage() {
       .order("created_at", { ascending: false })
       .limit(15)
       .then(({ data }) => setNotifications((data as MyNotification[]) ?? []));
+    loadPayouts();
+    supabase
+      .from("settings")
+      .select("key, value")
+      .in("key", ["min_payout_tokens", "token_to_mad"])
+      .then(({ data }) => {
+        (data ?? []).forEach((row) => {
+          if (row.key === "min_payout_tokens") setMinPayout(Number(row.value) || 1000);
+          if (row.key === "token_to_mad") setRate(Number(row.value) || 0.5);
+        });
+      });
   }, [user]);
+
+  function loadPayouts() {
+    if (!user) return;
+    supabase
+      .from("withdrawals")
+      .select("id, tokens, amount_mad, method, status, created_at")
+      .eq("expert_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(10)
+      .then(({ data }) => setPayouts((data as MyPayout[]) ?? []));
+  }
+
+  const PAYOUT_ERRORS: Record<string, string> = {
+    BELOW_MINIMUM_PAYOUT: t("payout.belowMin", `الحد الأدنى للتحويل هو ${minPayout} توكن`),
+    INSUFFICIENT_TOKENS: t("payout.insufficient", "رصيدك غير كافٍ"),
+    MISSING_PAYOUT_DETAILS: t("payout.missingDetails", "أدخل معلومات استلام المال (RIB أو رقم الهاتف...)"),
+    ACCOUNT_BANNED: t("payout.banned", "هذا الحساب محظور"),
+  };
+
+  async function submitPayout() {
+    if (!payoutDetails.trim()) {
+      toast.error(PAYOUT_ERRORS.MISSING_PAYOUT_DETAILS);
+      return;
+    }
+    setPayoutBusy(true);
+    const { error } = await supabase.rpc("request_payout", {
+      p_tokens: payoutTokens,
+      p_method: payoutMethod,
+      p_details: payoutDetails.trim(),
+    });
+    setPayoutBusy(false);
+    if (error) {
+      const key = Object.keys(PAYOUT_ERRORS).find((k) => error.message.includes(k));
+      toast.error(key ? PAYOUT_ERRORS[key] : error.message);
+      return;
+    }
+    setPayoutOpen(false);
+    setPayoutDetails("");
+    await refreshProfile();
+    loadPayouts();
+    toast.success(
+      t("payout.requested", "تم إرسال طلب التحويل! سيُراجعه فريقنا وستصلك الأموال بعد الموافقة."),
+      { duration: 8000 },
+    );
+  }
+
+  async function cancelPayout(id: string) {
+    if (!confirm(t("payout.confirmCancel", "إلغاء طلب التحويل واسترجاع التوكن إلى رصيدك؟"))) return;
+    const { error } = await supabase.rpc("cancel_payout", { p_id: id });
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    await refreshProfile();
+    loadPayouts();
+    toast.success(t("payout.cancelled", "تم الإلغاء واسترجاع التوكن إلى رصيدك"));
+  }
 
   if (loading || !user) {
     return (
@@ -203,14 +299,23 @@ function AccountPage() {
                 {t("common.tokens")}
               </span>
             </p>
-            <Button
-              asChild
-              variant="secondary"
-              size="sm"
-              className="mt-4 rounded-xl"
-            >
-              <Link to="/tokens">{t("tokens.buyTokens")}</Link>
-            </Button>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Button asChild variant="secondary" size="sm" className="rounded-xl">
+                <Link to="/tokens">{t("tokens.buyTokens")}</Link>
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="rounded-xl border-white/25 bg-white/10 text-primary-foreground hover:bg-white/20 hover:text-primary-foreground"
+                onClick={() => {
+                  setPayoutTokens(Math.min(profile?.tokens_balance ?? 0, minPayout));
+                  setPayoutOpen(true);
+                }}
+              >
+                <ArrowLeftRight className="size-3.5" />{" "}
+                {t("payout.convert", "تحويل إلى أموال")}
+              </Button>
+            </div>
           </div>
 
           <Link
@@ -446,9 +551,200 @@ function AccountPage() {
                 </Button>
               </form>
             </section>
+
+            {/* Payout history */}
+            {payouts.length > 0 && (
+              <section className="rounded-3xl border border-border/70 bg-card p-6">
+                <h2 className="flex items-center gap-2 font-semibold">
+                  <Banknote className="size-4.5 text-primary" />
+                  {t("payout.history", "تحويلاتي المالية")}
+                </h2>
+                <div className="mt-4 space-y-3">
+                  {payouts.map((p) => (
+                    <div key={p.id} className="rounded-xl border border-border/60 p-3 text-sm">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <p className="font-semibold">
+                          {p.amount_mad} {t("common.mad")}
+                          <span className="ms-2 text-xs font-normal text-muted-foreground">
+                            ({p.tokens.toLocaleString()} {t("common.tokens")})
+                          </span>
+                        </p>
+                        {p.status === "pending" && (
+                          <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-700">
+                            {t("payout.pending", "قيد المراجعة")}
+                          </span>
+                        )}
+                        {p.status === "approved" && (
+                          <span className="rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-semibold text-blue-700">
+                            {t("payout.approved", "موافَق — بانتظار التحويل")}
+                          </span>
+                        )}
+                        {p.status === "paid" && (
+                          <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-semibold text-emerald-700">
+                            {t("payout.paid", "تم التحويل")}
+                          </span>
+                        )}
+                        {p.status === "rejected" && (
+                          <span className="rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-semibold text-red-700">
+                            {t("payout.rejected", "مرفوض/ملغى")}
+                          </span>
+                        )}
+                      </div>
+                      <div className="mt-1 flex items-center justify-between gap-2">
+                        <p className="text-xs text-muted-foreground">
+                          {new Date(p.created_at).toLocaleDateString()}
+                        </p>
+                        {p.status === "pending" && (
+                          <button
+                            onClick={() => cancelPayout(p.id)}
+                            className="inline-flex items-center gap-1 text-xs font-medium text-destructive hover:underline"
+                          >
+                            <X className="size-3" /> {t("payout.cancel", "إلغاء واسترجاع التوكن")}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
           </div>
         </div>
       </div>
+
+      {/* ===== Fancy token → money conversion dialog ===== */}
+      <Dialog open={payoutOpen} onOpenChange={setPayoutOpen}>
+        <DialogContent className="max-w-md rounded-3xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-start text-xl">
+              <span className="grid size-9 place-items-center rounded-xl bg-gradient-to-br from-primary to-secondary text-primary-foreground">
+                <ArrowLeftRight className="size-4.5" />
+              </span>
+              {t("payout.title", "حوّل توكن إلى أموال")}
+            </DialogTitle>
+            <DialogDescription className="text-start">
+              {t("payout.subtitle", "اختر المبلغ وسيصلك المال بعد موافقة فريقنا")}
+            </DialogDescription>
+          </DialogHeader>
+
+          {/* Live conversion display */}
+          <div className="rounded-2xl bg-gradient-to-br from-primary to-secondary p-5 text-primary-foreground">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-primary-foreground/70">{t("common.tokens")}</p>
+                <p className="text-3xl font-bold tracking-tight">
+                  {payoutTokens.toLocaleString()}
+                </p>
+              </div>
+              <ArrowLeftRight className="size-5 text-primary-foreground/50" />
+              <div className="text-end">
+                <p className="text-xs text-primary-foreground/70">{t("common.mad")}</p>
+                <p className="text-3xl font-bold tracking-tight text-accent">
+                  {(payoutTokens * rate).toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-5" dir="ltr">
+              <Slider
+                value={[payoutTokens]}
+                min={0}
+                max={profile?.tokens_balance ?? 0}
+                step={50}
+                onValueChange={(v) => setPayoutTokens(v[0])}
+              />
+            </div>
+            <div className="mt-2 flex justify-between text-[11px] text-primary-foreground/60">
+              <span>0</span>
+              <span>
+                {t("payout.balance", "رصيدك")}: {(profile?.tokens_balance ?? 0).toLocaleString()}
+              </span>
+            </div>
+
+            <div className="mt-3 flex gap-2">
+              {[0.25, 0.5, 1].map((f) => (
+                <button
+                  key={f}
+                  type="button"
+                  onClick={() => setPayoutTokens(Math.floor((profile?.tokens_balance ?? 0) * f))}
+                  className="flex-1 rounded-lg bg-white/10 py-1.5 text-xs font-semibold transition hover:bg-white/20"
+                >
+                  {f === 1 ? t("payout.all", "الكل") : `${f * 100}%`}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {payoutTokens > 0 && payoutTokens < minPayout && (
+            <p className="rounded-xl bg-amber-50 p-3 text-xs leading-5 text-amber-800">
+              ⚠️ {t("payout.minNote", "الحد الأدنى للتحويل هو")}{" "}
+              <b>{minPayout.toLocaleString()}</b> {t("common.tokens")} (
+              {(minPayout * rate).toLocaleString()} {t("common.mad")})
+            </p>
+          )}
+
+          <div className="space-y-3">
+            <div className="space-y-1.5">
+              <Label>{t("payout.method", "طريقة الاستلام")}</Label>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  ["bank_transfer", t("payout.bank", "تحويل بنكي")],
+                  ["cash", t("payout.cash", "كاش بلص / وفاكاش")],
+                ].map(([id, label]) => (
+                  <button
+                    key={id}
+                    type="button"
+                    onClick={() => setPayoutMethod(id)}
+                    className={`rounded-xl border p-3 text-sm font-medium transition ${
+                      payoutMethod === id
+                        ? "border-primary bg-primary/[0.06] ring-2 ring-primary/20"
+                        : "border-border/70 hover:border-primary/30"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="payout-details">
+                {payoutMethod === "bank_transfer"
+                  ? t("payout.rib", "RIB والاسم الكامل")
+                  : t("payout.phone", "رقم الهاتف والاسم الكامل")}
+              </Label>
+              <Input
+                id="payout-details"
+                value={payoutDetails}
+                onChange={(e) => setPayoutDetails(e.target.value)}
+                placeholder={
+                  payoutMethod === "bank_transfer"
+                    ? "007 640 00012345678901 23 — الاسم الكامل"
+                    : "06XXXXXXXX — الاسم الكامل"
+                }
+                className="rounded-xl"
+              />
+            </div>
+          </div>
+
+          <Button
+            size="lg"
+            className="w-full rounded-xl"
+            disabled={payoutBusy || payoutTokens < minPayout || !payoutDetails.trim()}
+            onClick={submitPayout}
+          >
+            {payoutBusy ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <>
+                <Banknote className="size-4" />{" "}
+                {t("payout.submit", "طلب التحويل")} —{" "}
+                {(payoutTokens * rate).toLocaleString(undefined, { maximumFractionDigits: 2 })}{" "}
+                {t("common.mad")}
+              </>
+            )}
+          </Button>
+        </DialogContent>
+      </Dialog>
     </SiteLayout>
   );
 }
