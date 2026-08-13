@@ -13,6 +13,8 @@ export type PaymentMethod = {
   label: string;
   icon: string;
   active: boolean;
+  /** Payment instructions shown to users: bank name, RIB, PayPal email... */
+  details?: string;
 };
 export type Branding = {
   site_name: string;
