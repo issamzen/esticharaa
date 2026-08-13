@@ -17,7 +17,7 @@ export function OrdersPage() {
 
   async function load() {
     const [{ data: os }, { data: ps }] = await Promise.all([
-      supabase.from("orders").select("id, tokens, bonus, price_mad, method, status, reference, created_at, profiles(full_name)").order("created_at", { ascending: false }).limit(200),
+      supabase.from("orders").select("id, tokens, bonus, price_mad, method, status, reference, created_at, profiles:user_id(full_name)").order("created_at", { ascending: false }).limit(200),
       supabase.from("token_packs").select("*").order("sort"),
     ]);
     setOrders((os as unknown as Order[]) ?? []);
