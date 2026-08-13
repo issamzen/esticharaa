@@ -1,0 +1,29 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "IBM Plex Sans Arabic", ui-sans-serif, system-ui, sans-serif;
+  --color-brand-dark: #0d4b4b;
+  --color-brand-teal: #1e8c85;
+  --color-brand-gold: #d4af37;
+  --color-brand-cream: #f2e8d6;
+  --color-ink: #10312f;
+  --color-paper: #f7f4ec;
+}
+
+html { font-family: var(--font-sans); }
+body { background: var(--color-paper); color: var(--color-ink); }
+
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-thumb { background: #0d4b4b33; border-radius: 8px; }
+
+.glass {
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(13, 75, 75, 0.08);
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.fade-up { animation: fadeUp 0.35s ease both; }
