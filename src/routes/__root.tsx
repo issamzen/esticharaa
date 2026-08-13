@@ -16,6 +16,7 @@ import { LocaleBoundary } from "@/components/site/locale-boundary";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { Toaster } from "@/components/ui/sonner";
+import { AuthProvider } from "@/lib/auth";
 
 export const Route = createRootRouteWithContext<RouterContext>()({
   beforeLoad: async ({ context }) => {
@@ -87,8 +88,10 @@ function RootComponent() {
     <I18nextProvider i18n={i18n}>
       <QueryClientProvider client={queryClient}>
         <LocaleBoundary locale={locale}>
-          <Outlet />
-          <Toaster position="top-center" />
+          <AuthProvider>
+            <Outlet />
+            <Toaster position="top-center" />
+          </AuthProvider>
         </LocaleBoundary>
       </QueryClientProvider>
     </I18nextProvider>
