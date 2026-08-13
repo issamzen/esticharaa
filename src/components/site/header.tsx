@@ -84,26 +84,28 @@ export function Header() {
           </div>
           <ThemeToggle />
 
-          <Button
-            asChild
-            variant="ghost"
-            size="sm"
-            className="hidden md:inline-flex"
-          >
-            <Link to="/tokens">
-              <Coins className="size-4 text-accent" />{" "}
-              {user && profile
-                ? profile.tokens_balance.toLocaleString()
-                : t("common.tokens")}
-            </Link>
-          </Button>
-          <Button
-            asChild
-            size="sm"
-            className="hidden rounded-xl sm:inline-flex"
-          >
-            <Link to="/ask">{t("common.askQuestion")}</Link>
-          </Button>
+          {user && profile ? (
+            <Button
+              asChild
+              variant="ghost"
+              size="sm"
+              className="hidden md:inline-flex"
+            >
+              <Link to="/tokens">
+                <Coins className="size-4 text-accent" />{" "}
+                {profile.tokens_balance.toLocaleString()}
+              </Link>
+            </Button>
+          ) : null}
+          {user ? (
+            <Button
+              asChild
+              size="sm"
+              className="hidden rounded-xl sm:inline-flex"
+            >
+              <Link to="/ask">{t("common.askQuestion")}</Link>
+            </Button>
+          ) : null}
           {user ? (
             <Button
               asChild
@@ -180,11 +182,19 @@ export function Header() {
                   ))}
                 </nav>
 
-                <Button asChild className="mt-6 w-full rounded-xl">
-                  <Link to="/ask" onClick={() => setOpen(false)}>
-                    {t("common.askQuestion")}
-                  </Link>
-                </Button>
+                {user ? (
+                  <Button asChild className="mt-6 w-full rounded-xl">
+                    <Link to="/ask" onClick={() => setOpen(false)}>
+                      {t("common.askQuestion")}
+                    </Link>
+                  </Button>
+                ) : (
+                  <Button asChild className="mt-6 w-full rounded-xl">
+                    <Link to="/auth" onClick={() => setOpen(false)}>
+                      {t("nav.signUp")}
+                    </Link>
+                  </Button>
+                )}
                 {user ? (
                   <Button
                     asChild
