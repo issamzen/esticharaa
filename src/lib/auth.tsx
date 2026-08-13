@@ -51,7 +51,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .select("*")
       .eq("id", u.id)
       .single();
-    setProfile((data as Profile) ?? null);
+    const p = (data as Profile) ?? null;
+
+    // Banned user → force sign-out immediately
+    if (p?.is_banned) {
+      await supabase.auth.signOut();
+      setProfile(null);
+      setUser(null);
+      if (typeof window !== "undefined") {
+        alert("تم حظر هذا الحساب. للاستفسار تواصل معنا عبر صفحة الاتصال.");
+        window.location.href = "/";
+      }
+      return;
+    }
+
+    setProfile(p);
   }
 
   useEffect(() => {
