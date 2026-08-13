@@ -17,6 +17,7 @@ import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider } from "@/lib/auth";
+import { SiteSettingsProvider } from "@/lib/site-settings";
 
 export const Route = createRootRouteWithContext<RouterContext>()({
   beforeLoad: async ({ context }) => {
@@ -89,8 +90,10 @@ function RootComponent() {
       <QueryClientProvider client={queryClient}>
         <LocaleBoundary locale={locale}>
           <AuthProvider>
-            <Outlet />
-            <Toaster position="top-center" />
+            <SiteSettingsProvider>
+              <Outlet />
+              <Toaster position="top-center" />
+            </SiteSettingsProvider>
           </AuthProvider>
         </LocaleBoundary>
       </QueryClientProvider>
