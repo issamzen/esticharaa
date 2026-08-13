@@ -1,71 +1,74 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { ArrowRight, BookOpen } from "lucide-react";
 import { SiteLayout, PageHeader } from "@/components/site/layout";
 import { Badge } from "@/components/ui/badge";
+import { usePageCopy } from "@/i18n/page-copy";
+import { createPageSeo, pageHead } from "@/i18n/route-meta";
 
 export const Route = createFileRoute("/blog")({
-  head: () => ({
-    meta: [
-      { title: "Blog — Guides for Life in Morocco | Estichara.ma" },
-      {
-        name: "description",
-        content:
-          "Practical guides on Moroccan administration, health, law, property and entrepreneurship, written with verified experts.",
-      },
-      { property: "og:title", content: "Estichara.ma Blog" },
-      { property: "og:description", content: "Practical guides written with verified experts." },
-    ],
+  loader: ({ context }) => ({
+    seo: createPageSeo(context.localeRouting.getLocale(), "blog"),
   }),
+  head: ({ loaderData }) => pageHead(loaderData?.seo),
   component: BlogPage,
 });
 
-const posts = [
-  {
-    title: "The complete 2026 guide to the auto-entrepreneur status",
-    category: "Administration",
-    excerpt:
-      "Thresholds, taxes, CNSS coverage and the exact forms — everything a Moroccan freelancer needs before registering.",
-    date: "2026-08-04",
-  },
-  {
-    title: "Reading a Moroccan employment contract before you sign",
-    category: "Legal",
-    excerpt:
-      "Trial periods, non-compete clauses and notice periods: the five lines that decide how your job ends.",
-    date: "2026-07-22",
-  },
-  {
-    title: "Melkia versus titre foncier, explained simply",
-    category: "Real Estate",
-    excerpt: "Why the same apartment can cost 30% less, and what you are really buying.",
-    date: "2026-07-09",
-  },
-  {
-    title: "How Schengen refusal codes actually work",
-    category: "Immigration",
-    excerpt: "Decoding codes 2, 3 and 9, and what changes between an appeal and a new application.",
-    date: "2026-06-28",
-  },
-];
-
 function BlogPage() {
+  const copy = usePageCopy().blog;
+
   return (
     <SiteLayout>
       <PageHeader
-        eyebrow="Blog"
-        title="Guides written with the people who know"
-        description="Long-form answers to the questions that come back every week, reviewed by verified experts."
+        eyebrow={copy.eyebrow}
+        title={copy.title}
+        description={copy.description}
       />
-      <section className="mx-auto max-w-6xl px-4 py-14">
-        <div className="grid gap-4 sm:grid-cols-2">
-          {posts.map((post) => (
+      <section className="mx-auto max-w-7xl px-4 py-14 sm:px-6 sm:py-20">
+        <div className="grid gap-5 sm:grid-cols-2">
+          {copy.posts.map((post, index) => (
             <article
               key={post.title}
-              className="rounded-2xl border border-border/70 bg-card p-6 shadow-soft transition-all hover:-translate-y-0.5 hover:shadow-lift"
+              className={`group relative min-h-72 overflow-hidden rounded-3xl border p-7 shadow-soft transition duration-300 hover:-translate-y-1 hover:shadow-lift sm:p-8 ${
+                index === 0
+                  ? "border-primary bg-primary text-primary-foreground"
+                  : "border-border/70 bg-card"
+              }`}
             >
-              <Badge variant="secondary">{post.category}</Badge>
-              <h2 className="mt-3 text-lg font-semibold leading-snug">{post.title}</h2>
-              <p className="mt-2 text-sm text-muted-foreground">{post.excerpt}</p>
-              <p className="mt-4 text-xs text-muted-foreground">{post.date}</p>
+              <div className="absolute -end-20 -top-20 size-56 rounded-full bg-accent/15 blur-3xl" />
+              <div className="relative flex h-full flex-col">
+                <div className="flex items-center justify-between gap-3">
+                  <Badge
+                    variant={index === 0 ? "outline" : "secondary"}
+                    className={index === 0 ? "border-white/20 text-white" : ""}
+                  >
+                    {post.category}
+                  </Badge>
+                  <BookOpen
+                    className={`size-5 ${index === 0 ? "text-accent" : "text-secondary"}`}
+                  />
+                </div>
+                <h2 className="mt-8 text-balance text-xl font-semibold leading-snug sm:text-2xl">
+                  {post.title}
+                </h2>
+                <p
+                  className={`mt-3 text-sm leading-6 ${index === 0 ? "text-white/70" : "text-muted-foreground"}`}
+                >
+                  {post.excerpt}
+                </p>
+                <div className="mt-auto flex items-center justify-between gap-3 pt-8 text-xs">
+                  <time
+                    className={
+                      index === 0 ? "text-white/55" : "text-muted-foreground"
+                    }
+                  >
+                    {post.date}
+                  </time>
+                  <span className="inline-flex items-center gap-1.5 font-semibold">
+                    {copy.read}{" "}
+                    <ArrowRight data-directional className="size-3.5" />
+                  </span>
+                </div>
+              </div>
             </article>
           ))}
         </div>
