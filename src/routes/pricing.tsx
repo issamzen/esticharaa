@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowRight, Coins, TrendingUp, Wallet } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { SiteLayout, PageHeader } from "@/components/site/layout";
 import { Button } from "@/components/ui/button";
 import {
@@ -8,115 +9,121 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { faqs, tokenPacks } from "@/data/platform";
+import { tokenPacks } from "@/data/platform";
+import { usePageCopy } from "@/i18n/page-copy";
+import { createPageSeo, pageHead } from "@/i18n/route-meta";
+import { getHomeFaqs } from "@/i18n/home-content";
+import { formatNumber } from "@/i18n/format";
+import { tokenPackName } from "@/i18n/platform";
+import { useLocale } from "@/i18n/use-locale";
 
 export const Route = createFileRoute("/pricing")({
-  head: () => ({
-    meta: [
-      { title: "Pricing & How Tokens Work — Estichara.ma" },
-      {
-        name: "description",
-        content:
-          "How the Estichara token economy works: what you spend, how experts earn, and how payouts are processed from 1,000 tokens.",
-      },
-      { property: "og:title", content: "Pricing & How Tokens Work — Estichara.ma" },
-      {
-        property: "og:description",
-        content: "Transparent token pricing for askers and experts.",
-      },
-    ],
+  loader: ({ context }) => ({
+    seo: createPageSeo(context.localeRouting.getLocale(), "pricing"),
   }),
+  head: ({ loaderData }) => pageHead(loaderData?.seo),
   component: PricingPage,
 });
 
-const spend = [
-  { label: "Ask a free public question", cost: "0 tokens" },
-  { label: "Ask a premium question", cost: "5 – 20 tokens" },
-  { label: "Unlock a full answer", cost: "5 tokens average" },
-  { label: "Contact an expert privately", cost: "10 tokens" },
-];
-
-const earn = [
-  { label: "Approved answer", value: "+8 tokens" },
-  { label: "Selected as best answer", value: "+15 bonus tokens" },
-  { label: "Monthly top contributor", value: "+250 tokens" },
-  { label: "Referral signup", value: "+50 tokens" },
-];
-
 function PricingPage() {
+  const copy = usePageCopy().pricing;
+  const { t } = useTranslation();
+  const locale = useLocale();
+  const faqs = getHomeFaqs(t);
+
   return (
     <SiteLayout>
       <PageHeader
-        eyebrow="Pricing"
-        title="One currency, no subscription"
-        description="You buy tokens. You spend them only on the answers you actually want. Experts are paid for the value they create."
+        eyebrow={copy.eyebrow}
+        title={copy.title}
+        description={copy.description}
       />
 
-      <section className="mx-auto max-w-6xl px-4 py-14">
-        <div className="grid gap-6 lg:grid-cols-3">
-          <div className="rounded-2xl border border-border/70 bg-card p-6 shadow-soft">
-            <Coins className="size-5 text-secondary" />
-            <h2 className="mt-4 font-semibold">What you spend</h2>
-            <ul className="mt-4 space-y-3 text-sm">
-              {spend.map((row) => (
-                <li key={row.label} className="flex justify-between gap-4">
-                  <span className="text-muted-foreground">{row.label}</span>
-                  <span className="font-medium">{row.cost}</span>
+      <section className="mx-auto max-w-7xl px-4 py-14 sm:px-6 sm:py-20">
+        <div className="grid gap-5 lg:grid-cols-3">
+          <article className="premium-card p-6 sm:p-7">
+            <Coins className="size-6 text-secondary" />
+            <h2 className="mt-5 text-xl font-semibold">{copy.spendTitle}</h2>
+            <ul className="mt-5 space-y-4 text-sm">
+              {copy.spend.map(([label, value]) => (
+                <li
+                  key={label}
+                  className="flex items-start justify-between gap-4 border-b border-border/50 pb-3 last:border-0"
+                >
+                  <span className="text-muted-foreground">{label}</span>
+                  <span className="shrink-0 font-semibold">{value}</span>
                 </li>
               ))}
             </ul>
-          </div>
+          </article>
 
-          <div className="rounded-2xl border border-border/70 bg-card p-6 shadow-soft">
-            <TrendingUp className="size-5 text-secondary" />
-            <h2 className="mt-4 font-semibold">How experts earn</h2>
-            <ul className="mt-4 space-y-3 text-sm">
-              {earn.map((row) => (
-                <li key={row.label} className="flex justify-between gap-4">
-                  <span className="text-muted-foreground">{row.label}</span>
-                  <span className="font-medium text-secondary">{row.value}</span>
+          <article className="premium-card border-secondary/25 bg-secondary text-secondary-foreground p-6 sm:p-7">
+            <TrendingUp className="size-6 text-accent" />
+            <h2 className="mt-5 text-xl font-semibold">{copy.earnTitle}</h2>
+            <ul className="mt-5 space-y-4 text-sm">
+              {copy.earn.map(([label, value]) => (
+                <li
+                  key={label}
+                  className="flex items-start justify-between gap-4 border-b border-white/15 pb-3 last:border-0"
+                >
+                  <span className="text-secondary-foreground/75">{label}</span>
+                  <span className="shrink-0 font-semibold text-white">
+                    {value}
+                  </span>
                 </li>
               ))}
             </ul>
-          </div>
+          </article>
 
-          <div className="rounded-2xl border border-border/70 bg-card p-6 shadow-soft">
-            <Wallet className="size-5 text-secondary" />
-            <h2 className="mt-4 font-semibold">How payouts work</h2>
-            <p className="mt-4 text-sm text-muted-foreground">
-              Once an expert wallet reaches the 1,000 token threshold, a withdrawal can be requested
-              by bank transfer, PayPal or local transfer. The conversion rate is configured by the
-              platform and shown before you confirm. Requests are reviewed within 72 hours and every
-              movement is logged in the wallet history.
+          <article className="premium-card p-6 sm:p-7">
+            <Wallet className="size-6 text-accent" />
+            <h2 className="mt-5 text-xl font-semibold">{copy.payoutsTitle}</h2>
+            <p className="mt-5 text-sm leading-7 text-muted-foreground">
+              {copy.payoutsText}
             </p>
-          </div>
+          </article>
         </div>
 
-        <div className="mt-12 rounded-2xl border border-border/70 bg-card p-6 shadow-soft">
-          <h2 className="font-semibold">Token packs</h2>
-          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="premium-card mt-12 p-6 sm:p-8">
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <h2 className="text-2xl font-semibold">{copy.packs}</h2>
+            <Button asChild variant="outline" className="rounded-xl">
+              <Link to="/tokens">
+                {copy.shop} <ArrowRight data-directional className="size-4" />
+              </Link>
+            </Button>
+          </div>
+          <div className="mt-7 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {tokenPacks.map((pack) => (
-              <div key={pack.name} className="rounded-xl border border-border/70 p-4">
-                <p className="text-sm text-muted-foreground">{pack.name}</p>
-                <p className="mt-1 text-2xl font-semibold">{pack.tokens.toLocaleString()}</p>
-                <p className="text-sm text-muted-foreground">{pack.price} MAD</p>
-              </div>
+              <article
+                key={pack.name}
+                className="rounded-2xl border border-border/70 bg-background/60 p-5"
+              >
+                <p className="text-sm font-semibold text-muted-foreground">
+                  {tokenPackName(pack.name, locale)}
+                </p>
+                <p className="mt-3 text-3xl font-semibold">
+                  {formatNumber(pack.tokens, locale)}
+                </p>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  {formatNumber(pack.price, locale)} {t("common.mad")}
+                </p>
+              </article>
             ))}
           </div>
-          <Button asChild className="mt-6">
-            <Link to="/tokens">
-              Go to token shop <ArrowRight className="size-4" />
-            </Link>
-          </Button>
         </div>
 
-        <div className="mt-12">
-          <h2 className="text-2xl font-semibold">Frequently asked questions</h2>
-          <Accordion type="single" collapsible className="mt-4">
-            {faqs.map((faq) => (
-              <AccordionItem key={faq.q} value={faq.q}>
-                <AccordionTrigger className="text-left">{faq.q}</AccordionTrigger>
-                <AccordionContent className="text-muted-foreground">{faq.a}</AccordionContent>
+        <div className="mx-auto mt-16 max-w-3xl">
+          <h2 className="text-3xl font-semibold">{copy.faq}</h2>
+          <Accordion type="single" collapsible className="mt-5">
+            {faqs.map((faq, index) => (
+              <AccordionItem key={faq.q} value={`faq-${index}`}>
+                <AccordionTrigger className="text-start hover:no-underline hover:text-primary">
+                  {faq.q}
+                </AccordionTrigger>
+                <AccordionContent className="leading-7 text-muted-foreground">
+                  {faq.a}
+                </AccordionContent>
               </AccordionItem>
             ))}
           </Accordion>
