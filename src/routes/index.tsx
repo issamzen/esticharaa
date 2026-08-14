@@ -179,23 +179,20 @@ function Index() {
               {t("home.badge")}
             </Badge>
 
-            <h1 className="mt-7 max-w-3xl text-balance text-4xl font-semibold leading-[1.04] tracking-[-0.035em] sm:text-6xl lg:text-[4.25rem]">
-              {t("home.heroTitleBefore")}{" "}
-              <span className="bg-gradient-to-r from-primary via-primary to-accent bg-clip-text text-transparent">
-                {t("home.heroTitleAccent")}
-              </span>
-            </h1>
-            <p className="mt-6 max-w-xl text-pretty text-base leading-7 text-muted-foreground sm:text-lg sm:leading-8">
-              {t("home.heroDescription")}
-            </p>
-            <p className="mt-3 max-w-xl text-sm leading-6 text-muted-foreground">
-              <strong className="font-semibold text-foreground">Estichara.ma</strong>{" "}
-              {locale === "ar"
-                ? "هي منصة مغربية للأسئلة والأجوبة تربط المستخدمين بخبراء موثّقين للحصول على إرشادات عملية، مع نظام توكن لفتح الإجابات وإدارة مكافآت الخبراء."
-                : locale === "fr"
-                  ? "est une plateforme marocaine de questions-réponses qui met les utilisateurs en relation avec des experts vérifiés, avec un système de jetons pour débloquer les réponses et récompenser les experts."
-                  : "is a Moroccan question-and-answer marketplace connecting users with verified experts, with a token system for unlocking answers and rewarding expert contributions."}
-            </p>
+            <h1 className="mt-7 text-5xl font-bold">
+  Estichara.ma
+</h1>
+
+<p className="mt-4 text-xl">
+  Morocco's trusted question and answer marketplace.
+</p>
+
+<p className="mt-4">
+  Ask questions, receive answers from verified experts,
+  purchase tokens, unlock premium responses, and get
+  trusted advice across business, legal, health,
+  education, finance, and technology topics.
+</p>
 
             <div className="mt-8 max-w-xl rounded-2xl border border-border/70 bg-background/85 p-2 shadow-xl shadow-primary/5 backdrop-blur-xl">
               <div className="flex items-center gap-3 rounded-xl ps-3">
