@@ -4,7 +4,7 @@ import { createClient } from "@supabase/supabase-js";
 // all data protection is enforced by Row Level Security in Supabase.
 export const SUPABASE_URL = "https://wvbqmuumzbvaxnaajjqo.supabase.co";
 export const SUPABASE_ANON_KEY =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJIUzI1NiIsInJlZiI6Ind2YnFtdXVtemJ2YXhuYWFqanFvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY2MjEyNjAsImV4cCI6MjEwMjE5NzI2MH0.Zk1lZQ2T0Hf6HerD6eAYqRbMTghWuIcl5LS5jji9sHc";
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind2YnFtdXVtemJ2YXhuYWFqanFvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY2MjEyNjAsImV4cCI6MjEwMjE5NzI2MH0.Zk1lZQ2T0Hf6HerD6eAYqRbMTghWuIcl5LS5jji9sHc";
 
 const isBrowser = typeof window !== "undefined";
 
