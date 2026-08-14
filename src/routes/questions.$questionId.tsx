@@ -30,13 +30,16 @@ import { useLocale } from "@/i18n/use-locale";
 import { supabase, SUPABASE_URL, SUPABASE_ANON_KEY } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth";
 
+function decodeQuestionRef(value:string){try{return decodeURIComponent(value)}catch{return value}}
+
 export const Route = createFileRoute("/questions/$questionId")({
   loader: async ({ params, context }) => {
-    const base=questions.find(item=>item.id===params.questionId);
+    const questionRef=decodeQuestionRef(params.questionId);
+    const base=questions.find(item=>item.id===questionRef);
     const question=base?localizeQuestion(base,context.localeRouting.getLocale()):null;
     let seoQuestion:null|{title:string;description:string;slug:string}=null;
-    if(!question){try{const response=await fetch(`${SUPABASE_URL}/rest/v1/rpc/get_question_seo_by_ref`,{method:"POST",headers:{apikey:SUPABASE_ANON_KEY,Authorization:`Bearer ${SUPABASE_ANON_KEY}`,"Content-Type":"application/json"},body:JSON.stringify({p_question_ref:params.questionId})});if(response.ok){const data=await response.json() as {title?:string;description?:string;slug?:string}|null;if(data?.title)seoQuestion={title:data.title,description:data.description??"",slug:data.slug??params.questionId}}}catch{seoQuestion=null}}
-    return{question,seoQuestion,questionId:params.questionId};
+    if(!question){try{const response=await fetch(`${SUPABASE_URL}/rest/v1/rpc/get_question_seo_by_ref`,{method:"POST",headers:{apikey:SUPABASE_ANON_KEY,Authorization:`Bearer ${SUPABASE_ANON_KEY}`,"Content-Type":"application/json"},body:JSON.stringify({p_question_ref:questionRef})});if(response.ok){const data=await response.json() as {title?:string;description?:string;slug?:string}|null;if(data?.title)seoQuestion={title:data.title,description:data.description??"",slug:data.slug??questionRef}}}catch{seoQuestion=null}}
+    return{question,seoQuestion,questionId:questionRef};
   },
   head:({loaderData})=>{const item=loaderData?.question??loaderData?.seoQuestion;return{meta:item?[{title:`${item.title} — Estichara.ma`},{name:"description",content:("body" in item?item.body:item.description).slice(0,155)},{property:"og:title",content:`${item.title} — Estichara.ma`},{property:"og:description",content:("body" in item?item.body:item.description).slice(0,155)}]:[{title:"Estichara.ma"}]}},
   component: QuestionDetail,
