@@ -222,7 +222,7 @@ function AccountPage() {
 
   async function deleteQuestion(q: MyQuestion) {
     if (!confirm(t("account.confirmDeleteQ", "حذف هذا السؤال نهائيًا؟"))) return;
-    const { error } = await supabase.from("questions").delete().eq("id", q.id);
+    const { error } = await supabase.rpc("cancel_own_question", { p_question_id: q.id });
     if (error) {
       toast.error(error.message);
       return;
@@ -616,8 +616,10 @@ function AccountPage() {
                 {transactions.map((tx) => {
                   const positive = tx.amount > 0;
                   const labels: Record<string, string> = {
-                    purchase: "شراء توكن", spend_unlock: "فتح إجابة", earn_answer: "مكافأة إجابة",
-                    earn_bonus: "مكافأة إضافية", withdrawal_hold: "طلب تحويل", withdrawal_refund: "استرجاع تحويل", admin_adjust: "تعديل إداري",
+                    purchase: "شراء توكن", spend_unlock: "فتح إجابة", spend_question: "مكافأة سؤال محجوزة",
+                    refund_question: "استرجاع مكافأة سؤال", earn_question_reward: "مكافأة سؤال مكتسبة",
+                    earn_answer: "مكافأة إجابة", earn_bonus: "مكافأة إضافية", withdrawal_hold: "طلب تحويل",
+                    withdrawal_refund: "استرجاع تحويل", admin_adjust: "تعديل إداري",
                   };
                   return (
                     <div key={tx.id} className="flex items-center gap-3 py-3.5">
