@@ -32,6 +32,16 @@ type Audience = {
   label_en: string;
   active: boolean;
 };
+type PlatformLimits = {
+  questions_per_day: number; answers_per_hour: number; support_threads_per_day: number;
+  support_messages_per_hour: number; private_messages_per_hour: number; reports_per_day: number;
+  max_open_support_threads: number;
+};
+const DEFAULT_LIMITS: PlatformLimits = {
+  questions_per_day: 10, answers_per_hour: 10, support_threads_per_day: 5,
+  support_messages_per_hour: 30, private_messages_per_hour: 60, reports_per_day: 10,
+  max_open_support_threads: 5,
+};
 
 const DEFAULT_RULES: AccessRules = {
   guest_hide_full_content: true,
@@ -71,6 +81,7 @@ export function SettingsPage() {
   const [maintenance, setMaintenance] = useState(false);
   const [rules, setRules] = useState<AccessRules>(DEFAULT_RULES);
   const [audiences, setAudiences] = useState<Audience[]>([]);
+  const [limits, setLimits] = useState<PlatformLimits>(DEFAULT_LIMITS);
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -81,6 +92,7 @@ export function SettingsPage() {
         if (row.key === "maintenance_mode") setMaintenance(row.value === true || row.value === "true");
         else if (row.key === "content_access_rules") setRules({ ...DEFAULT_RULES, ...(row.value as Partial<AccessRules>) });
         else if (row.key === "expert_audiences") setAudiences((row.value as Audience[]) ?? []);
+        else if (row.key === "platform_limits") setLimits({ ...DEFAULT_LIMITS, ...(row.value as Partial<PlatformLimits>) });
         else v[row.key] = String(row.value);
       });
       setValues(v);
@@ -99,6 +111,7 @@ export function SettingsPage() {
       await updateSetting("maintenance_mode", maintenance);
       await updateSetting("content_access_rules", rules);
       await updateSetting("expert_audiences", audiences);
+      await updateSetting("platform_limits", limits);
       setSaved(true);
       setTimeout(() => setSaved(false), 2500);
     } catch (error) {
@@ -208,6 +221,24 @@ export function SettingsPage() {
                 <Trash2 className="size-4" />
               </button>
             </div>
+          ))}
+        </div>
+      </Card>
+
+      <Card className="fade-up p-6">
+        <h2 className="flex items-center gap-2 font-bold"><LockKeyhole className="size-4.5 text-brand-teal" /> حدود الاستخدام والحماية من الإزعاج</h2>
+        <p className="mt-1 text-xs text-ink/50">عدّل الحدود حسب حجم المنصة. التحقق يتم داخل قاعدة البيانات ولا يمكن تجاوزه من المتصفح.</p>
+        <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {([
+            ["questions_per_day", "أسئلة لكل مستخدم / يوم"],
+            ["answers_per_hour", "أجوبة لكل خبير / ساعة"],
+            ["support_threads_per_day", "طلبات دعم جديدة / يوم"],
+            ["support_messages_per_hour", "رسائل دعم / ساعة"],
+            ["private_messages_per_hour", "رسائل خاصة / ساعة"],
+            ["reports_per_day", "بلاغات / يوم"],
+            ["max_open_support_threads", "أقصى طلبات دعم مفتوحة"],
+          ] as [keyof PlatformLimits, string][]).map(([key, label]) => (
+            <NumberField key={key} label={label} value={limits[key]} onChange={(value) => setLimits({ ...limits, [key]: value })} />
           ))}
         </div>
       </Card>
