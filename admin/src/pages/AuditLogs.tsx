@@ -12,6 +12,7 @@ const TABLE_LABELS: Record<string, string> = {
   profiles: "المستخدمون", questions: "الأسئلة", answers: "الأجوبة", orders: "الطلبات",
   withdrawals: "السحوبات", settings: "الإعدادات", expert_profiles: "الخبراء",
   categories: "التصنيفات", token_packs: "باقات التوكن", support_threads: "الدعم",
+  moderation_decisions: "قرارات المراجعة", admin_notes: "ملاحظات الإدارة",
 };
 const ACTION_META: Record<string, { label: string; tone: "success" | "warning" | "danger" }> = {
   insert: { label: "إضافة", tone: "success" }, update: { label: "تعديل", tone: "warning" }, delete: { label: "حذف", tone: "danger" },
