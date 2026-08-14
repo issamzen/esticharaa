@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Loader2, Lock, LogIn, Mail, User, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
@@ -310,7 +310,9 @@ function AuthPage() {
                     )}
                   </Button>
                   <p className="text-center text-xs leading-5 text-muted-foreground">
-                    {t("auth.termsPrefix")} {t("auth.terms")}
+                    {t("auth.termsPrefix")}{" "}
+                    <Link to="/terms" className="font-semibold text-primary underline underline-offset-2">{t("auth.terms")}</Link>{" · "}
+                    <Link to="/privacy" className="font-semibold text-primary underline underline-offset-2">{t("auth.privacy")}</Link>
                   </p>
                 </form>
               </div>
