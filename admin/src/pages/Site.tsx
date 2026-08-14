@@ -57,7 +57,10 @@ export function SitePage() {
       .in("key", ["site_branding", "site_colors", "site_nav", "site_footer", "payment_methods", "page_404"])
       .then(({ data }) => {
         const map = Object.fromEntries((data ?? []).map((r) => [r.key, r.value]));
-        if (map.site_branding) setBranding({ site_name_ar: "", ...(map.site_branding as Branding) });
+        if (map.site_branding) {
+          const next = map.site_branding as Branding;
+          setBranding({ ...next, site_name_ar: next.site_name_ar ?? "" });
+        }
         if (map.site_colors) setColors(map.site_colors as Colors);
         if (map.site_nav) setNav(map.site_nav as NavItem[]);
         if (map.site_footer) setFooter(map.site_footer as NavItem[]);
