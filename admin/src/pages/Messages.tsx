@@ -19,14 +19,21 @@ export function MessagesPage() {
   const [supportMsgs, setSupportMsgs] = useState<SupportMsg[]>([]);
   const [reply, setReply] = useState("");
   const [busy, setBusy] = useState(false);
+  const [supportError, setSupportError] = useState("");
   const [convs, setConvs] = useState<Conv[]>([]);
   const [selected, setSelected] = useState<Conv | null>(null);
   const [msgs, setMsgs] = useState<Msg[]>([]);
 
   async function loadThreads() {
-    const { data } = await supabase.from("support_threads")
+    const { data, error } = await supabase.from("support_threads")
       .select("id, user_id, subject, status, priority, last_message_at, profiles:user_id(full_name)")
       .order("last_message_at", { ascending: false }).limit(200);
+    if (error) {
+      setSupportError(error.message);
+      setThreads([]);
+      return;
+    }
+    setSupportError("");
     setThreads((data as unknown as SupportThread[]) ?? []);
   }
 
@@ -79,7 +86,7 @@ export function MessagesPage() {
     setThreads((items) => items.map((item) => item.id === next.id ? next : item));
   }
 
-  const openCount = threads.filter((thread) => !["resolved", "closed"].includes(thread.status)).length;
+  const openCount = threads.filter((thread) => thread.status === "open").length;
   const statusMeta: Record<string, { label: string; tone: "warning" | "success" | "neutral" | "info" }> = {
     open: { label: "مفتوحة", tone: "warning" }, waiting_user: { label: "بانتظار المستخدم", tone: "info" },
     resolved: { label: "تم الحل", tone: "success" }, closed: { label: "مغلقة", tone: "neutral" },
@@ -96,6 +103,14 @@ export function MessagesPage() {
           <button onClick={() => setTab("monitoring")} className={`rounded-lg px-4 py-2 text-xs font-semibold transition ${tab === "monitoring" ? "bg-brand-dark text-white" : "text-ink/55 hover:bg-ink/5"}`}>مراقبة المحادثات</button>
         </div>
       </div>
+
+      {tab === "support" && supportError && (
+        <Card className="border-red-200 bg-red-50 p-5 text-red-800">
+          <p className="font-bold">تعذر تحميل رسائل الإدارة</p>
+          <p className="mt-1 text-xs leading-6">{supportError}</p>
+          <p className="mt-2 text-xs font-semibold">شغّل ملف <span dir="ltr">admin/supabase/06-support-messaging.sql</span> كاملًا في Supabase SQL Editor، ثم حدّث الصفحة.</p>
+        </Card>
+      )}
 
       {tab === "support" ? (
         <div className="grid min-h-[620px] gap-4 lg:grid-cols-[350px_1fr]">
