@@ -1,4 +1,4 @@
-import { useState, type ChangeEvent } from "react";
+import { useEffect, useState, type ChangeEvent } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { Mail, MessageCircle, Phone, Send } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -18,6 +18,8 @@ import {
 import { usePageCopy } from "@/i18n/page-copy";
 import { createPageSeo, pageHead } from "@/i18n/route-meta";
 import { getHomeFaqs } from "@/i18n/home-content";
+import { useAuth } from "@/lib/auth";
+import { supabase } from "@/lib/supabase";
 
 export const Route = createFileRoute("/contact")({
   loader: ({ context }) => ({
@@ -30,12 +32,19 @@ export const Route = createFileRoute("/contact")({
 function ContactPage() {
   const copy = usePageCopy().contact;
   const { t } = useTranslation();
+  const { user, profile } = useAuth();
   const faqs = getHomeFaqs(t).slice(0, 4);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
+  const [sending, setSending] = useState(false);
 
-  function submit() {
+  useEffect(() => {
+    if (profile?.full_name) setName(profile.full_name);
+    if (user?.email) setEmail(user.email);
+  }, [profile?.full_name, user?.email]);
+
+  async function submit() {
     const schema = z.object({
       name: z.string().trim().min(2, copy.validationName).max(100),
       email: z.string().trim().email(copy.validationEmail).max(255),
@@ -46,7 +55,18 @@ function ContactPage() {
       toast.error(result.error.issues[0]?.message ?? copy.validationGeneric);
       return;
     }
-    toast.success(copy.success, { description: copy.successDescription });
+    if (!user) {
+      toast.info(t("auth.signInDescription"), { description: "يجب تسجيل الدخول لإرسال رسالة آمنة إلى الإدارة." });
+      return;
+    }
+    setSending(true);
+    const { error } = await supabase.rpc("create_support_thread", {
+      p_subject: `رسالة تواصل من ${result.data.name}`,
+      p_body: result.data.message,
+    });
+    setSending(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success(copy.success, { description: "تم حفظ الرسالة في حسابك وإرسالها إلى الإدارة." });
     setMessage("");
   }
 
@@ -115,8 +135,8 @@ function ContactPage() {
               className="mt-2 min-h-44 rounded-xl"
             />
           </div>
-          <Button className="mt-6 rounded-xl" onClick={submit}>
-            <Send className="size-4" /> {copy.send}
+          <Button className="mt-6 rounded-xl" disabled={sending} onClick={submit}>
+            <Send className="size-4" /> {sending ? "جارٍ الإرسال…" : copy.send}
           </Button>
         </div>
 
