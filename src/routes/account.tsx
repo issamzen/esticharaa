@@ -47,6 +47,7 @@ export const Route = createFileRoute("/account")({
 
 type MyQuestion = {
   id: string;
+  slug: string;
   title: string;
   body: string;
   status: string;
@@ -143,7 +144,7 @@ function AccountPage() {
     if (!user) return;
     supabase
       .from("questions")
-      .select("id, title, body, status, tokens, answers_count, created_at")
+      .select("id, slug, title, body, status, tokens, answers_count, created_at")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
       .limit(20)
@@ -186,7 +187,7 @@ function AccountPage() {
     if (!user) return;
     supabase
       .from("questions")
-      .select("id, title, body, status, tokens, answers_count, created_at")
+      .select("id, slug, title, body, status, tokens, answers_count, created_at")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
       .limit(20)
@@ -504,7 +505,7 @@ function AccountPage() {
                       {q.status === "published" ? (
                         <Link
                           to="/questions/$questionId"
-                          params={{ questionId: q.id }}
+                          params={{ questionId: q.slug || q.id }}
                           className="mt-2 block font-medium hover:text-primary"
                         >
                           {q.title}
