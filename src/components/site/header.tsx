@@ -126,7 +126,7 @@ export function Header() {
               </Link>
             </Button>
           ) : null}
-          {user ? (
+          {user && site.features.new_questions !== false ? (
             <Button
               asChild
               size="sm"
@@ -220,19 +220,15 @@ export function Header() {
                   ))}
                 </nav>
 
-                {user ? (
+                {user && site.features.new_questions !== false ? (
                   <Button asChild className="mt-6 w-full rounded-xl">
-                    <Link to="/ask" onClick={() => setOpen(false)}>
-                      {t("common.askQuestion")}
-                    </Link>
+                    <Link to="/ask" onClick={() => setOpen(false)}>{t("common.askQuestion")}</Link>
                   </Button>
-                ) : (
+                ) : !user ? (
                   <Button asChild className="mt-6 w-full rounded-xl">
-                    <Link to="/auth" onClick={() => setOpen(false)}>
-                      {t("nav.signUp")}
-                    </Link>
+                    <Link to="/auth" onClick={() => setOpen(false)}>{t("nav.signUp")}</Link>
                   </Button>
-                )}
+                ) : null}
                 {user ? (
                   <Button
                     asChild
