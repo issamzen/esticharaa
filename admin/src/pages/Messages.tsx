@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Headphones, MessageSquareText, Send, Loader2, CheckCircle2, UserRound, ShieldCheck, Inbox } from "lucide-react";
+import { Headphones, MessageSquareText, Send, Loader2, CheckCircle2, UserRound, ShieldCheck, Inbox, LockKeyhole, Trash2, RotateCcw } from "lucide-react";
 import { supabase } from "../supabase";
 import { Card, Empty, Badge, Btn } from "../ui";
 
@@ -86,6 +86,29 @@ export function MessagesPage() {
     setThreads((items) => items.map((item) => item.id === next.id ? next : item));
   }
 
+  async function closeThread() {
+    if (!selectedThread) return;
+    const note = prompt("ملاحظة الإغلاق للمستخدم (اختيارية):", "تم توضيح الطلب وإغلاق المحادثة.");
+    if (note === null) return;
+    const { error } = await supabase.rpc("admin_close_support_thread", { p_thread_id:selectedThread.id, p_note:note });
+    if (error) { alert(error.message); return; }
+    const next={...selectedThread,status:"closed"};setSelectedThread(next);await loadThreads();
+  }
+  async function reopenThread() {
+    if (!selectedThread) return;
+    const { error } = await supabase.rpc("admin_reopen_support_thread", { p_thread_id:selectedThread.id });
+    if (error) { alert(error.message); return; }
+    const next={...selectedThread,status:"open"};setSelectedThread(next);await loadThreads();
+  }
+  async function deleteThread() {
+    if (!selectedThread) return;
+    const typed=prompt(`حذف نهائي للمحادثة «${selectedThread.subject}» وكل رسائلها؟\nاكتب: حذف`);
+    if (typed!=="حذف") return;
+    const { error }=await supabase.rpc("admin_delete_support_thread",{p_thread_id:selectedThread.id});
+    if(error){alert(error.message.includes("CLOSE_THREAD_BEFORE_DELETE")?"أغلق المحادثة أولًا قبل حذفها.":error.message);return}
+    setSelectedThread(null);setSupportMsgs([]);await loadThreads();
+  }
+
   const openCount = threads.filter((thread) => thread.status === "open").length;
   const statusMeta: Record<string, { label: string; tone: "warning" | "success" | "neutral" | "info" }> = {
     open: { label: "مفتوحة", tone: "warning" }, waiting_user: { label: "بانتظار المستخدم", tone: "info" },
@@ -136,6 +159,8 @@ export function MessagesPage() {
                 <div className="min-w-0 flex-1"><h2 className="truncate font-bold">{selectedThread.subject}</h2><p className="mt-0.5 text-xs text-ink/45">{selectedThread.profiles?.full_name ?? "مستخدم"}</p></div>
                 <Badge tone={(statusMeta[selectedThread.status] ?? statusMeta.open).tone}>{(statusMeta[selectedThread.status] ?? statusMeta.open).label}</Badge>
                 {!['resolved','closed'].includes(selectedThread.status) && <Btn small tone="ghost" onClick={() => setStatus("resolved")}><CheckCircle2 className="size-3.5" /> تم الحل</Btn>}
+                {selectedThread.status!=="closed"&&<Btn small tone="ghost" onClick={closeThread}><LockKeyhole className="size-3.5"/> إغلاق</Btn>}
+                {selectedThread.status==="closed"&&<><Btn small tone="ghost" onClick={reopenThread}><RotateCcw className="size-3.5"/> إعادة فتح</Btn><Btn small tone="danger" onClick={deleteThread}><Trash2 className="size-3.5"/> حذف نهائي</Btn></>}
               </div>
               <div className="flex-1 space-y-3 overflow-y-auto bg-ink/[.018] p-5">
                 {supportMsgs.map((message) => {
