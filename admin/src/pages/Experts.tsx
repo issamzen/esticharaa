@@ -17,9 +17,10 @@ const DOC_LABELS: Record<string, string> = {
 type Expert = {
   user_id: string; title: string; specialization: string; city: string;
   status: string; verified: boolean; rating: number; answered_count: number;
-  earned_tokens: number;
+  earned_tokens: number; audience_ids: string[];
   profiles: { full_name: string } | null;
 };
+type Audience = { id: string; label_ar: string; active: boolean };
 
 const STATUS_BADGE: Record<string, { label: string; tone: "warning" | "success" | "danger" | "neutral" }> = {
   pending: { label: "في الانتظار", tone: "warning" },
@@ -34,6 +35,12 @@ export function ExpertsPage() {
   const [docsFor, setDocsFor] = useState<string | null>(null);
   const [docs, setDocs] = useState<ExpertDoc[]>([]);
   const [loadingDocs, setLoadingDocs] = useState(false);
+  const [audiences, setAudiences] = useState<Audience[]>([]);
+
+  useEffect(() => {
+    supabase.from("settings").select("value").eq("key", "expert_audiences").single()
+      .then(({ data }) => setAudiences(((data?.value as Audience[]) ?? []).filter((item) => item.active)));
+  }, []);
 
   async function showDocs(userId: string) {
     if (docsFor === userId) { setDocsFor(null); return; }
@@ -59,7 +66,7 @@ export function ExpertsPage() {
   async function load() {
     const { data } = await supabase
       .from("expert_profiles")
-      .select("user_id, title, specialization, city, status, verified, rating, answered_count, earned_tokens, profiles(full_name)")
+      .select("user_id, title, specialization, city, status, verified, rating, answered_count, earned_tokens, audience_ids, profiles(full_name)")
       .order("created_at", { ascending: false });
     setRows((data as unknown as Expert[]) ?? []);
   }
@@ -71,6 +78,16 @@ export function ExpertsPage() {
     await supabase.from("expert_profiles").update(patch).eq("user_id", id);
     if (status === "approved") await supabase.from("profiles").update({ role: "expert" }).eq("id", id);
     await load();
+  }
+
+  async function toggleAudience(expert: Expert, audienceId: string) {
+    const current = expert.audience_ids ?? [];
+    const next = current.includes(audienceId)
+      ? current.filter((id) => id !== audienceId)
+      : [...current, audienceId];
+    const { error } = await supabase.from("expert_profiles").update({ audience_ids: next }).eq("user_id", expert.user_id);
+    if (error) { alert(error.message); return; }
+    setRows((items) => items.map((item) => item.user_id === expert.user_id ? { ...item, audience_ids: next } : item));
   }
 
   const filtered = rows.filter((r) => tab === "all" || r.status === tab);
@@ -117,6 +134,23 @@ export function ExpertsPage() {
                 <span>{e.answered_count} إجابة</span>
                 <span>{e.earned_tokens} توكن مكتسب</span>
               </div>
+
+              {audiences.length > 0 && (
+                <div className="mt-4 rounded-xl bg-ink/4 p-3">
+                  <p className="mb-2 text-[11px] font-semibold text-ink/50">فئات الأسئلة التي يمكن لهذا الخبير الإجابة عنها</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {audiences.map((audience) => {
+                      const selected = (e.audience_ids ?? []).includes(audience.id);
+                      return (
+                        <button key={audience.id} onClick={() => toggleAudience(e, audience.id)}
+                          className={`rounded-full px-3 py-1 text-xs font-semibold transition ${selected ? "bg-brand-teal text-white" : "bg-white text-ink/55 hover:bg-brand-teal/10"}`}>
+                          {audience.label_ar} {selected ? "✓" : "+"}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
 
               {docsFor === e.user_id && (
                 <div className="mt-4 rounded-xl bg-ink/4 p-3">
