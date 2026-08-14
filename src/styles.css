@@ -186,6 +186,19 @@
 .dark img { color-scheme: normal; }
 html, body, .premium-card, .glass { transition: background-color .25s ease, color .25s ease, border-color .25s ease; }
 
+.mobile-app-nav {
+  border-top: 1px solid var(--surface-border);
+  background: color-mix(in oklab, var(--background) 86%, transparent);
+  box-shadow: 0 -12px 40px oklch(0.2 0.03 195 / 12%);
+  backdrop-filter: blur(22px) saturate(165%);
+  -webkit-backdrop-filter: blur(22px) saturate(165%);
+}
+.dark .mobile-app-nav { box-shadow: 0 -14px 42px oklch(0 0 0 / 35%); }
+
+@media (display-mode: standalone) {
+  .mobile-app-nav { padding-bottom: env(safe-area-inset-bottom); }
+}
+
 @layer base {
   * {
     border-color: var(--color-border);
