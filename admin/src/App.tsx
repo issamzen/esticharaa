@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import {
   LayoutDashboard, Users, GraduationCap, MessagesSquare, MessageSquareText,
-  Coins, Wallet, Star, Settings, LogOut, ShieldCheck, Lock, Loader2, Paintbrush,
+  Coins, Wallet, Star, Settings, LogOut, ShieldCheck, Lock, Loader2, Paintbrush, History,
 } from "lucide-react";
 import { supabase, isConfigured } from "./supabase";
 import { Overview } from "./pages/Overview";
@@ -14,6 +14,7 @@ import { WithdrawalsPage } from "./pages/Withdrawals";
 import { ReviewsReportsPage } from "./pages/ReviewsReports";
 import { SettingsPage } from "./pages/Settings";
 import { SitePage } from "./pages/Site";
+import { AuditLogsPage } from "./pages/AuditLogs";
 
 const NAV = [
   { id: "overview", label: "نظرة عامة", icon: LayoutDashboard },
@@ -24,6 +25,7 @@ const NAV = [
   { id: "orders", label: "الطلبات والتوكن", icon: Coins },
   { id: "withdrawals", label: "طلبات السحب", icon: Wallet },
   { id: "moderation", label: "التقييمات والبلاغات", icon: Star },
+  { id: "audit", label: "سجل الإدارة", icon: History },
   { id: "site", label: "تخصيص الموقع", icon: Paintbrush },
   { id: "settings", label: "إعدادات المنصة", icon: Settings },
 ] as const;
@@ -164,6 +166,7 @@ export default function App() {
           {page === "orders" && <OrdersPage />}
           {page === "withdrawals" && <WithdrawalsPage />}
           {page === "moderation" && <ReviewsReportsPage />}
+          {page === "audit" && <AuditLogsPage />}
           {page === "site" && <SitePage />}
           {page === "settings" && <SettingsPage />}
         </main>
