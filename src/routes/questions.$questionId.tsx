@@ -27,30 +27,18 @@ import { usePageCopy } from "@/i18n/page-copy";
 import { formatDate, formatNumber } from "@/i18n/format";
 import { localizeExpert, localizeQuestion } from "@/i18n/platform";
 import { useLocale } from "@/i18n/use-locale";
-import { supabase } from "@/lib/supabase";
+import { supabase, SUPABASE_URL, SUPABASE_ANON_KEY } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth";
 
 export const Route = createFileRoute("/questions/$questionId")({
-  loader: ({ params, context }) => {
-    // Demo questions keep working; real (database) questions are
-    // fetched in the browser because unlock state depends on the user.
-    const base = questions.find((item) => item.id === params.questionId);
-    const question = base
-      ? localizeQuestion(base, context.localeRouting.getLocale())
-      : null;
-    return { question, questionId: params.questionId };
+  loader: async ({ params, context }) => {
+    const base=questions.find(item=>item.id===params.questionId);
+    const question=base?localizeQuestion(base,context.localeRouting.getLocale()):null;
+    let seoQuestion:null|{title:string;description:string;slug:string}=null;
+    if(!question){try{const response=await fetch(`${SUPABASE_URL}/rest/v1/rpc/get_question_seo_by_ref`,{method:"POST",headers:{apikey:SUPABASE_ANON_KEY,Authorization:`Bearer ${SUPABASE_ANON_KEY}`,"Content-Type":"application/json"},body:JSON.stringify({p_question_ref:params.questionId})});if(response.ok){const data=await response.json() as {title?:string;description?:string;slug?:string}|null;if(data?.title)seoQuestion={title:data.title,description:data.description??"",slug:data.slug??params.questionId}}}catch{seoQuestion=null}}
+    return{question,seoQuestion,questionId:params.questionId};
   },
-  head: ({ loaderData }) => ({
-    meta: loaderData?.question
-      ? [
-          { title: `${loaderData.question.title} — Estichara.ma` },
-          {
-            name: "description",
-            content: loaderData.question.body.slice(0, 155),
-          },
-        ]
-      : [{ title: "Estichara.ma" }],
-  }),
+  head:({loaderData})=>{const item=loaderData?.question??loaderData?.seoQuestion;return{meta:item?[{title:`${item.title} — Estichara.ma`},{name:"description",content:("body" in item?item.body:item.description).slice(0,155)},{property:"og:title",content:`${item.title} — Estichara.ma`},{property:"og:description",content:("body" in item?item.body:item.description).slice(0,155)}]:[{title:"Estichara.ma"}]}},
   component: QuestionDetail,
 });
 
@@ -83,6 +71,7 @@ type ExpertAccess = {
 
 type DbQuestion = {
   id: string;
+  slug: string;
   title: string;
   body: string;
   tokens: number;
@@ -131,22 +120,24 @@ function DbQuestionDetail({ questionId }: { questionId: string }) {
   const [reviewBusy,setReviewBusy]=useState(false);
 
   async function load() {
-    const { data, error } = await supabase.rpc("get_question_page", {
-      p_question_id: questionId,
+    const { data, error } = await supabase.rpc("get_question_page_by_ref", {
+      p_question_ref: questionId,
     });
     if (error || !data) {
       setState("notfound");
       return;
     }
-    setQ(data as DbQuestion);
+    const loaded=data as DbQuestion;
+    setQ(loaded);
     setState("ready");
+    supabase.rpc("increment_question_views",{p_question_id:loaded.id});
   }
 
   useEffect(() => {
-    load();
-    supabase.rpc("increment_question_views", { p_question_id: questionId });
+    load().then(() => undefined);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [questionId, user?.id]);
+  useEffect(()=>{if(q?.slug&&questionId!==q.slug)navigate({to:"/questions/$questionId",params:{questionId:q.slug},replace:true})},[q?.slug,questionId,navigate]);
 
   useEffect(() => {
     supabase.from("settings").select("value").eq("key", "expert_audiences").single()
@@ -159,9 +150,9 @@ function DbQuestionDetail({ questionId }: { questionId: string }) {
     }
     supabase.from("expert_profiles").select("status, audience_ids").eq("user_id", user.id).single()
       .then(({ data }) => setExpertAccess(data as ExpertAccess | null));
-    supabase.from("answers").select("status").eq("question_id", questionId).eq("expert_id", user.id).maybeSingle()
-      .then(({ data }) => setMyAnswerStatus(data?.status ?? null));
-  }, [questionId, user, profile?.role]);
+    if(q?.id) supabase.from("answers").select("status").eq("question_id",q.id).eq("expert_id",user.id).maybeSingle()
+      .then(({ data })=>setMyAnswerStatus(data?.status??null));
+  }, [questionId,user,profile?.role,q?.id]);
 
   async function submitAnswer() {
     const clean = answerBody.trim();
@@ -171,7 +162,7 @@ function DbQuestionDetail({ questionId }: { questionId: string }) {
     }
     setSubmittingAnswer(true);
     const { error } = await supabase.from("answers").insert({
-      question_id: questionId,
+      question_id: q!.id,
       expert_id: user!.id,
       body: clean,
       preview: clean.slice(0, 220),
@@ -205,7 +196,7 @@ function DbQuestionDetail({ questionId }: { questionId: string }) {
     }
     setUnlocking(true);
     const { error } = await supabase.rpc("unlock_question", {
-      p_question_id: questionId,
+      p_question_id: q!.id,
     });
     setUnlocking(false);
     if (error) {
