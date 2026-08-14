@@ -16,6 +16,10 @@ import {
   CheckCircle2,
   Clock3,
   WalletCards,
+  Headphones,
+  Send,
+  Plus,
+  ChevronLeft,
 } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import {
@@ -334,6 +338,7 @@ function AccountPage() {
     { id: "my-questions", label: t("account.myQuestions"), icon: MessagesSquare },
     { id: "wallet-activity", label: "المحفظة", icon: WalletCards },
     { id: "account-notifications", label: t("account.notifications"), icon: Bell },
+    { id: "admin-support", label: "مراسلة الإدارة", icon: Headphones },
     { id: "profile-settings", label: t("account.personalInfo"), icon: User },
   ];
   const overviewStats = [
@@ -675,8 +680,10 @@ function AccountPage() {
               </div>
             </section>
 
+            <SupportCenter userId={user.id} />
+
             {/* Profile settings */}
-            <section className="rounded-3xl border border-border/70 bg-card p-6">
+            <section id="profile-settings" className="scroll-mt-36 rounded-3xl border border-border/70 bg-card p-6 shadow-soft">
               <h2 className="flex items-center gap-2 font-semibold">
                 <User className="size-4.5 text-primary" />
                 {t("account.personalInfo")}
@@ -970,5 +977,116 @@ function AccountPage() {
         </DialogContent>
       </Dialog>
     </SiteLayout>
+  );
+}
+
+// Secure user ↔ administration support center.
+type SupportThread = {
+  id: string;
+  subject: string;
+  status: "open" | "waiting_user" | "resolved" | "closed";
+  priority: string;
+  last_message_at: string;
+  created_at: string;
+};
+type SupportMessage = { id: string; sender_id: string; body: string; read_at: string | null; created_at: string };
+
+function SupportCenter({ userId }: { userId: string }) {
+  const [threads, setThreads] = useState<SupportThread[]>([]);
+  const [selected, setSelected] = useState<SupportThread | null>(null);
+  const [messages, setMessages] = useState<SupportMessage[]>([]);
+  const [creating, setCreating] = useState(false);
+  const [subject, setSubject] = useState("");
+  const [body, setBody] = useState("");
+  const [reply, setReply] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  async function loadThreads(selectId?: string) {
+    const { data } = await supabase.from("support_threads")
+      .select("id, subject, status, priority, last_message_at, created_at")
+      .eq("user_id", userId).order("last_message_at", { ascending: false });
+    const rows = (data as SupportThread[]) ?? [];
+    setThreads(rows);
+    if (selectId) setSelected(rows.find((item) => item.id === selectId) ?? null);
+  }
+
+  async function loadMessages(thread: SupportThread) {
+    const { data } = await supabase.from("support_messages")
+      .select("id, sender_id, body, read_at, created_at")
+      .eq("thread_id", thread.id).order("created_at");
+    setMessages((data as SupportMessage[]) ?? []);
+    await supabase.from("support_messages").update({ read_at: new Date().toISOString() })
+      .eq("thread_id", thread.id).is("read_at", null);
+  }
+
+  useEffect(() => { loadThreads(); }, [userId]);
+  useEffect(() => { if (selected) loadMessages(selected); }, [selected?.id]);
+
+  async function createThread() {
+    if (subject.trim().length < 3 || body.trim().length < 10) {
+      toast.error("اكتب موضوعًا واضحًا ورسالة من 10 أحرف على الأقل"); return;
+    }
+    setBusy(true);
+    const { data, error } = await supabase.rpc("create_support_thread", { p_subject: subject.trim(), p_body: body.trim() });
+    setBusy(false);
+    if (error) { toast.error(error.message); return; }
+    setSubject(""); setBody(""); setCreating(false);
+    await loadThreads(data as string);
+    toast.success("تم إرسال رسالتك إلى الإدارة");
+  }
+
+  async function sendReply() {
+    if (!selected || !reply.trim()) return;
+    setBusy(true);
+    const { error } = await supabase.rpc("reply_support_thread", { p_thread_id: selected.id, p_body: reply.trim() });
+    setBusy(false);
+    if (error) { toast.error(error.message); return; }
+    setReply("");
+    await loadMessages(selected);
+    await loadThreads(selected.id);
+  }
+
+  const statusLabel: Record<string, string> = { open: "مفتوحة", waiting_user: "بانتظار ردك", resolved: "تم الحل", closed: "مغلقة" };
+
+  return (
+    <section id="admin-support" className="scroll-mt-36 overflow-hidden rounded-3xl border border-border/70 bg-card shadow-soft">
+      <div className="flex items-center justify-between border-b border-border/60 p-5">
+        <div className="flex items-center gap-3">
+          <span className="grid size-10 place-items-center rounded-xl bg-primary/10 text-primary"><Headphones className="size-4.5" /></span>
+          <div><h2 className="font-semibold">مراسلة الإدارة</h2><p className="text-[11px] text-muted-foreground">دعم خاص وآمن داخل حسابك</p></div>
+        </div>
+        <Button size="sm" className="rounded-xl" onClick={() => { setCreating(true); setSelected(null); }}><Plus className="size-3.5" /> رسالة جديدة</Button>
+      </div>
+
+      {creating ? (
+        <div className="space-y-4 p-5">
+          <div><Label htmlFor="support-subject">موضوع الرسالة</Label><Input id="support-subject" value={subject} onChange={(e) => setSubject(e.target.value)} maxLength={160} className="mt-1.5 rounded-xl" placeholder="مثال: مشكلة في الدفع أو الحساب" /></div>
+          <div><Label htmlFor="support-body">تفاصيل الطلب</Label><Textarea id="support-body" value={body} onChange={(e) => setBody(e.target.value)} maxLength={4000} className="mt-1.5 min-h-32 rounded-xl" placeholder="اشرح طلبك بوضوح، وستجيبك الإدارة هنا…" /></div>
+          <div className="flex justify-end gap-2"><Button variant="outline" className="rounded-xl" onClick={() => setCreating(false)}>إلغاء</Button><Button className="rounded-xl" disabled={busy} onClick={createThread}>{busy ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />} إرسال للإدارة</Button></div>
+        </div>
+      ) : selected ? (
+        <div>
+          <button onClick={() => setSelected(null)} className="flex w-full items-center gap-2 border-b border-border/60 px-5 py-3 text-start text-xs font-medium text-muted-foreground hover:bg-muted/40"><ChevronLeft className="size-3.5 rotate-180 rtl:rotate-0" /> كل الرسائل</button>
+          <div className="border-b border-border/60 px-5 py-4"><div className="flex items-center justify-between gap-2"><h3 className="font-semibold">{selected.subject}</h3><Badge variant="outline" className="rounded-full">{statusLabel[selected.status]}</Badge></div></div>
+          <div className="max-h-80 space-y-3 overflow-y-auto bg-muted/20 p-5">
+            {messages.map((message) => {
+              const mine = message.sender_id === userId;
+              return <div key={message.id} className={`flex ${mine ? "justify-end" : "justify-start"}`}><div className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-6 ${mine ? "rounded-ee-md bg-primary text-primary-foreground" : "rounded-es-md border border-border/60 bg-background"}`}><p className="whitespace-pre-wrap">{message.body}</p><p className={`mt-1 text-[9px] ${mine ? "text-primary-foreground/55" : "text-muted-foreground"}`}>{mine ? "أنت" : "الإدارة"} · {new Date(message.created_at).toLocaleString()}</p></div></div>;
+            })}
+          </div>
+          {selected.status !== "closed" && <div className="flex gap-2 border-t border-border/60 p-4"><Textarea value={reply} onChange={(e) => setReply(e.target.value)} maxLength={4000} className="min-h-11 flex-1 resize-none rounded-xl" placeholder="اكتب ردك…" /><Button size="icon" className="size-11 shrink-0 rounded-xl" disabled={busy || !reply.trim()} onClick={sendReply}>{busy ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}</Button></div>}
+        </div>
+      ) : (
+        <div className="p-3">
+          {threads.length === 0 ? <div className="py-10 text-center"><Headphones className="mx-auto size-8 text-muted-foreground/35" /><p className="mt-3 text-sm text-muted-foreground">لا توجد رسائل مع الإدارة</p></div> : threads.map((thread) => (
+            <button key={thread.id} onClick={() => setSelected(thread)} className="flex w-full items-center gap-3 rounded-2xl p-3 text-start transition hover:bg-muted/55">
+              <span className={`size-2 shrink-0 rounded-full ${thread.status === "waiting_user" ? "bg-amber-500" : thread.status === "resolved" ? "bg-emerald-500" : "bg-primary"}`} />
+              <div className="min-w-0 flex-1"><p className="truncate text-sm font-medium">{thread.subject}</p><p className="mt-0.5 text-[10px] text-muted-foreground">{new Date(thread.last_message_at).toLocaleString()}</p></div>
+              <span className="rounded-full bg-muted px-2 py-1 text-[10px] font-semibold text-muted-foreground">{statusLabel[thread.status]}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </section>
   );
 }
