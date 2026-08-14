@@ -112,10 +112,11 @@ type HomeLiveQuestion = {
   title: string;
   body: string;
   tokens: number;
+  unlock_cost: number;
   views: number;
   answers_count: number;
   created_at: string;
-  categories: { name_ar: string } | null;
+  category_name_ar: string | null;
 };
 
 function Index() {
@@ -125,13 +126,7 @@ function Index() {
   useEffect(() => {
     import("@/lib/supabase").then(({ supabase }) => {
       supabase
-        .from("questions")
-        .select(
-          "id, title, body, tokens, views, answers_count, created_at, categories(name_ar)",
-        )
-        .eq("status", "published")
-        .order("created_at", { ascending: false })
-        .limit(4)
+        .rpc("get_public_questions", { p_limit: 4 })
         .then(({ data }) =>
           setLiveQuestions((data as unknown as HomeLiveQuestion[]) ?? []),
         );
@@ -493,14 +488,14 @@ function Index() {
                   className="group relative block overflow-hidden rounded-3xl border border-border/70 bg-card p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-secondary/35 hover:shadow-xl sm:p-6"
                 >
                   <div className="flex flex-wrap items-center gap-2">
-                    {q.categories ? (
+                    {q.category_name_ar ? (
                       <Badge variant="secondary" className="rounded-full">
-                        {q.categories.name_ar}
+                        {q.category_name_ar}
                       </Badge>
                     ) : null}
-                    {q.tokens > 0 ? (
+                    {q.unlock_cost > 0 ? (
                       <Badge className="rounded-full bg-accent text-accent-foreground">
-                        <Lock className="size-3" /> {q.tokens}{" "}
+                        <Lock className="size-3" /> {q.unlock_cost}{" "}
                         {t("common.tokens")}
                       </Badge>
                     ) : (
