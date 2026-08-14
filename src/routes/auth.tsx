@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth";
+import { useLocale } from "@/i18n/use-locale";
 
 export const Route = createFileRoute("/auth")({
   component: AuthPage,
@@ -42,6 +43,7 @@ function AuthPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const locale = useLocale();
   const [busy, setBusy] = useState(false);
 
   // Sign-in state
@@ -62,7 +64,7 @@ function AuthPage() {
     setBusy(true);
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: `${window.location.origin}/account` },
+      options: { redirectTo: `${window.location.origin}/${locale}/account` },
     });
     if (error) {
       toast.error(error.message);
@@ -102,7 +104,7 @@ function AuthPage() {
       password: suPassword,
       options: {
         data: { full_name: suName },
-        emailRedirectTo: `${window.location.origin}/account`,
+        emailRedirectTo: `${window.location.origin}/${locale}/account`,
       },
     });
     setBusy(false);
