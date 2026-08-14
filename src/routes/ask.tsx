@@ -1,6 +1,6 @@
 import { useEffect, useState, type ChangeEvent } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Loader2, Paperclip, ShieldCheck, Sparkles, Wand2 } from "lucide-react";
+import { Loader2, ShieldCheck, Sparkles, Wand2 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
@@ -33,7 +33,7 @@ export const Route = createFileRoute("/ask")({
   component: AskPage,
 });
 
-const rewards = [0, 5, 10, 20, -1] as const;
+const rewards = [0, 5, 10, 20] as const;
 
 type Audience = { id: string; label_ar: string; label_fr: string; label_en: string; active: boolean };
 type AskRules = {
@@ -61,7 +61,6 @@ function AskPage() {
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [category, setCategory] = useState("");
-  const [visibility, setVisibility] = useState("public");
   const [reward, setReward] = useState<number>(0);
   const [targetAudience, setTargetAudience] = useState("all");
   const [audiences, setAudiences] = useState<Audience[]>([]);
@@ -112,7 +111,6 @@ function AskPage() {
 
   function rewardLabel(value: number) {
     if (value === 0) return copy.free;
-    if (value === -1) return copy.custom;
     return `${value} ${t("common.tokens")}`;
   }
 
@@ -235,7 +233,7 @@ function AskPage() {
               />
             </div>
 
-            <div className="grid gap-5 sm:grid-cols-2">
+            <div className="max-w-xl">
               <div>
                 <Label>{copy.category}</Label>
                 <Select value={category} onValueChange={setCategory}>
@@ -258,18 +256,6 @@ function AskPage() {
                             {item.name}
                           </SelectItem>
                         ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label>{copy.visibility}</Label>
-                <Select value={visibility} onValueChange={setVisibility}>
-                  <SelectTrigger className="mt-2 h-11 w-full rounded-xl">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="public">{copy.public}</SelectItem>
-                    <SelectItem value="private">{copy.private}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -342,14 +328,6 @@ function AskPage() {
                 )}
               </div>
             )}
-
-            <button
-              type="button"
-              className="w-full rounded-2xl border border-dashed border-secondary/35 bg-secondary/[0.04] p-7 text-center text-sm text-muted-foreground transition hover:border-secondary hover:bg-secondary/[0.07]"
-            >
-              <Paperclip className="mx-auto size-5 text-secondary" />
-              <span className="mt-2 block">{copy.attach}</span>
-            </button>
 
             <div className="flex flex-wrap items-center gap-2 rounded-2xl bg-muted/55 p-4 text-xs leading-6 text-muted-foreground">
               <Sparkles className="size-4 shrink-0 text-accent" />
