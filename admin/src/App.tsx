@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import {
   LayoutDashboard, Users, GraduationCap, MessagesSquare, MessageSquareText,
-  Coins, Wallet, Star, Settings, LogOut, ShieldCheck, Lock, Loader2, Paintbrush, History,
+  Coins, Wallet, Star, Settings, LogOut, ShieldCheck, Lock, Loader2, Paintbrush, History, FolderTree, Package,
 } from "lucide-react";
 import { supabase, isConfigured } from "./supabase";
 import { Overview } from "./pages/Overview";
@@ -15,14 +15,18 @@ import { ReviewsReportsPage } from "./pages/ReviewsReports";
 import { SettingsPage } from "./pages/Settings";
 import { SitePage } from "./pages/Site";
 import { AuditLogsPage } from "./pages/AuditLogs";
+import { CategoriesPage } from "./pages/Categories";
+import { TokenPacksPage } from "./pages/TokenPacks";
 
 const NAV = [
   { id: "overview", label: "نظرة عامة", icon: LayoutDashboard },
   { id: "users", label: "المستخدمون", icon: Users },
   { id: "experts", label: "الخبراء", icon: GraduationCap },
   { id: "questions", label: "الأسئلة والأجوبة", icon: MessagesSquare },
+  { id: "categories", label: "التصنيفات", icon: FolderTree },
   { id: "messages", label: "الرسائل", icon: MessageSquareText },
-  { id: "orders", label: "الطلبات والتوكن", icon: Coins },
+  { id: "orders", label: "طلبات الشراء", icon: Coins },
+  { id: "packs", label: "باقات التوكن", icon: Package },
   { id: "withdrawals", label: "طلبات السحب", icon: Wallet },
   { id: "moderation", label: "التقييمات والبلاغات", icon: Star },
   { id: "audit", label: "سجل الإدارة", icon: History },
@@ -162,8 +166,10 @@ export default function App() {
           {page === "users" && <UsersPage />}
           {page === "experts" && <ExpertsPage />}
           {page === "questions" && <QuestionsPage />}
+          {page === "categories" && <CategoriesPage />}
           {page === "messages" && <MessagesPage />}
           {page === "orders" && <OrdersPage />}
+          {page === "packs" && <TokenPacksPage />}
           {page === "withdrawals" && <WithdrawalsPage />}
           {page === "moderation" && <ReviewsReportsPage />}
           {page === "audit" && <AuditLogsPage />}
