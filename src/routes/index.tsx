@@ -383,6 +383,84 @@ function Index() {
         </div>
       </section>
 
+      {/* About Estichara.ma - OAuth Verification */}
+<section className="mx-auto max-w-6xl px-4 py-12">
+  <div className="rounded-3xl border border-border/70 bg-card p-6 shadow-sm sm:p-8">
+    <Badge variant="outline" className="rounded-full">
+      About Estichara.ma
+    </Badge>
+
+    <h2 className="mt-4 text-3xl font-semibold tracking-tight">
+      Estichara.ma
+    </h2>
+
+    <p className="mt-4 leading-7 text-muted-foreground">
+      Estichara.ma is a Moroccan online question-and-answer platform that
+      connects users with verified experts across multiple fields including
+      business, law, technology, education, health, finance, and professional
+      services.
+    </p>
+
+    <p className="mt-4 leading-7 text-muted-foreground">
+      Users can create an account, submit questions, receive answers from
+      verified experts, purchase tokens, unlock premium answers, and manage
+      their consultations through the platform.
+    </p>
+
+    <p className="mt-4 leading-7 text-muted-foreground">
+      Google Sign-In is provided as an authentication method to simplify
+      registration and login. When users sign in with Google, Estichara.ma
+      only accesses basic profile information such as the user's name, email
+      address, and profile picture for account identification and
+      authentication purposes.
+    </p>
+
+    <p className="mt-4 leading-7 text-muted-foreground">
+      Estichara.ma does not sell, rent, or share Google user data with third
+      parties.
+    </p>
+
+    <div className="mt-6 rounded-2xl bg-muted/50 p-4">
+      <h3 className="font-semibold">Contact Information</h3>
+
+      <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
+        <li>
+          Website:
+          <a
+            href="https://estichara.ma"
+            className="ml-2 text-primary hover:underline"
+          >
+            https://estichara.ma
+          </a>
+        </li>
+
+        <li>
+          Support Email:
+          :contact@estichara.ma"
+            className="ml-2 text-primary hover:underline"
+          >
+            contact@estichara.ma
+          </a>
+        </li>
+
+        <li>
+          Privacy Policy:
+          /privacy
+            Privacy Policy
+          </a>
+        </li>
+
+        <li>
+          Terms of Service:
+          /terms
+            Terms of Service
+          </a>
+        </li>
+      </ul>
+    </div>
+  </div>
+</section>
+
       {/* Value proposition */}
       <section className="mx-auto max-w-6xl px-4 py-20 sm:py-28">
         <SectionHeading
