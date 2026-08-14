@@ -48,10 +48,10 @@ const messages = [
 ];
 
 const token_packs = [
-  { id: "p1", name_ar: "باقة البداية", tokens: 100, bonus: 0, price_mad: 99, popular: false, active: true, sort: 1 },
-  { id: "p2", name_ar: "الباقة الشائعة", tokens: 500, bonus: 50, price_mad: 449, popular: true, active: true, sort: 2 },
-  { id: "p3", name_ar: "باقة برو", tokens: 1000, bonus: 100, price_mad: 849, popular: false, active: true, sort: 3 },
-  { id: "p4", name_ar: "باقة المؤسسات", tokens: 5000, bonus: 750, price_mad: 3799, popular: false, active: false, sort: 4 },
+  { id: "p1", name_ar: "باقة البداية", name_fr: "Pack Départ", name_en: "Starter Pack", tokens: 100, bonus: 0, price_mad: 99, promo_price_mad: null, promo_ends_at: null, popular: false, active: true, sort: 1 },
+  { id: "p2", name_ar: "الباقة الشائعة", name_fr: "Pack Populaire", name_en: "Popular Pack", tokens: 500, bonus: 50, price_mad: 449, promo_price_mad: 399, promo_ends_at: iso(now + 7 * day), popular: true, active: true, sort: 2 },
+  { id: "p3", name_ar: "باقة برو", name_fr: "Pack Pro", name_en: "Pro Pack", tokens: 1000, bonus: 100, price_mad: 849, promo_price_mad: null, promo_ends_at: null, popular: false, active: true, sort: 3 },
+  { id: "p4", name_ar: "باقة المؤسسات", name_fr: "Entreprise", name_en: "Business", tokens: 5000, bonus: 750, price_mad: 3799, promo_price_mad: null, promo_ends_at: null, popular: false, active: false, sort: 4 },
 ];
 
 const orders = [
@@ -92,6 +92,9 @@ const settings = [
     support_messages_per_hour: 30, private_messages_per_hour: 60, reports_per_day: 10,
     max_open_support_threads: 5,
   } },
+  { key: "feature_flags", value: { new_questions:true,free_questions:true,paid_questions:true,expert_answers:true,expert_targeting:true,answer_unlocking:true,expert_applications:true,token_purchases:true,withdrawals:true,support_messaging:true,private_messages:true,reviews:true } },
+  { key: "maintenance_page", value: { enabled:false,title_ar:"الموقع تحت الصيانة",message_ar:"نعمل على تحسين المنصة. سنعود قريبًا.",title_fr:"Maintenance en cours",message_fr:"Nous serons bientôt de retour.",title_en:"Maintenance",message_en:"We will be back shortly.",expected_return:"" } },
+  { key: "moderation_reasons", value: { question:["معلومات غير كافية","سؤال مكرر","محتوى غير مناسب"],answer:["إجابة غير دقيقة","معلومات ناقصة","تخصص غير مطابق"],expert:["وثائق غير مكتملة"],withdrawal:["بيانات التحويل غير صحيحة"] } },
   { key: "expert_audiences", value: [
     { id: "engineers", label_ar: "المهندسون", label_fr: "Ingénieurs", label_en: "Engineers", active: true },
     { id: "diplomats", label_ar: "الدبلوماسيون", label_fr: "Diplomates", label_en: "Diplomats", active: true },
