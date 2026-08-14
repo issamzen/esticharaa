@@ -12,6 +12,10 @@ import {
   ShoppingBag,
   User,
   X,
+  Activity,
+  CheckCircle2,
+  Clock3,
+  WalletCards,
 } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import {
@@ -74,6 +78,14 @@ type MyNotification = {
   created_at: string;
 };
 
+type MyTransaction = {
+  id: string;
+  amount: number;
+  type: string;
+  note: string | null;
+  created_at: string;
+};
+
 function AccountPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -90,6 +102,7 @@ function AccountPage() {
   const [questions, setQuestions] = useState<MyQuestion[]>([]);
   const [orders, setOrders] = useState<MyOrder[]>([]);
   const [notifications, setNotifications] = useState<MyNotification[]>([]);
+  const [transactions, setTransactions] = useState<MyTransaction[]>([]);
   const [payouts, setPayouts] = useState<MyPayout[]>([]);
   const [payoutOpen, setPayoutOpen] = useState(false);
   const [payoutTokens, setPayoutTokens] = useState(0);
@@ -145,6 +158,13 @@ function AccountPage() {
       .order("created_at", { ascending: false })
       .limit(15)
       .then(({ data }) => setNotifications((data as MyNotification[]) ?? []));
+    supabase
+      .from("token_transactions")
+      .select("id, amount, type, note, created_at")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(20)
+      .then(({ data }) => setTransactions((data as MyTransaction[]) ?? []));
     loadPayouts();
     supabase
       .from("settings")
@@ -309,39 +329,74 @@ function AccountPage() {
     closed: { label: t("account.statusClosed", "مغلق"), cls: "bg-muted text-muted-foreground" },
     rejected: { label: t("account.statusRejected", "مرفوض"), cls: "bg-red-100 text-red-700" },
   };
+  const dashboardLinks = [
+    { id: "dashboard-overview", label: "نظرة عامة", icon: Activity },
+    { id: "my-questions", label: t("account.myQuestions"), icon: MessagesSquare },
+    { id: "wallet-activity", label: "المحفظة", icon: WalletCards },
+    { id: "account-notifications", label: t("account.notifications"), icon: Bell },
+    { id: "profile-settings", label: t("account.personalInfo"), icon: User },
+  ];
+  const overviewStats = [
+    { value: questions.length, label: "أسئلتي", icon: MessagesSquare, tone: "text-blue-600 bg-blue-50" },
+    { value: questions.filter((q) => q.status === "published").length, label: "أسئلة منشورة", icon: CheckCircle2, tone: "text-emerald-600 bg-emerald-50" },
+    { value: questions.filter((q) => q.status === "pending").length, label: "قيد المراجعة", icon: Clock3, tone: "text-amber-600 bg-amber-50" },
+    { value: unread, label: "إشعارات جديدة", icon: Bell, tone: "text-violet-600 bg-violet-50" },
+  ];
 
   return (
     <SiteLayout>
       <div className="mx-auto max-w-6xl px-4 py-12 sm:py-16">
-        {/* Header */}
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <span className="grid size-14 place-items-center rounded-2xl bg-gradient-to-br from-primary to-secondary text-lg font-semibold text-primary-foreground">
-              {(profile?.full_name || user.email || "?")
-                .split(" ")
-                .map((w) => w[0])
-                .slice(0, 2)
-                .join("")}
-            </span>
-            <div>
-              <h1 className="text-2xl font-semibold tracking-tight">
-                {profile?.full_name || t("account.title")}
-              </h1>
-              <p className="text-sm text-muted-foreground" dir="ltr">
-                {user.email}
-              </p>
+        {/* Premium dashboard hero */}
+        <section className="relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-primary via-primary to-secondary p-6 text-primary-foreground shadow-2xl shadow-primary/15 sm:p-8">
+          <div className="pointer-events-none absolute -end-20 -top-24 size-72 rounded-full bg-white/10 blur-2xl" />
+          <div className="pointer-events-none absolute -bottom-24 start-1/3 size-56 rounded-full bg-accent/15 blur-3xl" />
+          <div className="relative flex flex-wrap items-center justify-between gap-6">
+            <div className="flex items-center gap-4">
+              <span className="grid size-16 place-items-center rounded-2xl border border-white/20 bg-white/12 text-xl font-bold shadow-inner backdrop-blur">
+                {(profile?.full_name || user.email || "?").split(" ").map((w) => w[0]).slice(0, 2).join("")}
+              </span>
+              <div>
+                <p className="text-xs font-medium text-primary-foreground/65">{t("account.title", "لوحة حسابك")}</p>
+                <h1 className="mt-1 text-2xl font-semibold tracking-tight sm:text-3xl">{profile?.full_name || t("account.title")}</h1>
+                <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-primary-foreground/70">
+                  <span dir="ltr">{user.email}</span>
+                  <span className="rounded-full bg-white/10 px-2.5 py-1 font-semibold">
+                    {profile?.role === "expert" ? "خبير معتمد" : profile?.role === "admin" ? "مشرف" : "عضو"}
+                  </span>
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="rounded-2xl border border-white/15 bg-white/10 px-5 py-3 text-center backdrop-blur">
+                <p className="text-[11px] text-primary-foreground/60">الرصيد المتاح</p>
+                <p className="mt-0.5 text-2xl font-bold text-accent">{(profile?.tokens_balance ?? 0).toLocaleString()}</p>
+              </div>
+              <Button variant="outline" className="rounded-xl border-white/20 bg-white/10 text-white hover:bg-white/20 hover:text-white"
+                onClick={async () => { await signOut(); navigate({ to: "/" }); }}>
+                <LogOut className="size-4" /> {t("nav.signOut")}
+              </Button>
             </div>
           </div>
-          <Button
-            variant="outline"
-            className="rounded-xl"
-            onClick={async () => {
-              await signOut();
-              navigate({ to: "/" });
-            }}
-          >
-            <LogOut className="size-4" /> {t("nav.signOut")}
-          </Button>
+        </section>
+
+        <nav className="sticky top-20 z-10 mt-5 flex gap-2 overflow-x-auto rounded-2xl border border-border/70 bg-background/85 p-2 shadow-soft backdrop-blur-xl">
+          {dashboardLinks.map(({ id, label, icon: Icon }) => (
+            <a key={id} href={`#${id}`} className="inline-flex shrink-0 items-center gap-2 rounded-xl px-3.5 py-2 text-xs font-semibold text-muted-foreground transition hover:bg-primary/8 hover:text-primary">
+              <Icon className="size-3.5" /> {label}
+            </a>
+          ))}
+        </nav>
+
+        <div id="dashboard-overview" className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {overviewStats.map(({ value, label, icon: Icon, tone }) => (
+            <div key={label} className="group rounded-2xl border border-border/60 bg-card p-4 shadow-soft transition hover:-translate-y-0.5 hover:shadow-lift">
+              <div className="flex items-center justify-between">
+                <span className={`grid size-10 place-items-center rounded-xl ${tone}`}><Icon className="size-4.5" /></span>
+                <span className="text-2xl font-bold tracking-tight">{value}</span>
+              </div>
+              <p className="mt-3 text-xs font-medium text-muted-foreground">{label}</p>
+            </div>
+          ))}
         </div>
 
         {/* Wallet + quick actions */}
@@ -405,7 +460,7 @@ function AccountPage() {
         <div className="mt-10 grid gap-8 lg:grid-cols-[1.2fr_.8fr]">
           <div className="space-y-8">
             {/* My questions */}
-            <section>
+            <section id="my-questions" className="scroll-mt-36">
               <h2 className="flex items-center gap-2 text-lg font-semibold">
                 <MessagesSquare className="size-5 text-primary" />
                 {t("account.myQuestions")}
@@ -479,7 +534,7 @@ function AccountPage() {
             </section>
 
             {/* My orders */}
-            <section>
+            <section id="wallet-activity" className="scroll-mt-36">
               <h2 className="flex items-center gap-2 text-lg font-semibold">
                 <ShoppingBag className="size-5 text-primary" />
                 {t("nav.purchases")}
@@ -541,11 +596,44 @@ function AccountPage() {
                 ))}
               </div>
             </section>
+
+            <section className="rounded-3xl border border-border/70 bg-card p-5 shadow-soft sm:p-6">
+              <div className="flex items-center justify-between gap-3">
+                <h2 className="flex items-center gap-2 text-lg font-semibold">
+                  <Activity className="size-5 text-primary" /> سجل حركة التوكن
+                </h2>
+                <Badge variant="outline" className="rounded-full">آخر {transactions.length} عملية</Badge>
+              </div>
+              <div className="mt-4 divide-y divide-border/60">
+                {transactions.length === 0 && <p className="py-8 text-center text-sm text-muted-foreground">لا توجد حركات توكن بعد</p>}
+                {transactions.map((tx) => {
+                  const positive = tx.amount > 0;
+                  const labels: Record<string, string> = {
+                    purchase: "شراء توكن", spend_unlock: "فتح إجابة", earn_answer: "مكافأة إجابة",
+                    earn_bonus: "مكافأة إضافية", withdrawal_hold: "طلب تحويل", withdrawal_refund: "استرجاع تحويل", admin_adjust: "تعديل إداري",
+                  };
+                  return (
+                    <div key={tx.id} className="flex items-center gap-3 py-3.5">
+                      <span className={`grid size-9 shrink-0 place-items-center rounded-xl ${positive ? "bg-emerald-50 text-emerald-600" : "bg-rose-50 text-rose-600"}`}>
+                        <Coins className="size-4" />
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium">{labels[tx.type] ?? tx.type}</p>
+                        <p className="mt-0.5 truncate text-[11px] text-muted-foreground">{tx.note || new Date(tx.created_at).toLocaleString()}</p>
+                      </div>
+                      <span dir="ltr" className={`font-bold ${positive ? "text-emerald-600" : "text-rose-600"}`}>
+                        {positive ? "+" : ""}{tx.amount}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
           </div>
 
           <div className="space-y-8">
             {/* Notifications */}
-            <section className="rounded-3xl border border-border/70 bg-card p-6">
+            <section id="account-notifications" className="scroll-mt-36 rounded-3xl border border-border/70 bg-card p-6 shadow-soft">
               <div className="flex items-center justify-between">
                 <h2 className="flex items-center gap-2 font-semibold">
                   <Bell className="size-4.5 text-primary" />
