@@ -81,6 +81,17 @@ const settings = [
   { key: "min_payout_tokens", value: "1000" },
   { key: "token_to_mad", value: "0.5" },
   { key: "maintenance_mode", value: false },
+  { key: "content_access_rules", value: {
+    guest_hide_full_content: true, answer_unlock_required: true,
+    default_answer_unlock_cost: 5, allow_free_questions: true,
+    targeting_enabled: true, targeting_requires_paid_question: true,
+    audience_min_token_balance: 1, question_preview_chars: 180, answer_preview_chars: 220,
+  } },
+  { key: "expert_audiences", value: [
+    { id: "engineers", label_ar: "المهندسون", label_fr: "Ingénieurs", label_en: "Engineers", active: true },
+    { id: "diplomats", label_ar: "الدبلوماسيون", label_fr: "Diplomates", label_en: "Diplomats", active: true },
+    { id: "teachers", label_ar: "الأساتذة والمعلمون", label_fr: "Enseignants", label_en: "Teachers", active: true },
+  ] },
   { key: "site_branding", value: { site_name: "Estichara.ma", logo_url: "", favicon_url: "" } },
   { key: "site_colors", value: { primary: "#0D4B4B", secondary: "#1E8C85", accent: "#D4AF37", muted: "#F2E8D6" } },
   { key: "site_nav", value: [
