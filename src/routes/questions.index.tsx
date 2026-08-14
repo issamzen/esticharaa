@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type ChangeEvent } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Eye, Lock, MessageSquare, Search } from "lucide-react";
+import { Eye, Lock, MessageSquare, Search, Users } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useTranslation } from "react-i18next";
 import { supabase } from "@/lib/supabase";
@@ -48,7 +48,9 @@ type LiveQuestion = {
   created_at: string;
   category_slug: string | null;
   category_name_ar: string | null;
+  target_audience_id: string | null;
 };
+type Audience = { id: string; label_ar: string; label_fr: string; label_en: string; active: boolean };
 
 function QuestionsPage() {
   const { category } = Route.useSearch();
@@ -56,11 +58,14 @@ function QuestionsPage() {
   const locale = useLocale();
   const { t } = useTranslation();
   const [live, setLive] = useState<LiveQuestion[]>([]);
+  const [audiences, setAudiences] = useState<Audience[]>([]);
 
   useEffect(() => {
     supabase
       .rpc("get_public_questions", { p_limit: 50 })
       .then(({ data }) => setLive((data as unknown as LiveQuestion[]) ?? []));
+    supabase.from("settings").select("value").eq("key", "expert_audiences").single()
+      .then(({ data }) => setAudiences(((data?.value as Audience[]) ?? []).filter((item) => item.active)));
   }, []);
 
   const liveVisible = useMemo(
@@ -73,6 +78,12 @@ function QuestionsPage() {
   );
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<Filter>("newest");
+
+  function audienceLabel(id: string | null) {
+    if (!id) return locale === "ar" ? "كل الخبراء" : locale === "fr" ? "Tous les experts" : "All experts";
+    const item = audiences.find((audience) => audience.id === id);
+    return item ? (locale === "fr" ? item.label_fr : locale === "en" ? item.label_en : item.label_ar) : id;
+  }
 
   const visible = useMemo(() => {
     const needle = query.toLocaleLowerCase();
@@ -144,6 +155,9 @@ function QuestionsPage() {
                     {q.category_name_ar}
                   </Badge>
                 ) : null}
+                <Badge variant="outline" className="rounded-full border-secondary/35 bg-secondary/5">
+                  <Users className="size-3" /> {audienceLabel(q.target_audience_id)}
+                </Badge>
                 {q.unlock_cost > 0 ? (
                   <Badge className="rounded-full bg-accent text-accent-foreground">
                     <Lock className="size-3" /> {q.unlock_cost} {t("common.tokens")}
