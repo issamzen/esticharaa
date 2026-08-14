@@ -39,6 +39,7 @@ export const Route = createFileRoute("/questions/")({
 
 type LiveQuestion = {
   id: string;
+  slug: string;
   title: string;
   body: string;
   tokens: number;
@@ -145,7 +146,7 @@ function QuestionsPage() {
             <Link
               key={q.id}
               to="/questions/$questionId"
-              params={{ questionId: q.id }}
+              params={{ questionId: q.slug || q.id }}
               className="group relative block overflow-hidden rounded-3xl border border-border/70 bg-card p-5 shadow-soft transition-all duration-300 hover:-translate-y-1 hover:border-secondary/35 hover:shadow-lift sm:p-6"
             >
               <div className="absolute inset-x-0 top-0 h-0.5 origin-start scale-x-0 bg-gradient-to-r from-secondary to-accent transition-transform duration-300 group-hover:scale-x-100" />
