@@ -109,6 +109,7 @@ function TextLink({ to, children }: { to: HomeTextLink; children: ReactNode }) {
 
 type HomeLiveQuestion = {
   id: string;
+  slug: string;
   title: string;
   body: string;
   tokens: number;
@@ -492,7 +493,7 @@ function Index() {
                 <Link
                   key={q.id}
                   to="/questions/$questionId"
-                  params={{ questionId: q.id }}
+                  params={{ questionId: q.slug || q.id }}
                   className="group relative block overflow-hidden rounded-3xl border border-border/70 bg-card p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-secondary/35 hover:shadow-xl sm:p-6"
                 >
                   <div className="flex flex-wrap items-center gap-2">
