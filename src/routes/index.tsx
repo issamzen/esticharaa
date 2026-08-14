@@ -432,27 +432,34 @@ function Index() {
         </li>
 
         <li>
-          Support Email:
-          :contact@estichara.ma"
-            className="ml-2 text-primary hover:underline"
-          >
-            contact@estichara.ma
-          </a>
-        </li>
+  Support Email:
+  <a
+    href="mailto:contact@estichara.ma"
+    className="ml-2 text-primary hover:underline"
+  >
+    contact@estichara.ma
+  </a>
+</li>
 
-        <li>
-          Privacy Policy:
-          /privacy
-            Privacy Policy
-          </a>
-        </li>
+<li>
+  Privacy Policy:
+  <Link
+    to="/privacy"
+    className="ml-2 text-primary hover:underline"
+  >
+    Privacy Policy
+  </Link>
+</li>
 
-        <li>
-          Terms of Service:
-          /terms
-            Terms of Service
-          </a>
-        </li>
+<li>
+  Terms of Service:
+  <Link
+    to="/terms"
+    className="ml-2 text-primary hover:underline"
+  >
+    Terms of Service
+  </Link>
+</li>
       </ul>
     </div>
   </div>
