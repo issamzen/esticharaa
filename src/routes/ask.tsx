@@ -35,6 +35,20 @@ export const Route = createFileRoute("/ask")({
 
 const rewards = [0, 5, 10, 20, -1] as const;
 
+type Audience = { id: string; label_ar: string; label_fr: string; label_en: string; active: boolean };
+type AskRules = {
+  allow_free_questions: boolean;
+  targeting_enabled: boolean;
+  targeting_requires_paid_question: boolean;
+  audience_min_token_balance: number;
+};
+const DEFAULT_ASK_RULES: AskRules = {
+  allow_free_questions: true,
+  targeting_enabled: true,
+  targeting_requires_paid_question: true,
+  audience_min_token_balance: 1,
+};
+
 function AskPage() {
   const copy = usePageCopy().ask;
   const navigate = useNavigate();
@@ -48,7 +62,10 @@ function AskPage() {
   const [body, setBody] = useState("");
   const [category, setCategory] = useState("");
   const [visibility, setVisibility] = useState("public");
-  const [reward, setReward] = useState<number>(5);
+  const [reward, setReward] = useState<number>(0);
+  const [targetAudience, setTargetAudience] = useState("all");
+  const [audiences, setAudiences] = useState<Audience[]>([]);
+  const [askRules, setAskRules] = useState<AskRules>(DEFAULT_ASK_RULES);
   const [submitting, setSubmitting] = useState(false);
   const [dbCategories, setDbCategories] = useState<
     { id: string; slug: string; name_ar: string; name_fr: string; name_en: string }[]
@@ -61,6 +78,18 @@ function AskPage() {
       .eq("active", true)
       .order("sort")
       .then(({ data }) => setDbCategories(data ?? []));
+    supabase
+      .from("settings")
+      .select("key, value")
+      .in("key", ["content_access_rules", "expert_audiences"])
+      .then(({ data }) => {
+        for (const row of data ?? []) {
+          if (row.key === "content_access_rules")
+            setAskRules({ ...DEFAULT_ASK_RULES, ...(row.value as Partial<AskRules>) });
+          if (row.key === "expert_audiences")
+            setAudiences(((row.value as Audience[]) ?? []).filter((item) => item.active));
+        }
+      });
   }, []);
 
   // Not logged in → go to register/login first
@@ -87,6 +116,10 @@ function AskPage() {
     return `${value} ${t("common.tokens")}`;
   }
 
+  const targetingAvailable = askRules.targeting_enabled
+    && (profile?.tokens_balance ?? 0) >= askRules.audience_min_token_balance
+    && (!askRules.targeting_requires_paid_question || reward > 0);
+
   async function submit() {
     const schema = z.object({
       title: z.string().trim().min(15, copy.validationTitle).max(160),
@@ -108,20 +141,33 @@ function AskPage() {
       .maybeSingle();
 
     const rewardTokens = reward > 0 ? reward : 0;
-    // Paid question → tokens are deducted from the asker immediately (escrow)
+    if (rewardTokens === 0 && !askRules.allow_free_questions) {
+      setSubmitting(false);
+      toast.error(t("ask.freeDisabled", "الأسئلة المجانية متوقفة حاليًا"));
+      return;
+    }
+    const canTarget = askRules.targeting_enabled
+      && (profile?.tokens_balance ?? 0) >= askRules.audience_min_token_balance
+      && (!askRules.targeting_requires_paid_question || rewardTokens > 0);
+    // The database repeats every check and deducts the reward atomically.
     const { error } = await supabase.rpc("create_question", {
       p_title: result.data.title,
       p_body: result.data.body,
       p_category_id: cat?.id ?? null,
       p_tokens: rewardTokens,
+      p_target_audience_id: canTarget && targetAudience !== "all" ? targetAudience : null,
     });
     setSubmitting(false);
     if (error) {
-      if (error.message.includes("INSUFFICIENT_TOKENS")) {
+      if (error.message.includes("INSUFFICIENT_TOKENS") || error.message.includes("TARGETING_REQUIRES_TOKENS")) {
         toast.error(
-          t("ask.insufficient", "رصيدك غير كافٍ لهذه المكافأة — اشترِ توكن أولًا"),
+          t("ask.insufficient", "رصيدك غير كافٍ — اشترِ توكن أولًا"),
         );
         navigate({ to: "/tokens" });
+        return;
+      }
+      if (error.message.includes("TARGETING_REQUIRES_PAID_QUESTION")) {
+        toast.error(t("ask.targetPaidOnly", "اختر مكافأة توكن لتوجيه السؤال إلى فئة مهنية محددة"));
         return;
       }
       toast.error(error.message);
@@ -244,14 +290,15 @@ function AskPage() {
                 {rewards.map((value) => {
                   const unaffordable =
                     value > 0 && value > (profile?.tokens_balance ?? 0);
+                  const disabledByRules = value === 0 && !askRules.allow_free_questions;
                   return (
                     <Button
                       key={value}
                       type="button"
                       size="sm"
                       variant={reward === value ? "default" : "outline"}
-                      className={`rounded-full ${unaffordable ? "opacity-40" : ""}`}
-                      disabled={unaffordable}
+                      className={`rounded-full ${unaffordable || disabledByRules ? "opacity-40" : ""}`}
+                      disabled={unaffordable || disabledByRules}
                       onClick={() => setReward(value)}
                     >
                       {rewardLabel(value)}
@@ -269,6 +316,32 @@ function AskPage() {
                 </p>
               )}
             </div>
+
+            {askRules.targeting_enabled && audiences.length > 0 && (
+              <div>
+                <Label>{t("ask.targetAudience", "من تريد أن يجيب؟")}</Label>
+                <Select value={targetAudience} onValueChange={setTargetAudience} disabled={!targetingAvailable}>
+                  <SelectTrigger className="mt-2 h-11 w-full rounded-xl">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">{t("ask.allExperts", "كل الخبراء المؤهلين")}</SelectItem>
+                    {audiences.map((item) => (
+                      <SelectItem key={item.id} value={item.id}>
+                        {locale === "fr" ? item.label_fr : locale === "en" ? item.label_en : item.label_ar}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {!targetingAvailable && (
+                  <p className="mt-2 text-xs leading-5 text-muted-foreground">
+                    {(profile?.tokens_balance ?? 0) < askRules.audience_min_token_balance
+                      ? t("ask.targetNeedsTokens", `تحتاج إلى رصيد ${askRules.audience_min_token_balance} توكن على الأقل لاختيار فئة المجيب.`)
+                      : t("ask.targetPaidOnly", "الأسئلة المجانية تصل لكل الخبراء. اختر مكافأة توكن لتحديد فئة مهنية.")}
+                  </p>
+                )}
+              </div>
+            )}
 
             <button
               type="button"
