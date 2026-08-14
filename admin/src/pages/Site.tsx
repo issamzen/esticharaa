@@ -17,6 +17,12 @@ type NavItem = { to: string; key: string; visible: boolean };
 type PayMethod = { id: string; label: string; icon: string; active: boolean; details?: string };
 type Branding = { site_name: string; site_name_ar: string; logo_url: string; favicon_url: string };
 type Colors = { primary: string; secondary: string; accent: string; muted: string };
+type AboutLocale = { eyebrow:string;title:string;description:string;mission_title:string;mission_text:string;vision_title:string;vision_text:string;team_title:string;team_description:string;partners_title:string };
+type TeamMember = { id:string;name:string;role_ar:string;role_fr:string;role_en:string;image_url:string };
+type Partner = { id:string;name:string;logo_url:string;website:string };
+type AboutSettings = { ar:AboutLocale;fr:AboutLocale;en:AboutLocale;team:TeamMember[];partners:Partner[] };
+const EMPTY_ABOUT_LOCALE:AboutLocale={eyebrow:"",title:"",description:"",mission_title:"",mission_text:"",vision_title:"",vision_text:"",team_title:"",team_description:"",partners_title:""};
+const DEFAULT_ABOUT:AboutSettings={ar:{...EMPTY_ABOUT_LOCALE},fr:{...EMPTY_ABOUT_LOCALE},en:{...EMPTY_ABOUT_LOCALE},team:[],partners:[]};
 
 const NAV_LABELS: Record<string, string> = {
   "/questions": "الأسئلة",
@@ -45,6 +51,8 @@ export function SitePage() {
   const [footer, setFooter] = useState<NavItem[]>([]);
   const [methods, setMethods] = useState<PayMethod[]>([]);
   const [page404, setPage404] = useState<{ image_url: string }>({ image_url: "" });
+  const [about, setAbout] = useState<AboutSettings>(DEFAULT_ABOUT);
+  const [aboutLang, setAboutLang] = useState<"ar"|"fr"|"en">("ar");
   const [saved, setSaved] = useState("");
   const logoRef = useRef<HTMLInputElement>(null);
   const favRef = useRef<HTMLInputElement>(null);
@@ -54,7 +62,7 @@ export function SitePage() {
     supabase
       .from("settings")
       .select("key, value")
-      .in("key", ["site_branding", "site_colors", "site_nav", "site_footer", "payment_methods", "page_404"])
+      .in("key", ["site_branding", "site_colors", "site_nav", "site_footer", "payment_methods", "page_404", "page_about"])
       .then(({ data }) => {
         const map = Object.fromEntries((data ?? []).map((r) => [r.key, r.value]));
         if (map.site_branding) {
@@ -66,6 +74,7 @@ export function SitePage() {
         if (map.site_footer) setFooter(map.site_footer as NavItem[]);
         if (map.payment_methods) setMethods(map.payment_methods as PayMethod[]);
         if (map.page_404) setPage404(map.page_404 as { image_url: string });
+        if (map.page_about) setAbout({ ...DEFAULT_ABOUT, ...(map.page_about as AboutSettings) });
       });
   }, []);
 
@@ -127,6 +136,12 @@ export function SitePage() {
     setMethods(next);
     await saveKey("payment_methods", next, "وسائل الدفع");
   }
+
+  const aboutCopy=about[aboutLang];
+  const roleKey=(`role_${aboutLang}`) as "role_ar"|"role_fr"|"role_en";
+  function updateAboutCopy(key:keyof AboutLocale,value:string){setAbout({...about,[aboutLang]:{...aboutCopy,[key]:value}})}
+  function addMember(){setAbout({...about,team:[...about.team,{id:`member-${Date.now()}`,name:"",role_ar:"",role_fr:"",role_en:"",image_url:""}]})}
+  function addPartner(){setAbout({...about,partners:[...about.partners,{id:`partner-${Date.now()}`,name:"",logo_url:"",website:""}]})}
 
   return (
     <div className="space-y-6">
@@ -265,6 +280,22 @@ export function SitePage() {
         </Card>
       </div>
 
+      {/* About page CMS */}
+      <Card className="fade-up p-6">
+        <div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="flex items-center gap-2 font-bold"><Type className="size-4.5 text-brand-teal"/> تحرير صفحة من نحن</h2><p className="mt-1 text-xs text-ink/50">تحكم في كل النصوص والفريق والشركاء بثلاث لغات</p></div><Btn onClick={()=>saveKey("page_about",about,"صفحة من نحن")}><Save className="size-4"/> حفظ الصفحة كاملة</Btn></div>
+        <div className="mt-5 flex gap-2">{([['ar','العربية'],['fr','Français'],['en','English']] as const).map(([id,label])=><button key={id} onClick={()=>setAboutLang(id)} className={`rounded-full px-4 py-2 text-xs font-bold transition ${aboutLang===id?"bg-brand-dark text-white":"bg-ink/5 text-ink/55"}`}>{label}</button>)}</div>
+        <div className="mt-5 grid gap-4 sm:grid-cols-2">
+          <AboutField label="النص الصغير أعلى الصفحة" value={aboutCopy.eyebrow} onChange={v=>updateAboutCopy('eyebrow',v)}/><AboutField label="العنوان الرئيسي" value={aboutCopy.title} onChange={v=>updateAboutCopy('title',v)}/>
+          <AboutArea label="وصف الصفحة" value={aboutCopy.description} onChange={v=>updateAboutCopy('description',v)}/><div/>
+          <AboutField label="عنوان المهمة" value={aboutCopy.mission_title} onChange={v=>updateAboutCopy('mission_title',v)}/><AboutField label="عنوان الرؤية" value={aboutCopy.vision_title} onChange={v=>updateAboutCopy('vision_title',v)}/>
+          <AboutArea label="نص المهمة" value={aboutCopy.mission_text} onChange={v=>updateAboutCopy('mission_text',v)}/><AboutArea label="نص الرؤية" value={aboutCopy.vision_text} onChange={v=>updateAboutCopy('vision_text',v)}/>
+          <AboutField label="عنوان قسم الفريق" value={aboutCopy.team_title} onChange={v=>updateAboutCopy('team_title',v)}/><AboutField label="عنوان قسم الشركاء" value={aboutCopy.partners_title} onChange={v=>updateAboutCopy('partners_title',v)}/>
+          <AboutArea label="وصف الفريق" value={aboutCopy.team_description} onChange={v=>updateAboutCopy('team_description',v)}/>
+        </div>
+        <div className="mt-7 border-t border-ink/8 pt-6"><div className="flex items-center justify-between"><div><h3 className="font-bold">أعضاء الفريق</h3><p className="text-xs text-ink/45">الاسم والصورة مشتركان، والدور مترجم حسب اللغة المختارة</p></div><Btn small tone="ghost" onClick={addMember}><Plus className="size-3.5"/> عضو</Btn></div><div className="mt-4 grid gap-3 md:grid-cols-2">{about.team.map((member,index)=><div key={member.id} className="rounded-2xl border border-ink/8 bg-white p-4"><div className="flex gap-3"><span className="grid size-11 shrink-0 place-items-center overflow-hidden rounded-xl bg-brand-dark text-xs font-bold text-white">{member.image_url?<img src={member.image_url} alt="" className="size-full object-cover"/>:(member.name||'?').split(' ').map(x=>x[0]).slice(0,2).join('')}</span><div className="min-w-0 flex-1 space-y-2"><input value={member.name} onChange={e=>setAbout({...about,team:about.team.map((m,i)=>i===index?{...m,name:e.target.value}:m)})} placeholder="الاسم الكامل" className="w-full rounded-lg border border-ink/10 px-3 py-2 text-sm"/><input value={member[roleKey]} onChange={e=>setAbout({...about,team:about.team.map((m,i)=>i===index?{...m,[roleKey]:e.target.value}:m)})} placeholder="الدور في اللغة المختارة" className="w-full rounded-lg border border-ink/10 px-3 py-2 text-sm"/><input dir="ltr" value={member.image_url} onChange={e=>setAbout({...about,team:about.team.map((m,i)=>i===index?{...m,image_url:e.target.value}:m)})} placeholder="رابط الصورة (اختياري)" className="w-full rounded-lg border border-ink/10 px-3 py-2 text-xs"/></div><button onClick={()=>setAbout({...about,team:about.team.filter((_,i)=>i!==index)})} className="self-start rounded-lg p-2 text-red-500 hover:bg-red-50"><Trash2 className="size-4"/></button></div></div>)}</div></div>
+        <div className="mt-7 border-t border-ink/8 pt-6"><div className="flex items-center justify-between"><h3 className="font-bold">الشركاء والمؤسسات</h3><Btn small tone="ghost" onClick={addPartner}><Plus className="size-3.5"/> شريك</Btn></div><div className="mt-4 grid gap-3 md:grid-cols-2">{about.partners.map((partner,index)=><div key={partner.id} className="flex gap-2 rounded-xl bg-white p-3"><div className="grid flex-1 gap-2"><input value={partner.name} onChange={e=>setAbout({...about,partners:about.partners.map((p,i)=>i===index?{...p,name:e.target.value}:p)})} placeholder="اسم الشريك" className="rounded-lg border border-ink/10 px-3 py-2 text-sm"/><input dir="ltr" value={partner.logo_url} onChange={e=>setAbout({...about,partners:about.partners.map((p,i)=>i===index?{...p,logo_url:e.target.value}:p)})} placeholder="رابط الشعار" className="rounded-lg border border-ink/10 px-3 py-2 text-xs"/><input dir="ltr" value={partner.website} onChange={e=>setAbout({...about,partners:about.partners.map((p,i)=>i===index?{...p,website:e.target.value}:p)})} placeholder="رابط الموقع" className="rounded-lg border border-ink/10 px-3 py-2 text-xs"/></div><button onClick={()=>setAbout({...about,partners:about.partners.filter((_,i)=>i!==index)})} className="self-start rounded-lg p-2 text-red-500 hover:bg-red-50"><Trash2 className="size-4"/></button></div>)}</div></div>
+      </Card>
+
       {/* 404 page */}
       <Card className="fade-up p-6">
         <h2 className="flex items-center gap-2 font-bold"><Image className="size-4.5 text-brand-teal" /> صفحة 404</h2>
@@ -372,4 +403,11 @@ export function SitePage() {
       </Card>
     </div>
   );
+}
+
+function AboutField({label,value,onChange}:{label:string;value:string;onChange:(value:string)=>void}){
+  return <label className="text-xs font-semibold text-ink/60">{label}<input value={value} onChange={e=>onChange(e.target.value)} className="mt-1.5 w-full rounded-xl border border-ink/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-brand-teal"/></label>;
+}
+function AboutArea({label,value,onChange}:{label:string;value:string;onChange:(value:string)=>void}){
+  return <label className="text-xs font-semibold text-ink/60">{label}<textarea value={value} onChange={e=>onChange(e.target.value)} rows={3} className="mt-1.5 w-full resize-none rounded-xl border border-ink/15 bg-white px-3 py-2.5 text-sm leading-6 outline-none focus:border-brand-teal"/></label>;
 }
