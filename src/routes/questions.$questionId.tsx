@@ -67,6 +67,9 @@ type DbQuestion = {
   title: string;
   body: string;
   tokens: number;
+  unlock_cost: number;
+  question_locked: boolean;
+  target_audience_id: string | null;
   views: number;
   tags: string[];
   created_at: string;
@@ -119,7 +122,7 @@ function DbQuestionDetail({ questionId }: { questionId: string }) {
       navigate({ to: "/auth" });
       return;
     }
-    if ((profile?.tokens_balance ?? 0) < (q?.tokens ?? 0)) {
+    if ((profile?.tokens_balance ?? 0) < (q?.unlock_cost ?? 0)) {
       toast.error(
         t("question.notEnoughTokens", "رصيدك غير كافٍ — اشترِ توكن أولًا"),
       );
@@ -175,16 +178,16 @@ function DbQuestionDetail({ questionId }: { questionId: string }) {
             </Badge>
           ) : null}
           <Badge
-            variant={q.tokens > 0 ? "default" : "outline"}
+            variant={q.unlock_cost > 0 ? "default" : "outline"}
             className={
-              q.tokens > 0
+              q.unlock_cost > 0
                 ? "rounded-full bg-accent text-accent-foreground"
                 : "rounded-full"
             }
           >
-            {q.tokens > 0 ? (
+            {q.unlock_cost > 0 ? (
               <>
-                <Lock className="size-3" /> {q.tokens} {t("common.tokens")}
+                <Lock className="size-3" /> {q.unlock_cost} {t("common.tokens")}
               </>
             ) : (
               copy.free
@@ -209,6 +212,14 @@ function DbQuestionDetail({ questionId }: { questionId: string }) {
         <p className="mt-5 whitespace-pre-line text-base leading-8 text-muted-foreground">
           {q.body}
         </p>
+        {q.question_locked && (
+          <div className="mt-5 rounded-2xl border border-accent/30 bg-accent/5 p-5 text-center">
+            <Lock className="mx-auto size-5 text-accent" />
+            <p className="mt-2 font-semibold">{t("question.signInForFullQuestion", "سجّل الدخول لقراءة السؤال كاملًا")}</p>
+            <p className="mt-1 text-xs text-muted-foreground">{t("question.guestPreviewOnly", "يظهر للزوار مقتطف فقط، بما في ذلك الأسئلة المجانية.")}</p>
+            <Button asChild className="mt-3 rounded-xl"><Link to="/auth">{t("nav.signIn")}</Link></Button>
+          </div>
+        )}
 
         {q.tags.length > 0 && (
           <div className="mt-5 flex flex-wrap gap-2">
@@ -294,7 +305,7 @@ function DbQuestionDetail({ questionId }: { questionId: string }) {
                     <div className="glass w-full rounded-2xl p-5 text-center shadow-lift sm:p-6">
                       <Lock className="mx-auto size-5 text-accent" />
                       <p className="mt-3 font-semibold">
-                        {copy.unlockTitle.replace("{{count}}", String(q.tokens))}
+                        {copy.unlockTitle.replace("{{count}}", String(q.unlock_cost))}
                       </p>
                       <p className="mt-1 text-xs text-muted-foreground">
                         {copy.unlockText}
@@ -351,7 +362,12 @@ function DemoQuestionDetail() {
   };
   const copy = usePageCopy().question;
   const locale = useLocale();
-  const [unlocked, setUnlocked] = useState(question.tokens === 0);
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [unlocked, setUnlocked] = useState(false);
+  useEffect(() => {
+    if (user && question.tokens === 0) setUnlocked(true);
+  }, [user, question.tokens]);
   const expert = localizeExpert(experts[0]!, locale);
   const related = questions
     .filter((item) => item.id !== question.id)
@@ -390,8 +406,15 @@ function DemoQuestionDetail() {
             {question.title}
           </h1>
           <p className="mt-5 text-base leading-8 text-muted-foreground">
-            {question.body}
+            {user ? question.body : `${question.body.slice(0, 180)}${question.body.length > 180 ? "…" : ""}`}
           </p>
+          {!user && (
+            <div className="mt-5 rounded-2xl border border-accent/30 bg-accent/5 p-5 text-center">
+              <Lock className="mx-auto size-5 text-accent" />
+              <p className="mt-2 font-semibold">سجّل الدخول لقراءة السؤال كاملًا</p>
+              <Button asChild className="mt-3 rounded-xl"><Link to="/auth">تسجيل الدخول</Link></Button>
+            </div>
+          )}
 
           <div className="mt-5 flex flex-wrap gap-2">
             {question.tags.map((tag) => (
@@ -460,7 +483,7 @@ function DemoQuestionDetail() {
                       <div className="mt-4 flex flex-wrap justify-center gap-2">
                         <Button
                           className="rounded-xl"
-                          onClick={() => setUnlocked(true)}
+                          onClick={() => user ? setUnlocked(true) : navigate({ to: "/auth" })}
                         >
                           <Coins className="size-4" /> {copy.unlock}
                         </Button>
