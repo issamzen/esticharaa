@@ -323,6 +323,7 @@ function AccountPage() {
     setNotifications((n) =>
       n.map((x) => ({ ...x, read_at: x.read_at ?? new Date().toISOString() })),
     );
+    window.dispatchEvent(new Event("estichara:notifications-read"));
   }
 
   const unread = notifications.filter((n) => !n.read_at).length;
@@ -357,8 +358,9 @@ function AccountPage() {
           <div className="pointer-events-none absolute -bottom-24 start-1/3 size-56 rounded-full bg-accent/15 blur-3xl" />
           <div className="relative flex flex-wrap items-center justify-between gap-6">
             <div className="flex items-center gap-4">
-              <span className="grid size-16 place-items-center rounded-2xl border border-white/20 bg-white/12 text-xl font-bold shadow-inner backdrop-blur">
-                {(profile?.full_name || user.email || "?").split(" ").map((w) => w[0]).slice(0, 2).join("")}
+              <span className="relative grid size-16 place-items-center rounded-2xl border border-white/20 bg-white/12 text-xl font-bold shadow-inner backdrop-blur">
+                {profile?.avatar_url ? <img src={profile.avatar_url} alt="" className="size-full rounded-2xl object-cover" /> : (profile?.full_name || user.email || "?").split(" ").map((w) => w[0]).slice(0, 2).join("")}
+                {unread > 0 && <span className="absolute -end-2 -top-2 grid min-h-6 min-w-6 place-items-center rounded-full border-2 border-primary bg-red-500 px-1 text-[10px] font-bold text-white shadow-lg">{unread > 99 ? "99+" : unread}</span>}
               </span>
               <div>
                 <p className="text-xs font-medium text-primary-foreground/65">{t("account.title", "لوحة حسابك")}</p>
