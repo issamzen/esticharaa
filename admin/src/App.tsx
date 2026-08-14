@@ -59,45 +59,68 @@ export default function App() {
   if (!session.isAdmin) return <NotAdmin email={session.email} />;
 
   return (
-    <div className="flex min-h-screen">
-      {/* Sidebar */}
-      <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-e border-brand-dark/10 bg-brand-dark text-white lg:flex">
-        <div className="flex items-center gap-2.5 px-5 py-6">
-          <span className="grid size-10 place-items-center rounded-2xl bg-white/10">
+    <div className="flex min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(212,175,55,.08),transparent_30%),radial-gradient(circle_at_bottom_right,rgba(30,140,133,.08),transparent_35%)]">
+      {/* Premium sidebar */}
+      <aside className="sticky top-0 hidden h-screen w-72 shrink-0 flex-col overflow-hidden border-e border-white/10 bg-gradient-to-b from-[#0b4141] via-brand-dark to-[#072f30] text-white shadow-2xl lg:flex">
+        <div className="relative flex items-center gap-3 px-5 py-7">
+          <div className="pointer-events-none absolute -end-16 -top-16 size-44 rounded-full bg-brand-gold/10 blur-3xl" />
+          <span className="relative grid size-11 place-items-center rounded-2xl border border-white/15 bg-white/10 shadow-inner">
             <ShieldCheck className="size-5 text-brand-gold" />
           </span>
-          <div>
-            <p className="font-bold tracking-tight" dir="ltr">Estichara<span className="text-brand-gold">.ma</span></p>
-            <p className="text-[11px] text-white/50">لوحة التحكم</p>
+          <div className="relative">
+            <p className="text-lg font-bold tracking-tight" dir="ltr">Estichara<span className="text-brand-gold">.ma</span></p>
+            <p className="text-[11px] text-white/45">مركز إدارة المنصة</p>
           </div>
+          <span className="ms-auto rounded-full border border-emerald-400/20 bg-emerald-400/10 px-2 py-1 text-[9px] font-bold text-emerald-300">LIVE</span>
         </div>
         <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-2">
+          <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[.18em] text-white/30">الإدارة</p>
           {NAV.map((item) => (
             <button
               key={item.id}
               onClick={() => setPage(item.id)}
-              className={`flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium transition ${
-                page === item.id ? "bg-white/12 text-brand-gold" : "text-white/70 hover:bg-white/8 hover:text-white"
+              className={`group relative flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium transition-all ${
+                page === item.id ? "bg-white/12 text-white shadow-sm ring-1 ring-white/10" : "text-white/60 hover:bg-white/7 hover:text-white"
               }`}
             >
-              <item.icon className="size-4.5 shrink-0" />
+              <span className={`grid size-8 place-items-center rounded-lg transition ${page === item.id ? "bg-brand-gold text-brand-dark" : "bg-white/5 group-hover:bg-white/10"}`}>
+                <item.icon className="size-4 shrink-0" />
+              </span>
               {item.label}
+              {page === item.id && <span className="absolute inset-y-2 end-0 w-0.5 rounded-full bg-brand-gold" />}
             </button>
           ))}
         </nav>
-        <div className="border-t border-white/10 p-4">
-          <p className="truncate text-xs text-white/50" dir="ltr">{session.email}</p>
-          <button
-            onClick={() => supabase.auth.signOut()}
-            className="mt-2 flex w-full items-center gap-2 rounded-xl bg-white/8 px-3.5 py-2.5 text-sm text-white/80 transition hover:bg-white/15"
-          >
-            <LogOut className="size-4" /> تسجيل الخروج
-          </button>
+        <div className="m-3 rounded-2xl border border-white/10 bg-white/5 p-3 backdrop-blur">
+          <div className="flex items-center gap-3">
+            <span className="grid size-9 place-items-center rounded-xl bg-brand-gold text-xs font-bold text-brand-dark">AD</span>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-semibold">مدير المنصة</p>
+              <p className="truncate text-[10px] text-white/40" dir="ltr">{session.email}</p>
+            </div>
+            <button onClick={() => supabase.auth.signOut()} title="تسجيل الخروج" className="rounded-lg p-2 text-white/50 transition hover:bg-white/10 hover:text-white">
+              <LogOut className="size-4" />
+            </button>
+          </div>
         </div>
       </aside>
 
       {/* Mobile top bar */}
       <div className="flex min-w-0 flex-1 flex-col">
+        <header className="sticky top-0 z-20 hidden items-center justify-between border-b border-brand-dark/8 bg-paper/80 px-8 py-4 backdrop-blur-xl lg:flex">
+          <div>
+            <p className="text-[11px] font-semibold text-brand-teal">لوحة تحكم Estichara.ma</p>
+            <h2 className="mt-0.5 font-bold">{NAV.find((item) => item.id === page)?.label}</h2>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-[11px] font-semibold text-emerald-700">
+              <span className="size-1.5 animate-pulse rounded-full bg-emerald-500" /> النظام يعمل بشكل طبيعي
+            </span>
+            <span className="rounded-xl bg-white px-3 py-2 text-xs text-ink/50 shadow-sm">
+              {new Date().toLocaleDateString("ar-MA", { weekday: "long", day: "numeric", month: "long" })}
+            </span>
+          </div>
+        </header>
         <header className="glass sticky top-0 z-20 flex items-center gap-2 overflow-x-auto px-4 py-3 lg:hidden">
           {NAV.map((item) => (
             <button
@@ -112,7 +135,7 @@ export default function App() {
           ))}
         </header>
 
-        <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6">
+        <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-7 sm:px-6 lg:px-8">
           {page === "overview" && <Overview />}
           {page === "users" && <UsersPage />}
           {page === "experts" && <ExpertsPage />}
