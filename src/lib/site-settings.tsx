@@ -29,12 +29,16 @@ export type SiteColors = {
   muted: string;
 };
 
+export type FeatureFlags = Record<string, boolean>;
+export type MaintenancePage = { enabled:boolean; title_ar:string; message_ar:string; title_fr:string; message_fr:string; title_en:string; message_en:string; expected_return:string };
 type SiteSettings = {
   branding: Branding;
   colors: SiteColors | null;
   nav: NavItem[];
   footer: NavItem[];
   paymentMethods: PaymentMethod[];
+  features: FeatureFlags;
+  maintenance: MaintenancePage;
   loaded: boolean;
 };
 
@@ -44,6 +48,8 @@ const DEFAULTS: SiteSettings = {
   nav: [],
   footer: [],
   paymentMethods: [],
+  features: {},
+  maintenance: { enabled:false,title_ar:"الموقع تحت الصيانة",message_ar:"سنعود قريبًا.",title_fr:"Maintenance en cours",message_fr:"Nous serons bientôt de retour.",title_en:"Maintenance in progress",message_en:"We will be back shortly.",expected_return:"" },
   loaded: false,
 };
 
@@ -97,6 +103,8 @@ export function SiteSettingsProvider({ children }: { children: ReactNode }) {
         "site_nav",
         "site_footer",
         "payment_methods",
+        "feature_flags",
+        "maintenance_page",
       ])
       .then(({ data }) => {
         if (!data) return;
@@ -107,6 +115,8 @@ export function SiteSettingsProvider({ children }: { children: ReactNode }) {
           nav: (map.site_nav as NavItem[]) ?? [],
           footer: (map.site_footer as NavItem[]) ?? [],
           paymentMethods: (map.payment_methods as PaymentMethod[]) ?? [],
+          features: (map.feature_flags as FeatureFlags) ?? {},
+          maintenance: { ...DEFAULTS.maintenance, ...((map.maintenance_page as Partial<MaintenancePage>) ?? {}) },
           loaded: true,
         };
         setSettings(next);
