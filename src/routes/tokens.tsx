@@ -48,9 +48,13 @@ const ICONS: Record<string, typeof CreditCard> = {
 type DbPack = {
   id: string;
   name_ar: string;
+  name_fr: string;
+  name_en: string;
   tokens: number;
   bonus: number;
   price_mad: number;
+  promo_price_mad: number | null;
+  promo_ends_at: string | null;
   popular: boolean;
 };
 
@@ -69,7 +73,7 @@ function TokensPage() {
   useEffect(() => {
     supabase
       .from("token_packs")
-      .select("id, name_ar, tokens, bonus, price_mad, popular")
+      .select("id, name_ar, name_fr, name_en, tokens, bonus, price_mad, promo_price_mad, promo_ends_at, popular")
       .eq("active", true)
       .order("sort")
       .then(({ data }) => {
@@ -82,8 +86,16 @@ function TokensPage() {
     ? site.paymentMethods.filter((m) => m.active)
     : null;
 
+  function effectivePrice(pack: DbPack) {
+    return pack.promo_price_mad !== null && (!pack.promo_ends_at || new Date(pack.promo_ends_at) > new Date()) ? pack.promo_price_mad : pack.price_mad;
+  }
+  function localizedName(pack: DbPack) {
+    return locale === "fr" && pack.name_fr ? pack.name_fr : locale === "en" && pack.name_en ? pack.name_en : pack.name_ar;
+  }
+
   // Step 1: user clicks "buy" → open the payment-method chooser
   function orderPack(pack: DbPack) {
+    if (site.features.token_purchases === false) { toast.info("شراء التوكن متوقف مؤقتًا"); return; }
     if (!user) {
       toast.info(t("auth.signInDescription"));
       navigate({ to: "/auth" });
@@ -99,14 +111,9 @@ function TokensPage() {
     const methodLabel =
       activeMethods?.find((m) => m.id === chosenMethod)?.label ?? chosenMethod;
     setOrdering(payingPack.id);
-    const { error } = await supabase.from("orders").insert({
-      user_id: user.id,
-      pack_id: payingPack.id,
-      tokens: payingPack.tokens,
-      bonus: payingPack.bonus,
-      price_mad: payingPack.price_mad,
-      method: methodLabel,
-      status: "pending",
+    const { error } = await supabase.rpc("create_token_order", {
+      p_pack_id: payingPack.id,
+      p_method: methodLabel,
     });
     setOrdering(null);
     setPayingPack(null);
@@ -150,7 +157,7 @@ function TokensPage() {
                     </Badge>
                   ) : null}
                   <h2 className="font-semibold text-muted-foreground">
-                    {pack.name_ar}
+                    {localizedName(pack)}
                   </h2>
                   <p className="mt-5 text-4xl font-semibold text-brand">
                     {formatNumber(pack.tokens, locale)}
@@ -158,9 +165,10 @@ function TokensPage() {
                   <p className="text-sm text-muted-foreground">
                     {t("common.tokens")}
                   </p>
-                  <p className="mt-4 text-xl font-semibold">
-                    {formatNumber(pack.price_mad, locale)} {t("common.mad")}
-                  </p>
+                  <div className="mt-4 flex items-baseline gap-2">
+                    {effectivePrice(pack) !== pack.price_mad && <span className="text-sm text-muted-foreground line-through">{formatNumber(pack.price_mad, locale)}</span>}
+                    <p className="text-xl font-semibold">{formatNumber(effectivePrice(pack), locale)} {t("common.mad")}</p>
+                  </div>
                   <ul className="mt-5 space-y-2 text-sm text-muted-foreground">
                     {pack.bonus > 0 ? (
                       <li className="flex items-center gap-2">
@@ -182,7 +190,7 @@ function TokensPage() {
                     {ordering === pack.id ? (
                       <Loader2 className="size-4 animate-spin" />
                     ) : (
-                      copy.buy.replace("{{name}}", pack.name_ar)
+                      copy.buy.replace("{{name}}", localizedName(pack))
                     )}
                   </Button>
                 </article>
@@ -266,7 +274,7 @@ function TokensPage() {
                   {formatNumber(payingPack.tokens + payingPack.bonus, locale)}{" "}
                   {t("common.tokens")} —{" "}
                   <span className="font-semibold text-foreground">
-                    {formatNumber(payingPack.price_mad, locale)} {t("common.mad")}
+                    {formatNumber(effectivePrice(payingPack), locale)} {t("common.mad")}
                   </span>
                 </>
               )}
