@@ -138,6 +138,38 @@ function Index() {
   const localizedStories = getHomeStories(t);
   const localizedFaqs = getHomeFaqs(t);
   const locale = useLocale();
+  const aboutPlatform = locale === "ar"
+    ? {
+        badge: "حول Estichara.ma",
+        purpose: "Estichara.ma هي منصة مغربية للأسئلة والأجوبة تربط المستخدمين بخبراء موثّقين في مجالات الأعمال والقانون والتقنية والتعليم والصحة والمالية والخدمات المهنية.",
+        features: "يمكن للمستخدمين إنشاء حساب، وطرح الأسئلة، وتلقي إجابات من خبراء معتمدين، وشراء التوكن، وفتح الإجابات المميزة، وإدارة استشاراتهم من داخل المنصة.",
+        google: "يُستخدم تسجيل الدخول بواسطة Google لتسهيل إنشاء الحساب والدخول. لا نصل إلا إلى المعلومات الأساسية التي يوافق المستخدم على مشاركتها، مثل الاسم والبريد الإلكتروني والصورة، ولا نحصل على كلمة مرور Google.",
+        privacy: "لا تبيع Estichara.ma بيانات مستخدمي Google ولا تؤجرها ولا تشاركها لأغراض إعلانية.",
+        contact: "معلومات التواصل",
+        website: "الموقع",
+        email: "البريد الإلكتروني للدعم",
+      }
+    : locale === "fr"
+      ? {
+          badge: "À propos de Estichara.ma",
+          purpose: "Estichara.ma est une plateforme marocaine de questions-réponses qui met les utilisateurs en relation avec des experts vérifiés dans les domaines du droit, des affaires, de la technologie, de l’éducation, de la santé et de la finance.",
+          features: "Les utilisateurs peuvent créer un compte, poser des questions, recevoir des réponses d’experts, acheter des jetons, débloquer des réponses premium et gérer leurs consultations sur la plateforme.",
+          google: "La connexion Google facilite l’inscription et l’authentification. Estichara.ma accède uniquement aux informations de base autorisées par l’utilisateur, comme le nom, l’adresse e-mail et la photo de profil, et ne reçoit jamais le mot de passe Google.",
+          privacy: "Estichara.ma ne vend, ne loue et ne partage pas les données des utilisateurs Google à des fins publicitaires.",
+          contact: "Coordonnées",
+          website: "Site web",
+          email: "E-mail d’assistance",
+        }
+      : {
+          badge: "About Estichara.ma",
+          purpose: "Estichara.ma is a Moroccan question-and-answer platform connecting users with verified experts in business, law, technology, education, health, finance and professional services.",
+          features: "Users can create an account, submit questions, receive expert answers, purchase tokens, unlock premium answers and manage their consultations through the platform.",
+          google: "Google Sign-In simplifies registration and authentication. Estichara.ma accesses only the basic information authorized by the user, such as name, email address and profile picture, and never receives the user’s Google password.",
+          privacy: "Estichara.ma does not sell, rent or share Google user data for advertising purposes.",
+          contact: "Contact information",
+          website: "Website",
+          email: "Support email",
+        };
   const stats = [
     { value: "12.4k+", label: t("home.stats.answers") },
     { value: "640+", label: t("home.stats.experts") },
@@ -179,20 +211,23 @@ function Index() {
               {t("home.badge")}
             </Badge>
 
-            <h1 className="mt-7 text-5xl font-bold">
-  Estichara.ma
-</h1>
-
-<p className="mt-4 text-xl">
-  Morocco's trusted question and answer marketplace.
-</p>
-
-<p className="mt-4">
-  Ask questions, receive answers from verified experts,
-  purchase tokens, unlock premium responses, and get
-  trusted advice across business, legal, health,
-  education, finance, and technology topics.
-</p>
+            <h1 className="mt-7 max-w-3xl text-balance text-4xl font-semibold leading-[1.04] tracking-[-0.035em] sm:text-6xl lg:text-[4.25rem]">
+              {t("home.heroTitleBefore")}{" "}
+              <span className="bg-gradient-to-r from-primary via-primary to-accent bg-clip-text text-transparent">
+                {t("home.heroTitleAccent")}
+              </span>
+            </h1>
+            <p className="mt-6 max-w-xl text-pretty text-base leading-7 text-muted-foreground sm:text-lg sm:leading-8">
+              {t("home.heroDescription")}
+            </p>
+            <p className="mt-3 max-w-xl text-sm leading-6 text-muted-foreground">
+              <strong className="font-semibold text-foreground">Estichara.ma</strong>{" "}
+              {locale === "ar"
+                ? "هي منصة مغربية للأسئلة والأجوبة تربط المستخدمين بخبراء موثّقين للحصول على إرشادات عملية، مع نظام توكن لفتح الإجابات وإدارة مكافآت الخبراء."
+                : locale === "fr"
+                  ? "est une plateforme marocaine de questions-réponses qui met les utilisateurs en relation avec des experts vérifiés, avec un système de jetons pour débloquer les réponses et récompenser les experts."
+                  : "is a Moroccan question-and-answer marketplace connecting users with verified experts, with a token system for unlocking answers and rewarding expert contributions."}
+            </p>
 
             <div className="mt-8 max-w-xl rounded-2xl border border-border/70 bg-background/85 p-2 shadow-xl shadow-primary/5 backdrop-blur-xl">
               <div className="flex items-center gap-3 rounded-xl ps-3">
@@ -380,90 +415,28 @@ function Index() {
         </div>
       </section>
 
-      {/* About Estichara.ma - OAuth Verification */}
-<section className="mx-auto max-w-6xl px-4 py-12">
-  <div className="rounded-3xl border border-border/70 bg-card p-6 shadow-sm sm:p-8">
-    <Badge variant="outline" className="rounded-full">
-      About Estichara.ma
-    </Badge>
-
-    <h2 className="mt-4 text-3xl font-semibold tracking-tight">
-      Estichara.ma
-    </h2>
-
-    <p className="mt-4 leading-7 text-muted-foreground">
-      Estichara.ma is a Moroccan online question-and-answer platform that
-      connects users with verified experts across multiple fields including
-      business, law, technology, education, health, finance, and professional
-      services.
-    </p>
-
-    <p className="mt-4 leading-7 text-muted-foreground">
-      Users can create an account, submit questions, receive answers from
-      verified experts, purchase tokens, unlock premium answers, and manage
-      their consultations through the platform.
-    </p>
-
-    <p className="mt-4 leading-7 text-muted-foreground">
-      Google Sign-In is provided as an authentication method to simplify
-      registration and login. When users sign in with Google, Estichara.ma
-      only accesses basic profile information such as the user's name, email
-      address, and profile picture for account identification and
-      authentication purposes.
-    </p>
-
-    <p className="mt-4 leading-7 text-muted-foreground">
-      Estichara.ma does not sell, rent, or share Google user data with third
-      parties.
-    </p>
-
-    <div className="mt-6 rounded-2xl bg-muted/50 p-4">
-      <h3 className="font-semibold">Contact Information</h3>
-
-      <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
-        <li>
-          Website:
-          <a
-            href="https://estichara.ma"
-            className="ml-2 text-primary hover:underline"
-          >
-            https://estichara.ma
-          </a>
-        </li>
-
-        <li>
-  Support Email:
-  <a
-    href="mailto:contact@estichara.ma"
-    className="ml-2 text-primary hover:underline"
-  >
-    contact@estichara.ma
-  </a>
-</li>
-
-<li>
-  Privacy Policy:
-  <Link
-    to="/privacy"
-    className="ml-2 text-primary hover:underline"
-  >
-    Privacy Policy
-  </Link>
-</li>
-
-<li>
-  Terms of Service:
-  <Link
-    to="/terms"
-    className="ml-2 text-primary hover:underline"
-  >
-    Terms of Service
-  </Link>
-</li>
-      </ul>
-    </div>
-  </div>
-</section>
+      {/* Clear platform purpose and OAuth disclosure, localized per language. */}
+      <section className="mx-auto max-w-6xl px-4 py-12 sm:py-16">
+        <div className="rounded-3xl border border-border/70 bg-card p-6 shadow-sm sm:p-8">
+          <Badge variant="outline" className="rounded-full">{aboutPlatform.badge}</Badge>
+          <h2 className="mt-4 text-3xl font-semibold tracking-tight">Estichara.ma</h2>
+          <div className="mt-4 max-w-4xl space-y-4 leading-7 text-muted-foreground">
+            <p>{aboutPlatform.purpose}</p>
+            <p>{aboutPlatform.features}</p>
+            <p>{aboutPlatform.google}</p>
+            <p>{aboutPlatform.privacy}</p>
+          </div>
+          <div className="mt-6 rounded-2xl bg-muted/50 p-4">
+            <h3 className="font-semibold">{aboutPlatform.contact}</h3>
+            <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
+              <li>{aboutPlatform.website}: <a href="https://estichara.ma" className="ms-2 text-primary hover:underline">https://estichara.ma</a></li>
+              <li>{aboutPlatform.email}: <a href="mailto:contact@estichara.ma" className="ms-2 text-primary hover:underline">contact@estichara.ma</a></li>
+              <li><Link to="/privacy" className="text-primary hover:underline">{t("footer.privacy")}</Link></li>
+              <li><Link to="/terms" className="text-primary hover:underline">{t("footer.terms")}</Link></li>
+            </ul>
+          </div>
+        </div>
+      </section>
 
       {/* Value proposition */}
       <section className="mx-auto max-w-6xl px-4 py-20 sm:py-28">
