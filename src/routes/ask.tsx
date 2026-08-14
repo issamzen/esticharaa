@@ -24,6 +24,7 @@ import { usePageCopy } from "@/i18n/page-copy";
 import { createPageSeo, pageHead } from "@/i18n/route-meta";
 import { localizeCategory } from "@/i18n/platform";
 import { useLocale } from "@/i18n/use-locale";
+import { useSiteSettings } from "@/lib/site-settings";
 
 export const Route = createFileRoute("/ask")({
   loader: ({ context }) => ({
@@ -55,6 +56,7 @@ function AskPage() {
   const { user, profile, loading, refreshProfile } = useAuth();
   const { t } = useTranslation();
   const locale = useLocale();
+  const site = useSiteSettings();
   const localizedCategories = categories.map((item) =>
     localizeCategory(item, locale),
   );
@@ -67,13 +69,13 @@ function AskPage() {
   const [askRules, setAskRules] = useState<AskRules>(DEFAULT_ASK_RULES);
   const [submitting, setSubmitting] = useState(false);
   const [dbCategories, setDbCategories] = useState<
-    { id: string; slug: string; name_ar: string; name_fr: string; name_en: string }[]
+    { id: string; slug: string; name_ar: string; name_fr: string; name_en: string; min_reward_tokens: number }[]
   >([]);
 
   useEffect(() => {
     supabase
       .from("categories")
-      .select("id, slug, name_ar, name_fr, name_en")
+      .select("id, slug, name_ar, name_fr, name_en, min_reward_tokens")
       .eq("active", true)
       .order("sort")
       .then(({ data }) => setDbCategories(data ?? []));
@@ -109,12 +111,18 @@ function AskPage() {
     );
   }
 
+  if (site.loaded && site.features.new_questions === false) {
+    return <SiteLayout><div className="mx-auto max-w-xl px-4 py-32 text-center"><ShieldCheck className="mx-auto size-12 text-primary"/><h1 className="mt-5 text-3xl font-semibold">طرح الأسئلة متوقف مؤقتًا</h1><p className="mt-3 text-muted-foreground">فعّلت الإدارة إيقاف الأسئلة الجديدة. يمكنك متابعة أسئلتك الحالية من حسابك.</p><Button className="mt-6 rounded-xl" onClick={()=>navigate({to:"/account"})}>العودة إلى حسابي</Button></div></SiteLayout>;
+  }
+
   function rewardLabel(value: number) {
     if (value === 0) return copy.free;
     return `${value} ${t("common.tokens")}`;
   }
 
+  const categoryMinimum = dbCategories.find((item) => item.slug === category)?.min_reward_tokens ?? 0;
   const targetingAvailable = askRules.targeting_enabled
+    && site.features.expert_targeting !== false
     && (profile?.tokens_balance ?? 0) >= askRules.audience_min_token_balance
     && (!askRules.targeting_requires_paid_question || reward > 0);
 
@@ -129,6 +137,7 @@ function AskPage() {
       toast.error(result.error.issues[0]?.message ?? copy.validationGeneric);
       return;
     }
+    if (reward < categoryMinimum) { toast.error(`الحد الأدنى لهذا التصنيف هو ${categoryMinimum} توكن`); return; }
     setSubmitting(true);
 
     // Find the category's database id from its slug
@@ -276,7 +285,7 @@ function AskPage() {
                 {rewards.map((value) => {
                   const unaffordable =
                     value > 0 && value > (profile?.tokens_balance ?? 0);
-                  const disabledByRules = value === 0 && !askRules.allow_free_questions;
+                  const disabledByRules = value < categoryMinimum || (value === 0 && (!askRules.allow_free_questions || site.features.free_questions === false)) || (value > 0 && site.features.paid_questions === false);
                   return (
                     <Button
                       key={value}
@@ -292,6 +301,7 @@ function AskPage() {
                   );
                 })}
               </div>
+              {categoryMinimum > 0 && <p className="mt-2 text-xs font-medium text-secondary">الحد الأدنى لهذا التصنيف: {categoryMinimum} {t("common.tokens")}</p>}
               {reward > 0 && (
                 <p className="mt-2 text-xs leading-5 text-muted-foreground">
                   ⚠️{" "}
@@ -303,7 +313,7 @@ function AskPage() {
               )}
             </div>
 
-            {askRules.targeting_enabled && audiences.length > 0 && (
+            {askRules.targeting_enabled && site.features.expert_targeting !== false && audiences.length > 0 && (
               <div>
                 <Label>{t("ask.targetAudience", "من تريد أن يجيب؟")}</Label>
                 <Select value={targetAudience} onValueChange={setTargetAudience} disabled={!targetingAvailable}>
