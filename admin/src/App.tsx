@@ -34,6 +34,7 @@ export default function App() {
   const [session, setSession] = useState<null | { email: string; isAdmin: boolean }>(null);
   const [checking, setChecking] = useState(true);
   const [page, setPage] = useState<PageId>("overview");
+  const [supportCount, setSupportCount] = useState(0);
 
   useEffect(() => {
     if (!isConfigured) { setChecking(false); return; }
@@ -52,6 +53,21 @@ export default function App() {
     const { data } = await supabase.from("profiles").select("role").eq("id", uid).single();
     setSession({ email, isAdmin: data?.role === "admin" });
   }
+
+  useEffect(() => {
+    if (!session?.isAdmin) return;
+    async function refreshSupportCount() {
+      const { data } = await supabase.from("support_threads").select("id, status")
+        .eq("status", "open");
+      setSupportCount(data?.length ?? 0);
+    }
+    refreshSupportCount();
+    const timer = window.setInterval(refreshSupportCount, 30000);
+    const channel = supabase.channel("admin-support-alerts")
+      .on("postgres_changes", { event: "*", schema: "public", table: "support_threads" }, refreshSupportCount)
+      .subscribe();
+    return () => { window.clearInterval(timer); supabase.removeChannel(channel); };
+  }, [session?.isAdmin]);
 
   if (!isConfigured) return <SetupNotice />;
   if (checking) return <Center><Loader2 className="size-8 animate-spin text-brand-teal" /></Center>;
@@ -87,6 +103,9 @@ export default function App() {
                 <item.icon className="size-4 shrink-0" />
               </span>
               {item.label}
+              {item.id === "messages" && supportCount > 0 && (
+                <span className="ms-auto grid min-w-5 place-items-center rounded-full bg-brand-gold px-1.5 py-0.5 text-[10px] font-bold text-brand-dark">{supportCount}</span>
+              )}
               {page === item.id && <span className="absolute inset-y-2 end-0 w-0.5 rounded-full bg-brand-gold" />}
             </button>
           ))}
@@ -131,6 +150,7 @@ export default function App() {
               }`}
             >
               {item.label}
+              {item.id === "messages" && supportCount > 0 && <span className="ms-1 rounded-full bg-brand-gold px-1.5 text-[10px] text-brand-dark">{supportCount}</span>}
             </button>
           ))}
         </header>
