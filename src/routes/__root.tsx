@@ -42,6 +42,8 @@ export const Route = createRootRouteWithContext<RouterContext>()({
           "منصة مغربية موثوقة للأسئلة والأجوبة تجمعك بخبراء ومهنيين موثّقين.",
       },
       { name: "author", content: "Estichara.ma" },
+      { name: "application-name", content: "Estichara.ma" },
+      { property: "og:site_name", content: "Estichara.ma" },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -73,6 +75,48 @@ function RootShell({ children }: { children: ReactNode }) {
     <html lang={locale} dir={localeDirection(locale)} suppressHydrationWarning>
       <head>
         <HeadContent />
+        <link rel="alternate" hrefLang="ar" href="https://estichara.ma/ar" />
+        <link rel="alternate" hrefLang="fr" href="https://estichara.ma/fr" />
+        <link rel="alternate" hrefLang="en" href="https://estichara.ma/en" />
+        <link rel="alternate" hrefLang="x-default" href="https://estichara.ma/ar" />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "Organization",
+              name: "Estichara.ma",
+              alternateName: "Estichara",
+              url: "https://estichara.ma",
+              logo: "https://estichara.ma/favicon.ico",
+              email: "contact@estichara.ma",
+              description:
+                locale === "ar"
+                  ? "منصة مغربية للأسئلة والأجوبة تربط المستخدمين بخبراء موثّقين."
+                  : locale === "fr"
+                    ? "Plateforme marocaine de questions-réponses reliant les utilisateurs à des experts vérifiés."
+                    : "A Moroccan question-and-answer platform connecting users with verified experts.",
+            }),
+          }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "WebSite",
+              name: "Estichara.ma",
+              url: `https://estichara.ma/${locale}`,
+              inLanguage: locale,
+              description:
+                locale === "ar"
+                  ? "اطرح الأسئلة واحصل على إجابات من خبراء موثّقين."
+                  : locale === "fr"
+                    ? "Posez des questions et obtenez des réponses d’experts vérifiés."
+                    : "Ask questions and get answers from verified experts.",
+            }),
+          }}
+        />
       </head>
       <body>
         {children}
