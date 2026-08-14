@@ -100,6 +100,7 @@ const settings = [
     { id: "diplomats", label_ar: "الدبلوماسيون", label_fr: "Diplomates", label_en: "Diplomats", active: true },
     { id: "teachers", label_ar: "الأساتذة والمعلمون", label_fr: "Enseignants", label_en: "Teachers", active: true },
   ] },
+  { key: "page_about", value: { ar:{eyebrow:"من نحن",title:"النصيحة الجيدة للجميع",description:"منصة مغربية للخبرة الموثوقة",mission_title:"مهمتنا",mission_text:"إتاحة الخبرة للجميع",vision_title:"رؤيتنا",vision_text:"قاعدة معرفة وطنية",team_title:"فريقنا",team_description:"فريق مغربي متعدد التخصصات",partners_title:"شركاؤنا"},fr:{eyebrow:"À propos",title:"Le bon conseil pour tous",description:"Une plateforme marocaine",mission_title:"Mission",mission_text:"Rendre le savoir accessible",vision_title:"Vision",vision_text:"Une base nationale",team_title:"Équipe",team_description:"Une équipe marocaine",partners_title:"Partenaires"},en:{eyebrow:"About",title:"Good advice for everyone",description:"A Moroccan knowledge platform",mission_title:"Mission",mission_text:"Make expertise accessible",vision_title:"Vision",vision_text:"A national knowledge base",team_title:"Team",team_description:"A Moroccan team",partners_title:"Partners"},team:[],partners:[] } },
   { key: "site_branding", value: { site_name: "Estichara.ma", logo_url: "", favicon_url: "" } },
   { key: "site_colors", value: { primary: "#0D4B4B", secondary: "#1E8C85", accent: "#D4AF37", muted: "#F2E8D6" } },
   { key: "site_nav", value: [
