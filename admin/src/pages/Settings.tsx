@@ -42,6 +42,12 @@ const DEFAULT_LIMITS: PlatformLimits = {
   support_messages_per_hour: 30, private_messages_per_hour: 60, reports_per_day: 10,
   max_open_support_threads: 5,
 };
+type FeatureFlags = Record<"new_questions"|"free_questions"|"paid_questions"|"expert_answers"|"expert_targeting"|"answer_unlocking"|"expert_applications"|"token_purchases"|"withdrawals"|"support_messaging"|"private_messages"|"reviews", boolean>;
+const DEFAULT_FEATURES: FeatureFlags = { new_questions:true,free_questions:true,paid_questions:true,expert_answers:true,expert_targeting:true,answer_unlocking:true,expert_applications:true,token_purchases:true,withdrawals:true,support_messaging:true,private_messages:true,reviews:true };
+type MaintenancePage={enabled:boolean;title_ar:string;message_ar:string;title_fr:string;message_fr:string;title_en:string;message_en:string;expected_return:string};
+const DEFAULT_MAINTENANCE:MaintenancePage={enabled:false,title_ar:"الموقع تحت الصيانة",message_ar:"نعمل على تحسين المنصة. سنعود قريبًا.",title_fr:"Maintenance en cours",message_fr:"Nous améliorons la plateforme.",title_en:"We are improving the platform",message_en:"We will be back shortly.",expected_return:""};
+type ModerationReasons={question:string[];answer:string[];expert:string[];withdrawal:string[]};
+const DEFAULT_REASONS:ModerationReasons={question:["معلومات غير كافية","سؤال مكرر","محتوى غير مناسب"],answer:["إجابة غير دقيقة","معلومات ناقصة","تخصص غير مطابق"],expert:["وثائق غير مكتملة"],withdrawal:["بيانات التحويل غير صحيحة"]};
 
 const DEFAULT_RULES: AccessRules = {
   guest_hide_full_content: true,
@@ -82,6 +88,9 @@ export function SettingsPage() {
   const [rules, setRules] = useState<AccessRules>(DEFAULT_RULES);
   const [audiences, setAudiences] = useState<Audience[]>([]);
   const [limits, setLimits] = useState<PlatformLimits>(DEFAULT_LIMITS);
+  const [features, setFeatures] = useState<FeatureFlags>(DEFAULT_FEATURES);
+  const [maintenancePage, setMaintenancePage] = useState<MaintenancePage>(DEFAULT_MAINTENANCE);
+  const [moderationReasons, setModerationReasons] = useState<ModerationReasons>(DEFAULT_REASONS);
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -93,6 +102,9 @@ export function SettingsPage() {
         else if (row.key === "content_access_rules") setRules({ ...DEFAULT_RULES, ...(row.value as Partial<AccessRules>) });
         else if (row.key === "expert_audiences") setAudiences((row.value as Audience[]) ?? []);
         else if (row.key === "platform_limits") setLimits({ ...DEFAULT_LIMITS, ...(row.value as Partial<PlatformLimits>) });
+        else if (row.key === "feature_flags") setFeatures({ ...DEFAULT_FEATURES, ...(row.value as Partial<FeatureFlags>) });
+        else if (row.key === "maintenance_page") { const page = { ...DEFAULT_MAINTENANCE, ...(row.value as Partial<MaintenancePage>) }; setMaintenancePage(page); if (page.enabled) setMaintenance(true); }
+        else if (row.key === "moderation_reasons") setModerationReasons({ ...DEFAULT_REASONS, ...(row.value as Partial<ModerationReasons>) });
         else v[row.key] = String(row.value);
       });
       setValues(v);
@@ -112,6 +124,9 @@ export function SettingsPage() {
       await updateSetting("content_access_rules", rules);
       await updateSetting("expert_audiences", audiences);
       await updateSetting("platform_limits", limits);
+      await updateSetting("feature_flags", features);
+      await updateSetting("maintenance_page", { ...maintenancePage, enabled: maintenance });
+      await updateSetting("moderation_reasons", moderationReasons);
       setSaved(true);
       setTimeout(() => setSaved(false), 2500);
     } catch (error) {
@@ -223,6 +238,25 @@ export function SettingsPage() {
             </div>
           ))}
         </div>
+      </Card>
+
+      <Card className="fade-up p-6">
+        <h2 className="flex items-center gap-2 font-bold"><Wrench className="size-4.5 text-brand-teal" /> مركز التحكم في الميزات</h2>
+        <p className="mt-1 text-xs text-ink/50">أوقف أو فعّل أي جزء من المنصة. الإيقاف محمي أيضًا داخل قاعدة البيانات.</p>
+        <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {([
+            ["new_questions","طرح أسئلة جديدة"],["free_questions","الأسئلة المجانية"],["paid_questions","الأسئلة المدفوعة"],
+            ["expert_answers","إجابات الخبراء"],["expert_targeting","اختيار فئة المجيب"],["answer_unlocking","فتح الأجوبة بالتوكن"],
+            ["expert_applications","طلبات الانضمام كخبير"],["token_purchases","شراء التوكن"],["withdrawals","طلبات السحب"],
+            ["support_messaging","مراسلة الإدارة"],["private_messages","الرسائل الخاصة"],["reviews","التقييمات"],
+          ] as [keyof FeatureFlags,string][]).map(([key,label])=><Switch key={key} checked={features[key]} onChange={value=>setFeatures({...features,[key]:value})} label={label}/>) }
+        </div>
+        <div className="mt-6 border-t border-ink/8 pt-5"><h3 className="font-bold">صفحة الصيانة</h3><div className="mt-4 grid gap-4 sm:grid-cols-2"><label className="text-xs font-semibold text-ink/60">العنوان بالعربية<input value={maintenancePage.title_ar} onChange={e=>setMaintenancePage({...maintenancePage,title_ar:e.target.value})} className="mt-1.5 w-full rounded-xl border border-ink/15 bg-white px-3 py-2.5 text-sm"/></label><label className="text-xs font-semibold text-ink/60">موعد العودة المتوقع<input type="datetime-local" dir="ltr" value={maintenancePage.expected_return} onChange={e=>setMaintenancePage({...maintenancePage,expected_return:e.target.value})} className="mt-1.5 w-full rounded-xl border border-ink/15 bg-white px-3 py-2.5 text-sm"/></label></div><label className="mt-4 block text-xs font-semibold text-ink/60">رسالة الصيانة<textarea value={maintenancePage.message_ar} onChange={e=>setMaintenancePage({...maintenancePage,message_ar:e.target.value})} rows={3} className="mt-1.5 w-full resize-none rounded-xl border border-ink/15 bg-white px-3 py-2.5 text-sm"/></label></div>
+      </Card>
+
+      <Card className="fade-up p-6">
+        <h2 className="font-bold">أسباب المراجعة الجاهزة</h2><p className="mt-1 text-xs text-ink/50">اكتب سببًا في كل سطر. تظهر للمشرف عند رفض المحتوى.</p>
+        <div className="mt-5 grid gap-4 sm:grid-cols-2">{([['question','رفض الأسئلة'],['answer','رفض الأجوبة'],['expert','رفض الخبراء'],['withdrawal','رفض السحب']] as [keyof ModerationReasons,string][]).map(([key,label])=><label key={key} className="text-xs font-semibold text-ink/60">{label}<textarea rows={5} value={moderationReasons[key].join('\n')} onChange={e=>setModerationReasons({...moderationReasons,[key]:e.target.value.split('\n').map(x=>x.trim()).filter(Boolean)})} className="mt-1.5 w-full resize-none rounded-xl border border-ink/15 bg-white p-3 text-sm leading-6"/></label>)}</div>
       </Card>
 
       <Card className="fade-up p-6">
