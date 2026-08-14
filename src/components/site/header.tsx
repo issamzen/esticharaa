@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { Coins, LogIn, Menu, MessagesSquare, UserRound } from "lucide-react";
 import { useAuth } from "@/lib/auth";
@@ -10,6 +10,7 @@ import { localeDirection } from "@/i18n/config";
 import { useLocale } from "@/i18n/use-locale";
 import { LanguageSwitcher } from "./language-switcher";
 import { ThemeToggle } from "./theme-toggle";
+import { supabase } from "@/lib/supabase";
 
 const navigation = [
   { to: "/questions", key: "nav.questions" },
@@ -27,6 +28,30 @@ export function Header() {
   const { user, profile } = useAuth();
   const site = useSiteSettings();
   const siteName = useSiteName(locale);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    if (!user) { setUnreadCount(0); return; }
+    async function refreshUnread() {
+      const { count } = await supabase.from("notifications")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", user!.id).is("read_at", null);
+      setUnreadCount(count ?? 0);
+    }
+    refreshUnread();
+    const timer = window.setInterval(refreshUnread, 30000);
+    const channel = supabase.channel(`user-notifications-${user.id}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "notifications", filter: `user_id=eq.${user.id}` }, refreshUnread)
+      .subscribe();
+    const cleared = () => setUnreadCount(0);
+    window.addEventListener("estichara:notifications-read", cleared);
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener("estichara:notifications-read", cleared);
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id]);
+
   // Admin-controlled menu (falls back to the default list before load)
   const navItems = site.loaded
     ? site.nav.filter((i) => i.visible)
@@ -115,11 +140,18 @@ export function Header() {
               asChild
               variant="outline"
               size="sm"
-              className="rounded-xl"
-              aria-label={t("nav.account")}
+              className="relative rounded-xl ps-1.5"
+              aria-label={`${t("nav.account")}${unreadCount ? ` — ${unreadCount}` : ""}`}
             >
-              <Link to="/account">
-                <UserRound className="size-4" />
+              <Link to="/account" className="relative">
+                <span className="relative grid size-7 shrink-0 place-items-center overflow-visible rounded-lg bg-primary/10 text-[10px] font-bold text-primary">
+                  {profile?.avatar_url ? <img src={profile.avatar_url} alt="" className="size-full rounded-lg object-cover" /> : (profile?.full_name ? profile.full_name.split(" ").map((word) => word[0]).slice(0, 2).join("") : <UserRound className="size-4" />)}
+                  {unreadCount > 0 && (
+                    <span className="absolute -end-2 -top-2 grid min-h-5 min-w-5 place-items-center rounded-full border-2 border-background bg-red-500 px-1 text-[9px] font-bold leading-none text-white shadow-lg shadow-red-500/25">
+                      {unreadCount > 99 ? "99+" : unreadCount}
+                    </span>
+                  )}
+                </span>
                 <span className="hidden lg:inline">
                   {profile?.full_name?.split(" ")[0] || t("nav.account")}
                 </span>
@@ -207,8 +239,9 @@ export function Header() {
                     variant="outline"
                     className="mt-2 w-full rounded-xl"
                   >
-                    <Link to="/account" onClick={() => setOpen(false)}>
+                    <Link to="/account" onClick={() => setOpen(false)} className="relative">
                       <UserRound className="size-4" /> {t("nav.account")}
+                      {unreadCount > 0 && <span className="ms-auto rounded-full bg-red-500 px-2 py-0.5 text-[10px] font-bold text-white">{unreadCount > 99 ? "99+" : unreadCount}</span>}
                     </Link>
                   </Button>
                 ) : (
