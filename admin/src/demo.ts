@@ -87,6 +87,11 @@ const settings = [
     targeting_enabled: true, targeting_requires_paid_question: true,
     audience_min_token_balance: 1, question_preview_chars: 180, answer_preview_chars: 220,
   } },
+  { key: "platform_limits", value: {
+    questions_per_day: 10, answers_per_hour: 10, support_threads_per_day: 5,
+    support_messages_per_hour: 30, private_messages_per_hour: 60, reports_per_day: 10,
+    max_open_support_threads: 5,
+  } },
   { key: "expert_audiences", value: [
     { id: "engineers", label_ar: "المهندسون", label_fr: "Ingénieurs", label_en: "Engineers", active: true },
     { id: "diplomats", label_ar: "الدبلوماسيون", label_fr: "Diplomates", label_en: "Diplomats", active: true },
