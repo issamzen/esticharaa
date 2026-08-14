@@ -42,10 +42,12 @@ type LiveQuestion = {
   title: string;
   body: string;
   tokens: number;
+  unlock_cost: number;
   views: number;
   answers_count: number;
   created_at: string;
-  categories: { slug: string; name_ar: string } | null;
+  category_slug: string | null;
+  category_name_ar: string | null;
 };
 
 function QuestionsPage() {
@@ -57,18 +59,12 @@ function QuestionsPage() {
 
   useEffect(() => {
     supabase
-      .from("questions")
-      .select(
-        "id, title, body, tokens, views, answers_count, created_at, categories(slug, name_ar)",
-      )
-      .eq("status", "published")
-      .order("created_at", { ascending: false })
-      .limit(50)
+      .rpc("get_public_questions", { p_limit: 50 })
       .then(({ data }) => setLive((data as unknown as LiveQuestion[]) ?? []));
   }, []);
 
   const liveVisible = useMemo(
-    () => live.filter((q) => !category || q.categories?.slug === category),
+    () => live.filter((q) => !category || q.category_slug === category),
     [live, category],
   );
   const localized = useMemo(
@@ -143,14 +139,14 @@ function QuestionsPage() {
             >
               <div className="absolute inset-x-0 top-0 h-0.5 origin-start scale-x-0 bg-gradient-to-r from-secondary to-accent transition-transform duration-300 group-hover:scale-x-100" />
               <div className="flex flex-wrap items-center gap-2">
-                {q.categories ? (
+                {q.category_name_ar ? (
                   <Badge variant="secondary" className="rounded-full">
-                    {q.categories.name_ar}
+                    {q.category_name_ar}
                   </Badge>
                 ) : null}
-                {q.tokens > 0 ? (
+                {q.unlock_cost > 0 ? (
                   <Badge className="rounded-full bg-accent text-accent-foreground">
-                    <Lock className="size-3" /> {q.tokens} {t("common.tokens")}
+                    <Lock className="size-3" /> {q.unlock_cost} {t("common.tokens")}
                   </Badge>
                 ) : (
                   <Badge variant="outline" className="rounded-full">
