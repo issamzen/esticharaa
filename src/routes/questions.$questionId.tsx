@@ -12,6 +12,7 @@ import {
   CheckCircle2,
   AlertTriangle,
   Send,
+  Flag,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
@@ -120,6 +121,14 @@ function DbQuestionDetail({ questionId }: { questionId: string }) {
   const [myAnswerStatus, setMyAnswerStatus] = useState<string | null>(null);
   const [answerBody, setAnswerBody] = useState("");
   const [submittingAnswer, setSubmittingAnswer] = useState(false);
+  const [reportTarget,setReportTarget]=useState<{type:"question"|"answer";id:string;label:string}|null>(null);
+  const [reportCategory,setReportCategory]=useState("spam");
+  const [reportDetails,setReportDetails]=useState("");
+  const [reportBusy,setReportBusy]=useState(false);
+  const [reviewAnswer,setReviewAnswer]=useState<{id:string;name:string}|null>(null);
+  const [reviewRating,setReviewRating]=useState(5);
+  const [reviewComment,setReviewComment]=useState("");
+  const [reviewBusy,setReviewBusy]=useState(false);
 
   async function load() {
     const { data, error } = await supabase.rpc("get_question_page", {
@@ -177,6 +186,9 @@ function DbQuestionDetail({ questionId }: { questionId: string }) {
     setMyAnswerStatus("pending");
     toast.success(locale === "ar" ? "تم إرسال إجابتك للمراجعة" : locale === "fr" ? "Votre réponse a été envoyée pour validation." : "Your answer was submitted for review.");
   }
+
+  async function submitReport(){if(!reportTarget||!user){navigate({to:"/auth"});return}if(reportDetails.trim().length<5){toast.error(locale==="ar"?"أضف تفاصيل قصيرة عن سبب البلاغ":"Please add a short explanation");return}setReportBusy(true);const{error}=await supabase.rpc("create_content_report",{p_target_type:reportTarget.type,p_target_id:reportTarget.id,p_category:reportCategory,p_details:reportDetails.trim()});setReportBusy(false);if(error){toast.error(error.message.includes("REPORT_ALREADY_OPEN")?(locale==="ar"?"لديك بلاغ مفتوح بالفعل حول هذا المحتوى":"You already have an open report for this content"):error.message);return}setReportTarget(null);setReportDetails("");toast.success(locale==="ar"?"تم إرسال البلاغ إلى فريق المراجعة":"Report sent to moderation")}
+  async function submitReview(){if(!reviewAnswer||!user)return;if(reviewComment.trim().length>0&&reviewComment.trim().length<5){toast.error(locale==="ar"?"اكتب تعليقًا أوضح أو اتركه فارغًا":"Write a clearer comment or leave it empty");return}setReviewBusy(true);const{error}=await supabase.rpc("submit_expert_review",{p_answer_id:reviewAnswer.id,p_rating:reviewRating,p_comment:reviewComment.trim()});setReviewBusy(false);if(error){toast.error(error.message.includes("UNLOCK_REQUIRED")?(locale==="ar"?"يجب فتح الإجابة قبل تقييمها":"Unlock the answer before reviewing it"):error.message);return}setReviewAnswer(null);setReviewComment("");toast.success(locale==="ar"?"شكرًا، تم حفظ تقييمك":"Thank you, your review was saved")}
 
   async function unlock() {
     if (!user) {
@@ -306,6 +318,7 @@ function DbQuestionDetail({ questionId }: { questionId: string }) {
             ))}
           </div>
         )}
+        <div className="mt-4 flex justify-end"><button onClick={()=>user?setReportTarget({type:"question",id:q.id,label:q.title}):navigate({to:"/auth"})} className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs text-muted-foreground transition hover:bg-destructive/8 hover:text-destructive"><Flag className="size-3.5"/>{locale==="ar"?"الإبلاغ عن السؤال":locale==="fr"?"Signaler la question":"Report question"}</button></div>
 
         {profile?.role === "expert" && expertAccess && (
           <section className={`mt-8 overflow-hidden rounded-3xl border shadow-soft ${
@@ -497,8 +510,14 @@ function DbQuestionDetail({ questionId }: { questionId: string }) {
                 </>
               )}
             </div>
+            <div className="mt-5 flex flex-wrap items-center justify-end gap-2 border-t border-border/50 pt-4">
+              {a.body&&user&&<Button size="sm" variant="outline" className="rounded-xl" onClick={()=>{setReviewAnswer({id:a.id,name:a.expert_name});setReviewRating(5);setReviewComment("")}}><Star className="size-3.5 text-accent"/>{locale==="ar"?"قيّم الإجابة":locale==="fr"?"Évaluer":"Review answer"}</Button>}
+              <button onClick={()=>user?setReportTarget({type:"answer",id:a.id,label:`${a.expert_name}` }):navigate({to:"/auth"})} className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs text-muted-foreground transition hover:bg-destructive/8 hover:text-destructive"><Flag className="size-3.5"/>{locale==="ar"?"الإبلاغ":locale==="fr"?"Signaler":"Report"}</button>
+            </div>
           </section>
         ))}
+        {reportTarget&&<div className="fixed inset-0 z-[80] grid place-items-center bg-foreground/25 p-4 backdrop-blur-sm" onMouseDown={e=>e.target===e.currentTarget&&setReportTarget(null)}><div className="w-full max-w-md rounded-3xl border border-border bg-background p-6 shadow-2xl"><div className="flex items-start justify-between"><div><h2 className="text-xl font-semibold">{locale==="ar"?"إرسال بلاغ":locale==="fr"?"Envoyer un signalement":"Submit a report"}</h2><p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{reportTarget.label}</p></div><button onClick={()=>setReportTarget(null)} className="rounded-lg bg-muted p-2">×</button></div><div className="mt-5 grid grid-cols-2 gap-2">{[{id:"spam",ar:"إعلان أو إزعاج",en:"Spam"},{id:"harassment",ar:"إساءة أو مضايقة",en:"Harassment"},{id:"misinformation",ar:"معلومات خطرة",en:"Misinformation"},{id:"privacy",ar:"بيانات شخصية",en:"Privacy"},{id:"impersonation",ar:"انتحال صفة",en:"Impersonation"},{id:"illegal",ar:"محتوى غير قانوني",en:"Illegal content"},{id:"off_topic",ar:"خارج الموضوع",en:"Off topic"},{id:"other",ar:"سبب آخر",en:"Other"}].map(item=><button key={item.id} onClick={()=>setReportCategory(item.id)} className={`rounded-xl border px-3 py-2 text-xs font-semibold ${reportCategory===item.id?"border-destructive bg-destructive/8 text-destructive":"border-border text-muted-foreground"}`}>{locale==="ar"?item.ar:item.en}</button>)}</div><Textarea value={reportDetails} onChange={e=>setReportDetails(e.target.value)} maxLength={2000} className="mt-4 min-h-28 rounded-xl" placeholder={locale==="ar"?"اشرح المشكلة باختصار…":"Briefly explain the problem…"}/><div className="mt-4 flex justify-end gap-2"><Button variant="outline" className="rounded-xl" onClick={()=>setReportTarget(null)}>{locale==="ar"?"إلغاء":"Cancel"}</Button><Button variant="destructive" className="rounded-xl" disabled={reportBusy} onClick={submitReport}>{reportBusy?<Loader2 className="size-4 animate-spin"/>:<Flag className="size-4"/>}{locale==="ar"?"إرسال البلاغ":"Submit"}</Button></div></div></div>}
+        {reviewAnswer&&<div className="fixed inset-0 z-[80] grid place-items-center bg-foreground/25 p-4 backdrop-blur-sm" onMouseDown={e=>e.target===e.currentTarget&&setReviewAnswer(null)}><div className="w-full max-w-md rounded-3xl border border-border bg-background p-6 text-center shadow-2xl"><h2 className="text-xl font-semibold">{locale==="ar"?"تقييم الإجابة":locale==="fr"?"Évaluer la réponse":"Review this answer"}</h2><p className="mt-1 text-xs text-muted-foreground">{reviewAnswer.name}</p><div className="mt-5 flex justify-center gap-2" dir="ltr">{[1,2,3,4,5].map(value=><button key={value} onClick={()=>setReviewRating(value)} className="p-1 transition hover:scale-110"><Star className={`size-8 ${value<=reviewRating?"fill-amber-400 text-amber-400":"text-muted"}`}/></button>)}</div><p className="mt-2 text-sm font-semibold">{reviewRating} / 5</p><Textarea value={reviewComment} onChange={e=>setReviewComment(e.target.value)} maxLength={2000} className="mt-4 min-h-28 rounded-xl text-start" placeholder={locale==="ar"?"ما الذي كان مفيدًا في الإجابة؟ (اختياري)":"What was helpful? (optional)"}/><div className="mt-4 flex justify-center gap-2"><Button variant="outline" className="rounded-xl" onClick={()=>setReviewAnswer(null)}>{locale==="ar"?"إلغاء":"Cancel"}</Button><Button className="rounded-xl" disabled={reviewBusy} onClick={submitReview}>{reviewBusy?<Loader2 className="size-4 animate-spin"/>:<Star className="size-4"/>}{locale==="ar"?"حفظ التقييم":"Save review"}</Button></div></div></div>}
       </article>
     </SiteLayout>
   );
