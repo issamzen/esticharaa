@@ -1,91 +1,27 @@
-import { useEffect, useState } from "react";
-import { Star, Trash2, Check } from "lucide-react";
+import { useEffect,useMemo,useState } from "react";
+import { Star,Trash2,Check,Flag,Search,ShieldAlert,EyeOff,Eye,UserX,Loader2,X } from "lucide-react";
 import { supabase } from "../supabase";
-import { Card, Badge, Btn, Empty } from "../ui";
+import { Card,Badge,Btn,Empty } from "../ui";
 
-type Review = {
-  id: string; rating: number; comment: string; created_at: string;
-  expert: { full_name: string } | null;
-  reviewer: { full_name: string } | null;
-};
-type Report = {
-  id: string; target_type: string; reason: string; resolved: boolean; created_at: string;
-  reporter: { full_name: string } | null;
-};
+type Review={id:string;rating:number;comment:string;status:string;moderation_note:string;created_at:string;expert:{full_name:string}|null;reviewer:{full_name:string}|null};
+type Report={id:string;target_type:string;target_id:string;category:string;reason:string;details:string;status:string;priority:string;resolution_note:string;action_taken:string;target_snapshot:Record<string,unknown>;created_at:string;reporter:{full_name:string}|null};
+const TARGET:Record<string,string>={question:"سؤال",answer:"إجابة",user:"مستخدم",expert:"خبير",message:"رسالة",review:"تقييم",support:"دعم"};
+const STATUS:Record<string,{label:string;tone:"danger"|"warning"|"success"|"neutral"|"info"}>={new:{label:"جديد",tone:"danger"},reviewing:{label:"قيد التحقيق",tone:"warning"},resolved:{label:"تمت المعالجة",tone:"success"},dismissed:{label:"مرفوض",tone:"neutral"}};
 
-export function ReviewsReportsPage() {
-  const [reviews, setReviews] = useState<Review[]>([]);
-  const [reports, setReports] = useState<Report[]>([]);
-
-  async function load() {
-    const [{ data: rv }, { data: rp }] = await Promise.all([
-      supabase.from("reviews").select("id, rating, comment, created_at, expert:expert_id(full_name), reviewer:user_id(full_name)").order("created_at", { ascending: false }).limit(100),
-      supabase.from("reports").select("id, target_type, reason, resolved, created_at, reporter:reporter_id(full_name)").order("created_at", { ascending: false }).limit(100),
-    ]);
-    setReviews((rv as unknown as Review[]) ?? []);
-    setReports((rp as unknown as Report[]) ?? []);
-  }
-  useEffect(() => { load(); }, []);
-
-  async function delReview(id: string) {
-    if (!confirm("حذف هذا التقييم؟")) return;
-    await supabase.from("reviews").delete().eq("id", id);
-    await load();
-  }
-  async function resolveReport(id: string) {
-    await supabase.from("reports").update({ resolved: true }).eq("id", id);
-    await load();
-  }
-
-  const TARGET_LABEL: Record<string, string> = { question: "سؤال", answer: "جواب", user: "مستخدم", message: "رسالة" };
-
-  return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">التقييمات والبلاغات</h1>
-        <p className="mt-1 text-sm text-ink/55">إدارة تقييمات الخبراء ومعالجة بلاغات الإساءة</p>
-      </div>
-
-      <section className="space-y-3">
-        <h2 className="font-bold">البلاغات {reports.filter((r) => !r.resolved).length > 0 && <Badge tone="danger">{reports.filter((r) => !r.resolved).length} غير معالَج</Badge>}</h2>
-        {reports.map((r) => (
-          <Card key={r.id} className={`fade-up flex flex-wrap items-center justify-between gap-3 p-4 ${r.resolved ? "opacity-55" : ""}`}>
-            <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <Badge tone="info">{TARGET_LABEL[r.target_type] ?? r.target_type}</Badge>
-                {r.resolved ? <Badge tone="success">معالَج</Badge> : <Badge tone="danger">جديد</Badge>}
-              </div>
-              <p className="mt-2 text-sm">{r.reason}</p>
-              <p className="mt-1 text-xs text-ink/45">بلّغ عنه: {r.reporter?.full_name ?? "مجهول"} · {new Date(r.created_at).toLocaleDateString("ar-MA")}</p>
-            </div>
-            {!r.resolved && <Btn small onClick={() => resolveReport(r.id)}><Check className="size-3.5" /> تمت المعالجة</Btn>}
-          </Card>
-        ))}
-        {reports.length === 0 && <Card><Empty text="لا توجد بلاغات 🎉" /></Card>}
-      </section>
-
-      <section className="space-y-3">
-        <h2 className="font-bold">أحدث التقييمات</h2>
-        <div className="grid gap-3 lg:grid-cols-2">
-          {reviews.map((rv) => (
-            <Card key={rv.id} className="fade-up p-4">
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-1">
-                  {Array.from({ length: 5 }).map((_, i) => (
-                    <Star key={i} className={`size-4 ${i < rv.rating ? "fill-amber-400 text-amber-400" : "text-ink/20"}`} />
-                  ))}
-                </div>
-                <Btn small tone="danger" onClick={() => delReview(rv.id)}><Trash2 className="size-3.5" /></Btn>
-              </div>
-              {rv.comment && <p className="mt-2 text-sm leading-6 text-ink/75">{rv.comment}</p>}
-              <p className="mt-2 text-xs text-ink/45">
-                {rv.reviewer?.full_name ?? "—"} ← الخبير {rv.expert?.full_name ?? "—"} · {new Date(rv.created_at).toLocaleDateString("ar-MA")}
-              </p>
-            </Card>
-          ))}
-        </div>
-        {reviews.length === 0 && <Card><Empty text="لا توجد تقييمات بعد" /></Card>}
-      </section>
-    </div>
-  );
+export function ReviewsReportsPage(){
+ const[tab,setTab]=useState<"reports"|"reviews">("reports");const[reviews,setReviews]=useState<Review[]>([]);const[reports,setReports]=useState<Report[]>([]);const[filter,setFilter]=useState("new");const[query,setQuery]=useState("");const[selected,setSelected]=useState<Report|null>(null);const[action,setAction]=useState("none");const[note,setNote]=useState("");const[busy,setBusy]=useState(false);const[error,setError]=useState("");
+ async function load(){const[{data:rv,error:rvError},{data:rp,error:rpError}]=await Promise.all([supabase.from("reviews").select("id,rating,comment,status,moderation_note,created_at,expert:expert_id(full_name),reviewer:user_id(full_name)").order("created_at",{ascending:false}).limit(300),supabase.from("reports").select("id,target_type,target_id,category,reason,details,status,priority,resolution_note,action_taken,target_snapshot,created_at,reporter:reporter_id(full_name)").order("created_at",{ascending:false}).limit(300)]);if(rvError||rpError){setError((rvError||rpError)?.message??"");return}setError("");setReviews((rv as unknown as Review[])??[]);setReports((rp as unknown as Report[])??[])}
+ useEffect(()=>{load()},[]);
+ const visible=useMemo(()=>reports.filter(r=>(filter==="all"||r.status===filter)&&(!query||`${r.reason} ${r.details} ${r.reporter?.full_name??""}`.toLowerCase().includes(query.toLowerCase()))),[reports,filter,query]);
+ async function beginReview(r:Report){const{error}=await supabase.rpc("admin_process_report",{p_report_id:r.id,p_status:"reviewing",p_action:"none",p_note:""});if(error)alert(error.message);else load()}
+ async function process(status:"resolved"|"dismissed"){if(!selected)return;setBusy(true);const{error}=await supabase.rpc("admin_process_report",{p_report_id:selected.id,p_status:status,p_action:status==="dismissed"?"none":action,p_note:note.trim()});setBusy(false);if(error){alert(error.message);return}setSelected(null);setNote("");setAction("none");load()}
+ async function setReviewStatus(id:string,status:string){const{error}=await supabase.from("reviews").update({status,moderation_note:status==="hidden"?"أخفي بواسطة الإدارة":""}).eq("id",id);if(error)alert(error.message);else load()}
+ async function delReview(id:string){if(!confirm("حذف هذا التقييم نهائيًا؟"))return;const{error}=await supabase.from("reviews").delete().eq("id",id);if(error)alert(error.message);else load()}
+ const newCount=reports.filter(r=>r.status==="new").length;
+ return <div className="space-y-5"><div className="flex flex-wrap items-end justify-between gap-3"><div><h1 className="text-2xl font-bold">التقييمات والبلاغات</h1><p className="mt-1 text-sm text-ink/55">مركز سلامة المجتمع والتحقيق في المحتوى</p></div><div className="flex rounded-xl border border-ink/8 bg-white p-1"><button onClick={()=>setTab("reports")} className={`rounded-lg px-4 py-2 text-xs font-bold ${tab==="reports"?"bg-brand-dark text-white":"text-ink/55"}`}>البلاغات {newCount>0&&<span className="ms-1 rounded-full bg-red-500 px-1.5 text-white">{newCount}</span>}</button><button onClick={()=>setTab("reviews")} className={`rounded-lg px-4 py-2 text-xs font-bold ${tab==="reviews"?"bg-brand-dark text-white":"text-ink/55"}`}>التقييمات ({reviews.length})</button></div></div>
+ {error&&<Card className="border-red-200 bg-red-50 p-5 text-sm text-red-700">{error}<br/><b>شغّل migration 15 في Supabase.</b></Card>}
+ {tab==="reports"?<><Card className="p-4"><div className="flex flex-wrap gap-3"><div className="relative min-w-60 flex-1"><Search className="absolute start-3 top-1/2 size-4 -translate-y-1/2 text-ink/35"/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="بحث في البلاغات…" className="w-full rounded-xl border border-ink/12 bg-white py-2.5 pe-3 ps-10 text-sm"/></div><div className="flex flex-wrap gap-1">{[["all","الكل"],["new","جديد"],["reviewing","قيد التحقيق"],["resolved","معالج"],["dismissed","مرفوض"]].map(([id,label])=><button key={id} onClick={()=>setFilter(id)} className={`rounded-xl px-3 py-2 text-xs font-semibold ${filter===id?"bg-brand-teal text-white":"bg-ink/5 text-ink/55"}`}>{label} ({id==="all"?reports.length:reports.filter(r=>r.status===id).length})</button>)}</div></div></Card><div className="space-y-3">{visible.map(r=>{const meta=STATUS[r.status]??STATUS.new;const snap=r.target_snapshot??{};return <Card key={r.id} className={`p-5 ${r.priority==="high"?"border-red-200":""}`}><div className="flex flex-wrap items-start gap-4"><span className={`grid size-11 shrink-0 place-items-center rounded-2xl ${r.status==="new"?"bg-red-50 text-red-600":"bg-ink/5 text-ink/50"}`}><Flag className="size-5"/></span><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><Badge tone={meta.tone}>{meta.label}</Badge><Badge tone="info">{TARGET[r.target_type]??r.target_type}</Badge>{r.priority==="high"&&<Badge tone="danger">أولوية عالية</Badge>}</div><h3 className="mt-2 font-bold">{r.reason}</h3><p className="mt-1 text-sm leading-6 text-ink/65">{r.details}</p>{Boolean(snap.title||snap.name||snap.excerpt)&&<div className="mt-3 rounded-xl bg-ink/[.035] p-3"><p className="text-xs font-semibold">{String(snap.title??snap.name??"المحتوى المبلّغ عنه")}</p>{Boolean(snap.excerpt)&&<p className="mt-1 line-clamp-3 text-xs leading-5 text-ink/55">{String(snap.excerpt)}</p>}</div>}<p className="mt-2 text-[10px] text-ink/40">المبلّغ: {r.reporter?.full_name??"مجهول"} · {new Date(r.created_at).toLocaleString("ar-MA")}</p>{r.resolution_note&&<p className="mt-2 rounded-lg bg-emerald-50 p-2 text-xs text-emerald-700">القرار: {r.resolution_note}</p>}</div><div className="flex gap-2">{r.status==="new"&&<Btn small tone="ghost" onClick={()=>beginReview(r)}><ShieldAlert className="size-3.5"/> بدء التحقيق</Btn>}{!["resolved","dismissed"].includes(r.status)&&<Btn small onClick={()=>{setSelected(r);setAction("none");setNote("")}}><Check className="size-3.5"/> اتخاذ قرار</Btn>}</div></div></Card>})}{visible.length===0&&<Card><Empty text="لا توجد بلاغات مطابقة"/></Card>}</div></>:<div className="grid gap-3 lg:grid-cols-2">{reviews.map(rv=><Card key={rv.id} className={`p-5 ${rv.status!=="published"?"opacity-55":""}`}><div className="flex items-center justify-between"><div className="flex gap-0.5">{[0,1,2,3,4].map(i=><Star key={i} className={`size-4 ${i<rv.rating?"fill-amber-400 text-amber-400":"text-ink/20"}`}/>)}</div><Badge tone={rv.status==="published"?"success":"neutral"}>{rv.status==="published"?"ظاهر":"مخفي"}</Badge></div>{rv.comment&&<p className="mt-3 text-sm leading-6 text-ink/70">{rv.comment}</p>}<p className="mt-2 text-xs text-ink/40">{rv.reviewer?.full_name??"—"} ← {rv.expert?.full_name??"—"} · {new Date(rv.created_at).toLocaleDateString("ar-MA")}</p><div className="mt-4 flex gap-2 border-t border-ink/7 pt-3">{rv.status==="published"?<Btn small tone="ghost" onClick={()=>setReviewStatus(rv.id,"hidden")}><EyeOff className="size-3.5"/> إخفاء</Btn>:<Btn small onClick={()=>setReviewStatus(rv.id,"published")}><Eye className="size-3.5"/> إعادة النشر</Btn>}<Btn small tone="danger" onClick={()=>delReview(rv.id)}><Trash2 className="size-3.5"/> حذف</Btn></div></Card>)}{reviews.length===0&&<Card className="lg:col-span-2"><Empty text="لا توجد تقييمات"/></Card>}</div>}
+ {selected&&<div className="fixed inset-0 z-50 grid place-items-center bg-ink/35 p-4 backdrop-blur-sm" onMouseDown={e=>e.target===e.currentTarget&&setSelected(null)}><Card className="w-full max-w-lg p-6"><div className="flex items-start justify-between"><div><h2 className="text-lg font-bold">معالجة البلاغ</h2><p className="mt-1 text-xs text-ink/45">{selected.reason}</p></div><button onClick={()=>setSelected(null)} className="rounded-lg bg-ink/5 p-2"><X className="size-4"/></button></div><p className="mt-5 text-xs font-semibold text-ink/60">الإجراء</p><div className="mt-2 grid grid-cols-2 gap-2"><Action id="none" label="بدون إجراء" active={action==="none"} onClick={setAction}/>{selected.target_type==="question"&&<Action id="close_content" label="إغلاق السؤال" active={action==="close_content"} onClick={setAction}/>} {["answer","review"].includes(selected.target_type)&&<Action id="hide_content" label="إخفاء المحتوى" active={action==="hide_content"} onClick={setAction}/>}<Action id="ban_author" label="حظر صاحب المحتوى" active={action==="ban_author"} onClick={setAction}/></div><label className="mt-4 block text-xs font-semibold text-ink/60">ملخص القرار للمبلّغ<textarea value={note} onChange={e=>setNote(e.target.value)} rows={4} className="mt-1.5 w-full resize-none rounded-xl border border-ink/12 bg-white p-3 text-sm" placeholder="اشرح ما تمت مراجعته والإجراء المتخذ…"/></label><div className="mt-5 flex flex-wrap justify-end gap-2"><Btn tone="ghost" onClick={()=>process("dismissed")}>رفض البلاغ</Btn><Btn disabled={busy||!note.trim()} onClick={()=>process("resolved")}>{busy?<Loader2 className="size-4 animate-spin"/>:<Check className="size-4"/>} تأكيد المعالجة</Btn></div></Card></div>}
+ </div>;
 }
+function Action({id,label,active,onClick}:{id:string;label:string;active:boolean;onClick:(id:string)=>void}){return <button onClick={()=>onClick(id)} className={`rounded-xl border px-3 py-2.5 text-xs font-semibold ${active?"border-brand-teal bg-brand-teal/8 text-brand-teal":"border-ink/10 bg-white text-ink/55"}`}>{id==="ban_author"&&<UserX className="me-1 inline size-3.5"/>}{label}</button>}
