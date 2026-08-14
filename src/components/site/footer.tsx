@@ -43,6 +43,8 @@ export function Footer() {
       links: [
         { to: "/about", label: t("footer.about") },
         { to: "/contact", label: t("footer.contact") },
+        { to: "/privacy", label: t("footer.privacy") },
+        { to: "/terms", label: t("footer.terms") },
       ],
     },
   ] as const;
