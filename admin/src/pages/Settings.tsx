@@ -42,8 +42,8 @@ const DEFAULT_LIMITS: PlatformLimits = {
   support_messages_per_hour: 30, private_messages_per_hour: 60, reports_per_day: 10,
   max_open_support_threads: 5,
 };
-type FeatureFlags = Record<"new_questions"|"free_questions"|"paid_questions"|"expert_answers"|"expert_targeting"|"answer_unlocking"|"expert_applications"|"token_purchases"|"withdrawals"|"support_messaging"|"private_messages"|"reviews", boolean>;
-const DEFAULT_FEATURES: FeatureFlags = { new_questions:true,free_questions:true,paid_questions:true,expert_answers:true,expert_targeting:true,answer_unlocking:true,expert_applications:true,token_purchases:true,withdrawals:true,support_messaging:true,private_messages:true,reviews:true };
+type FeatureFlags = Record<"new_questions"|"free_questions"|"paid_questions"|"expert_answers"|"community_answers"|"expert_targeting"|"answer_unlocking"|"expert_applications"|"token_purchases"|"withdrawals"|"support_messaging"|"private_messages"|"reviews", boolean>;
+const DEFAULT_FEATURES: FeatureFlags = { new_questions:true,free_questions:true,paid_questions:true,expert_answers:true,community_answers:true,expert_targeting:true,answer_unlocking:true,expert_applications:true,token_purchases:true,withdrawals:true,support_messaging:true,private_messages:true,reviews:true };
 type MaintenancePage={enabled:boolean;title_ar:string;message_ar:string;title_fr:string;message_fr:string;title_en:string;message_en:string;expected_return:string};
 const DEFAULT_MAINTENANCE:MaintenancePage={enabled:false,title_ar:"الموقع تحت الصيانة",message_ar:"نعمل على تحسين المنصة. سنعود قريبًا.",title_fr:"Maintenance en cours",message_fr:"Nous améliorons la plateforme.",title_en:"We are improving the platform",message_en:"We will be back shortly.",expected_return:""};
 type ModerationReasons={question:string[];answer:string[];expert:string[];withdrawal:string[]};
@@ -260,7 +260,7 @@ export function SettingsPage() {
         <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {([
             ["new_questions","طرح أسئلة جديدة"],["free_questions","الأسئلة المجانية"],["paid_questions","الأسئلة المدفوعة"],
-            ["expert_answers","إجابات الخبراء"],["expert_targeting","اختيار فئة المجيب"],["answer_unlocking","فتح الأجوبة بالتوكن"],
+            ["expert_answers","إجابات الخبراء"],["community_answers","السماح للجميع بالإجابة"],["expert_targeting","اختيار فئة المجيب"],["answer_unlocking","فتح الأجوبة بالتوكن"],
             ["expert_applications","طلبات الانضمام كخبير"],["token_purchases","شراء التوكن"],["withdrawals","طلبات السحب"],
             ["support_messaging","مراسلة الإدارة"],["private_messages","الرسائل الخاصة"],["reviews","التقييمات"],
           ] as [keyof FeatureFlags,string][]).map(([key,label])=><Switch key={key} checked={features[key]} onChange={value=>setFeatures({...features,[key]:value})} label={label}/>) }
