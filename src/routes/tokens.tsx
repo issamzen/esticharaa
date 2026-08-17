@@ -131,6 +131,8 @@ function TokensPage() {
     navigate({ to: "/account" });
   }
 
+  if(site.loaded&&site.tokenProgram.mode!=="full")return <SiteLayout><div className="mx-auto max-w-xl px-4 py-32 text-center"><Wallet className="mx-auto size-12 text-primary"/><h1 className="mt-5 text-3xl font-semibold">{locale==="ar"?"شراء التوكن متوقف حاليًا":locale==="fr"?"L’achat de jetons est temporairement désactivé":"Token purchases are currently disabled"}</h1><p className="mt-3 text-muted-foreground">{locale==="ar"?"المنصة مجانية حاليًا، ويمكنك متابعة مكافآتك وسجل التوكن من المحفظة.":"The platform is currently free. View your rewards and history in the wallet."}</p>{user&&<Button asChild className="mt-6 rounded-xl"><Link to="/wallet">{locale==="ar"?"فتح المحفظة":"Open wallet"}</Link></Button>}</div></SiteLayout>;
+
   return (
     <SiteLayout>
       <PageHeader
