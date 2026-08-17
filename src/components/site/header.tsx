@@ -80,7 +80,7 @@ export function Header() {
               <MessagesSquare className="size-5" />
             </span>
           )}
-          {!localizedLogo&&<span className="text-lg tracking-tight" dir={locale==="ar"&&site.branding.site_name_ar?"rtl":"ltr"}>{siteName!=="Estichara.ma"?siteName:<>Estichara<span className="text-secondary">.ma</span></>}</span>}
+          {!site.branding.use_image_logo&&<span className="text-lg tracking-tight" dir={locale==="ar"&&site.branding.site_name_ar?"rtl":"ltr"}>{siteName!=="Estichara.ma"?siteName:<>Estichara<span className="text-secondary">.ma</span></>}</span>}
         </Link>
 
         <nav
@@ -172,7 +172,7 @@ export function Header() {
                   onClick={() => setOpen(false)}
                   className="mb-7 flex items-center gap-2.5 font-semibold"
                 >
-                  {localizedLogo?<img src={localizedLogo} alt={siteName} style={logoStyle} className="site-header-logo max-h-12 object-contain"/>:<><span className="bg-brand grid size-10 place-items-center rounded-2xl text-primary-foreground"><MessagesSquare className="size-5"/></span><span dir={locale==="ar"&&site.branding.site_name_ar?"rtl":"ltr"}>{siteName}</span></>}
+                  {localizedLogo?<img src={localizedLogo} alt={siteName} style={logoStyle} className="site-header-logo max-h-12 object-contain"/>:<><span className="bg-brand grid size-10 place-items-center rounded-2xl text-primary-foreground"><MessagesSquare className="size-5"/></span>{!site.branding.use_image_logo&&<span dir={locale==="ar"&&site.branding.site_name_ar?"rtl":"ltr"}>{siteName}</span>}</>}
                 </Link>
 
                 <p className="mb-2 text-xs font-semibold text-muted-foreground">
