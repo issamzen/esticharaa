@@ -4,7 +4,7 @@ import { supabase } from "../supabase";
 import { Card, Badge, Btn, Empty } from "../ui";
 
 type Q = {
-  id: string; title: string; body: string; tokens: number; status: string;
+  id: string; title: string; body: string; tokens: number; status: string;is_anonymous:boolean;
   views: number; answers_count: number; created_at: string;
   profiles: { full_name: string } | null;
   categories: { name_ar: string } | null;
@@ -28,7 +28,7 @@ export function QuestionsPage() {
 
   async function load() {
     const [{ data: qs }, { data: as }, { data: moderation }] = await Promise.all([
-      supabase.from("questions").select("id, title, body, tokens, status, views, answers_count, created_at, profiles:user_id(full_name), categories(name_ar)").order("created_at", { ascending: false }).limit(200),
+      supabase.from("questions").select("id, title, body, tokens, status, is_anonymous, views, answers_count, created_at, profiles:user_id(full_name), categories(name_ar)").order("created_at", { ascending: false }).limit(200),
       supabase.from("answers").select("id, body, status, created_at, profiles:expert_id(full_name), questions(title)").eq("status", "pending").order("created_at", { ascending: false }).limit(200),
       supabase.from("settings").select("value").eq("key","moderation_reasons").single(),
     ]);
@@ -86,6 +86,7 @@ export function QuestionsPage() {
                     {q.status === "rejected" && <Badge tone="danger">مرفوض</Badge>}
                     {q.status === "closed" && <Badge>مغلق</Badge>}
                     {q.categories && <Badge tone="info">{q.categories.name_ar}</Badge>}
+                    {q.is_anonymous&&<Badge tone="neutral">مجهول للعموم</Badge>}
                     {q.tokens > 0 && <Badge tone="warning"><Lock className="me-1 inline size-3" />{q.tokens} توكن</Badge>}
                   </div>
                   <button onClick={() => setExpanded(expanded === q.id ? null : q.id)} className="mt-2 block text-start font-bold hover:text-brand-teal">
