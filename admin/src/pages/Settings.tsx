@@ -48,6 +48,8 @@ type MaintenancePage={enabled:boolean;title_ar:string;message_ar:string;title_fr
 const DEFAULT_MAINTENANCE:MaintenancePage={enabled:false,title_ar:"الموقع تحت الصيانة",message_ar:"نعمل على تحسين المنصة. سنعود قريبًا.",title_fr:"Maintenance en cours",message_fr:"Nous améliorons la plateforme.",title_en:"We are improving the platform",message_en:"We will be back shortly.",expected_return:""};
 type ModerationReasons={question:string[];answer:string[];expert:string[];withdrawal:string[]};
 const DEFAULT_REASONS:ModerationReasons={question:["معلومات غير كافية","سؤال مكرر","محتوى غير مناسب"],answer:["إجابة غير دقيقة","معلومات ناقصة","تخصص غير مطابق"],expert:["وثائق غير مكتملة"],withdrawal:["بيانات التحويل غير صحيحة"]};
+type TokenProgram={mode:"hidden"|"header_only"|"full";signup_bonus:number;share_bonus:number;share_daily_limit:number;wallet_enabled:boolean};
+const DEFAULT_TOKEN_PROGRAM:TokenProgram={mode:"header_only",signup_bonus:100,share_bonus:5,share_daily_limit:1,wallet_enabled:true};
 
 const DEFAULT_RULES: AccessRules = {
   guest_hide_full_content: true,
@@ -91,6 +93,7 @@ export function SettingsPage() {
   const [features, setFeatures] = useState<FeatureFlags>(DEFAULT_FEATURES);
   const [maintenancePage, setMaintenancePage] = useState<MaintenancePage>(DEFAULT_MAINTENANCE);
   const [moderationReasons, setModerationReasons] = useState<ModerationReasons>(DEFAULT_REASONS);
+  const [tokenProgram,setTokenProgram]=useState<TokenProgram>(DEFAULT_TOKEN_PROGRAM);
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -105,6 +108,7 @@ export function SettingsPage() {
         else if (row.key === "feature_flags") setFeatures({ ...DEFAULT_FEATURES, ...(row.value as Partial<FeatureFlags>) });
         else if (row.key === "maintenance_page") { const page = { ...DEFAULT_MAINTENANCE, ...(row.value as Partial<MaintenancePage>) }; setMaintenancePage(page); if (page.enabled) setMaintenance(true); }
         else if (row.key === "moderation_reasons") setModerationReasons({ ...DEFAULT_REASONS, ...(row.value as Partial<ModerationReasons>) });
+        else if(row.key==="token_program")setTokenProgram({...DEFAULT_TOKEN_PROGRAM,...(row.value as Partial<TokenProgram>)});
         else v[row.key] = String(row.value);
       });
       setValues(v);
@@ -127,6 +131,7 @@ export function SettingsPage() {
       await updateSetting("feature_flags", features);
       await updateSetting("maintenance_page", { ...maintenancePage, enabled: maintenance });
       await updateSetting("moderation_reasons", moderationReasons);
+      await updateSetting("token_program",tokenProgram);
       setSaved(true);
       setTimeout(() => setSaved(false), 2500);
     } catch (error) {
@@ -238,6 +243,15 @@ export function SettingsPage() {
             </div>
           ))}
         </div>
+      </Card>
+
+      <Card className="fade-up p-6">
+        <h2 className="flex items-center gap-2 font-bold"><Coins className="size-4.5 text-brand-gold"/> برنامج التوكن المجاني</h2>
+        <p className="mt-1 text-xs text-ink/50">تحكم في ظهور التوكن والمكافآت من دون بيع أو شراء.</p>
+        <div className="mt-5 grid gap-3 sm:grid-cols-3">{([{id:"hidden",title:"إخفاء كامل",text:"لا يظهر الرصيد أو المحفظة"},{id:"header_only",title:"الرصيد والمكافآت",text:"يظهر في الهيدر ويفتح سجل المحفظة"},{id:"full",title:"النظام الكامل",text:"شراء، فتح إجابات ومكافآت"}] as const).map(option=><button key={option.id} onClick={()=>setTokenProgram({...tokenProgram,mode:option.id})} className={`rounded-2xl border p-4 text-start transition ${tokenProgram.mode===option.id?"border-brand-teal bg-brand-teal/8 ring-2 ring-brand-teal/15":"border-ink/10 bg-white"}`}><p className="text-sm font-bold">{option.title}</p><p className="mt-1 text-[11px] leading-5 text-ink/50">{option.text}</p></button>)}</div>
+        <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4"><NumberField label="توكن عند أول تسجيل" value={tokenProgram.signup_bonus} onChange={value=>setTokenProgram({...tokenProgram,signup_bonus:value})}/><NumberField label="مكافأة مشاركة الموقع" value={tokenProgram.share_bonus} onChange={value=>setTokenProgram({...tokenProgram,share_bonus:value})}/><NumberField label="عدد مكافآت المشاركة يوميًا" value={tokenProgram.share_daily_limit} onChange={value=>setTokenProgram({...tokenProgram,share_daily_limit:value})}/><NumberField label="مكافأة الإجابة المعتمدة" value={Number(values["award_per_answer"])||0} onChange={value=>setValues({...values,award_per_answer:String(value)})}/></div>
+        <div className="mt-4 grid gap-4 sm:grid-cols-2"><NumberField label="قيمة التوكن بالدرهم المغربي" value={Number(values["token_to_mad"])||0} onChange={value=>setValues({...values,token_to_mad:String(value)})}/><Switch checked={tokenProgram.wallet_enabled} onChange={value=>setTokenProgram({...tokenProgram,wallet_enabled:value})} label="تفعيل صفحة المحفظة والسجل" help="عند تعطيلها لا يمكن فتح المحفظة حتى لو ظهر النظام."/></div>
+        {tokenProgram.mode!=="full"&&<p className="mt-4 rounded-xl bg-emerald-50 p-3 text-xs leading-6 text-emerald-700">الوضع المجاني يعطّل شراء التوكن والأسئلة المدفوعة وفتح الإجابات بالتوكن تلقائيًا. تبقى المكافآت وسجلها متاحة في وضع «الرصيد والمكافآت».</p>}
       </Card>
 
       <Card className="fade-up p-6">
