@@ -257,12 +257,7 @@ function Index() {
                   className="size-4 transition-transform group-hover:translate-x-1"
                 />
               </Link>
-              <Link
-                to="/become-expert"
-                className="font-medium text-muted-foreground transition-colors hover:text-foreground"
-              >
-                {t("home.joinAsExpert")}
-              </Link>
+              {site.features["expert_applications"]!==false&&<Link to="/become-expert" className="font-medium text-muted-foreground transition-colors hover:text-foreground">{t("home.joinAsExpert")}</Link>}
             </div>
 
             <div className="mt-8 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-muted-foreground">
@@ -868,14 +863,7 @@ function Index() {
                   <MessageSquare className="size-4" /> {t("common.askQuestion")}
                 </Link>
               </Button>
-              <Button
-                asChild
-                size="lg"
-                variant="outline"
-                className="rounded-xl border-white/20 bg-white/10 text-white hover:bg-white/15 hover:text-white"
-              >
-                <Link to="/become-expert">{t("home.cta.becomeExpert")}</Link>
-              </Button>
+              {site.features["expert_applications"]!==false&&<Button asChild size="lg" variant="outline" className="rounded-xl border-white/20 bg-white/10 text-white hover:bg-white/15 hover:text-white"><Link to="/become-expert">{t("home.cta.becomeExpert")}</Link></Button>}
             </div>
           </div>
         </div>
