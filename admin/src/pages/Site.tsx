@@ -15,7 +15,7 @@ import { Card, Badge, Btn, Empty } from "../ui";
 
 type NavItem = { to: string; key: string; visible: boolean };
 type PayMethod = { id: string; label: string; icon: string; active: boolean; details?: string };
-type Branding = { site_name: string; site_name_ar: string; logo_url: string; favicon_url: string };
+type Branding = { site_name:string;site_name_ar:string;logo_url:string;favicon_url:string;logo_ar_url:string;logo_latin_url:string;logo_width_desktop:number;logo_width_mobile:number;use_image_logo:boolean };
 type Colors = { primary: string; secondary: string; accent: string; muted: string };
 type AboutLocale = { eyebrow:string;title:string;description:string;mission_title:string;mission_text:string;vision_title:string;vision_text:string;team_title:string;team_description:string;partners_title:string };
 type TeamMember = { id:string;name:string;role_ar:string;role_fr:string;role_en:string;image_url:string };
@@ -45,7 +45,7 @@ const COLOR_LABELS: Record<keyof Colors, string> = {
 };
 
 export function SitePage() {
-  const [branding, setBranding] = useState<Branding>({ site_name: "", site_name_ar: "", logo_url: "", favicon_url: "" });
+  const [branding, setBranding] = useState<Branding>({site_name:"",site_name_ar:"",logo_url:"",favicon_url:"",logo_ar_url:"",logo_latin_url:"",logo_width_desktop:170,logo_width_mobile:120,use_image_logo:true});
   const [colors, setColors] = useState<Colors>({ primary: "#0D4B4B", secondary: "#1E8C85", accent: "#D4AF37", muted: "#F2E8D6" });
   const [nav, setNav] = useState<NavItem[]>([]);
   const [footer, setFooter] = useState<NavItem[]>([]);
@@ -55,6 +55,8 @@ export function SitePage() {
   const [aboutLang, setAboutLang] = useState<"ar"|"fr"|"en">("ar");
   const [saved, setSaved] = useState("");
   const logoRef = useRef<HTMLInputElement>(null);
+  const logoArRef=useRef<HTMLInputElement>(null);
+  const logoLatinRef=useRef<HTMLInputElement>(null);
   const favRef = useRef<HTMLInputElement>(null);
   const img404Ref = useRef<HTMLInputElement>(null);
 
@@ -66,8 +68,8 @@ export function SitePage() {
       .then(({ data }) => {
         const map = Object.fromEntries((data ?? []).map((r) => [r.key, r.value]));
         if (map.site_branding) {
-          const next = map.site_branding as Branding;
-          setBranding({ ...next, site_name_ar: next.site_name_ar ?? "" });
+          const next=map.site_branding as Partial<Branding>;
+          setBranding(current=>({...current,...next,site_name_ar:next.site_name_ar??"",logo_ar_url:next.logo_ar_url??"",logo_latin_url:next.logo_latin_url??"",logo_width_desktop:Number(next.logo_width_desktop)||170,logo_width_mobile:Number(next.logo_width_mobile)||120,use_image_logo:next.use_image_logo!==false}));
         }
         if (map.site_colors) setColors(map.site_colors as Colors);
         if (map.site_nav) setNav(map.site_nav as NavItem[]);
@@ -85,7 +87,7 @@ export function SitePage() {
     setTimeout(() => setSaved(""), 2500);
   }
 
-  async function upload(file: File, kind: "logo" | "favicon" | "img404") {
+  async function upload(file:File,kind:"logo"|"logoAr"|"logoLatin"|"favicon"|"img404"){
     const path = `${kind}-${Date.now()}.${file.name.split(".").pop()}`;
     const { error } = await supabase.storage.from("branding").upload(path, file, { upsert: true });
     if (error) { alert(error.message); return; }
@@ -96,8 +98,8 @@ export function SitePage() {
       await saveKey("page_404", next, "صورة 404");
       return;
     }
-    const next = { ...branding, [kind === "logo" ? "logo_url" : "favicon_url"]: data.publicUrl };
-    setBranding(next);
+    const field=kind==="logo"?"logo_url":kind==="logoAr"?"logo_ar_url":kind==="logoLatin"?"logo_latin_url":"favicon_url";
+    const next={...branding,[field]:data.publicUrl};setBranding(next);
     await saveKey("site_branding", next, "الشعار");
   }
 
@@ -209,6 +211,17 @@ export function SitePage() {
         <div className="mt-5 border-t border-ink/8 pt-4">
           <Btn onClick={() => saveKey("site_branding", branding, "الهوية")}><Save className="size-4" /> حفظ الهوية</Btn>
         </div>
+      </Card>
+
+      {/* Localized image logos */}
+      <Card className="fade-up p-6">
+        <div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="flex items-center gap-2 font-bold"><Image className="size-4.5 text-brand-teal"/> الشعار المصور حسب اللغة</h2><p className="mt-1 text-xs text-ink/50">ارفع صورة عربية وصورة للفرنسية والإنجليزية، أو ارجع إلى الاسم النصي في أي وقت.</p></div><button onClick={()=>setBranding({...branding,use_image_logo:!branding.use_image_logo})} className={`rounded-full px-4 py-2 text-xs font-bold ${branding.use_image_logo?"bg-brand-teal text-white":"bg-ink/7 text-ink/55"}`}>{branding.use_image_logo?"الشعار المصور مفعّل":"الاسم النصي مفعّل"}</button></div>
+        <div className="mt-5 grid gap-4 md:grid-cols-2">
+          <div className="rounded-2xl border border-ink/8 bg-white p-4"><p className="text-xs font-bold">الشعار العربي</p><div className="mt-3 flex min-h-24 items-center justify-center rounded-xl bg-paper/70 p-3">{branding.logo_ar_url?<img src={branding.logo_ar_url} alt="Arabic logo" className="max-h-20 max-w-full object-contain"/>:<span className="text-xs text-ink/35">لم ترفع صورة بعد</span>}</div><div className="mt-3 flex gap-2"><Btn small tone="ghost" onClick={()=>logoArRef.current?.click()}>رفع صورة عربية</Btn>{branding.logo_ar_url&&<Btn small tone="danger" onClick={()=>setBranding({...branding,logo_ar_url:""})}>إزالة</Btn>}</div><input ref={logoArRef} type="file" accept="image/png,image/jpeg,image/svg+xml,image/webp" hidden onChange={e=>e.target.files?.[0]&&upload(e.target.files[0],"logoAr")}/></div>
+          <div className="rounded-2xl border border-ink/8 bg-white p-4"><p className="text-xs font-bold">شعار الفرنسية والإنجليزية</p><div className="mt-3 flex min-h-24 items-center justify-center rounded-xl bg-paper/70 p-3">{branding.logo_latin_url?<img src={branding.logo_latin_url} alt="Latin logo" className="max-h-20 max-w-full object-contain"/>:<span className="text-xs text-ink/35">لم ترفع صورة بعد</span>}</div><div className="mt-3 flex gap-2"><Btn small tone="ghost" onClick={()=>logoLatinRef.current?.click()}>رفع صورة FR / EN</Btn>{branding.logo_latin_url&&<Btn small tone="danger" onClick={()=>setBranding({...branding,logo_latin_url:""})}>إزالة</Btn>}</div><input ref={logoLatinRef} type="file" accept="image/png,image/jpeg,image/svg+xml,image/webp" hidden onChange={e=>e.target.files?.[0]&&upload(e.target.files[0],"logoLatin")}/></div>
+        </div>
+        <div className="mt-5 grid gap-5 sm:grid-cols-2"><label className="text-xs font-semibold text-ink/60">عرض الشعار على الكمبيوتر: <b>{branding.logo_width_desktop}px</b><input type="range" min="80" max="320" step="5" value={branding.logo_width_desktop} onChange={e=>setBranding({...branding,logo_width_desktop:Number(e.target.value)})} className="mt-2 w-full accent-brand-teal"/></label><label className="text-xs font-semibold text-ink/60">عرض الشعار على الهاتف: <b>{branding.logo_width_mobile}px</b><input type="range" min="60" max="220" step="5" value={branding.logo_width_mobile} onChange={e=>setBranding({...branding,logo_width_mobile:Number(e.target.value)})} className="mt-2 w-full accent-brand-teal"/></label></div>
+        <div className="mt-5 border-t border-ink/8 pt-4"><Btn onClick={()=>saveKey("site_branding",branding,"الشعار المصور")}><Save className="size-4"/> حفظ الشعار والمقاسات</Btn></div>
       </Card>
 
       {/* Colors */}
