@@ -16,12 +16,7 @@ export type PaymentMethod = {
   /** Payment instructions shown to users: bank name, RIB, PayPal email... */
   details?: string;
 };
-export type Branding = {
-  site_name: string;
-  site_name_ar: string;
-  logo_url: string;
-  favicon_url: string;
-};
+export type Branding={site_name:string;site_name_ar:string;logo_url:string;favicon_url:string;logo_ar_url:string;logo_latin_url:string;logo_width_desktop:number;logo_width_mobile:number;use_image_logo:boolean};
 export type SiteColors = {
   primary: string;
   secondary: string;
@@ -45,7 +40,7 @@ type SiteSettings = {
 };
 
 const DEFAULTS: SiteSettings = {
-  branding: { site_name: "Estichara.ma", site_name_ar: "", logo_url: "", favicon_url: "" },
+  branding:{site_name:"Estichara.ma",site_name_ar:"",logo_url:"",favicon_url:"",logo_ar_url:"",logo_latin_url:"",logo_width_desktop:170,logo_width_mobile:120,use_image_logo:true},
   colors: null,
   nav: [],
   footer: [],
