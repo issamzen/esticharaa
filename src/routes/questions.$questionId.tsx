@@ -13,6 +13,7 @@ import {
   AlertTriangle,
   Send,
   Flag,
+  EyeOff,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
@@ -81,6 +82,7 @@ type DbQuestion = {
   tokens: number;
   unlock_cost: number;
   question_locked: boolean;
+  is_anonymous:boolean;
   target_audience_id: string | null;
   views: number;
   tags: string[];
@@ -166,12 +168,10 @@ function DbQuestionDetail({ questionId }: { questionId: string }) {
       return;
     }
     setSubmittingAnswer(true);
-    const { error } = await supabase.from("answers").insert({
-      question_id: q!.id,
-      expert_id: user!.id,
-      body: clean,
-      preview: clean.slice(0, 220),
-      status: "pending",
+    const { error } = await supabase.rpc("submit_expert_answer",{
+      p_question_id:q!.id,
+      p_body:clean,
+      p_preview:clean.slice(0,220),
     });
     setSubmittingAnswer(false);
     if (error) {
@@ -258,6 +258,7 @@ function DbQuestionDetail({ questionId }: { questionId: string }) {
               {q.category_name}
             </Badge>
           ) : null}
+          {q.is_anonymous&&<Badge variant="outline" className="rounded-full border-violet-300 bg-violet-50 text-violet-700"><EyeOff className="size-3"/>{locale==="ar"?"سؤال مجهول":locale==="fr"?"Question anonyme":"Anonymous question"}</Badge>}
           <Badge variant="outline" className="rounded-full border-secondary/40 bg-secondary/5">
             <Users className="size-3" />
             {targetLabel ?? (locale === "ar" ? "كل الخبراء المؤهلين" : locale === "fr" ? "Tous les experts qualifiés" : "All qualified experts")}
