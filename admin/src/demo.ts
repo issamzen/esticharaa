@@ -93,7 +93,7 @@ const settings = [
     max_open_support_threads: 5,
   } },
   { key: "token_program", value: { mode:"header_only",signup_bonus:100,share_bonus:5,share_daily_limit:1,wallet_enabled:true } },
-  { key: "feature_flags", value: { new_questions:true,free_questions:true,paid_questions:true,expert_answers:true,expert_targeting:true,answer_unlocking:true,expert_applications:true,token_purchases:true,withdrawals:true,support_messaging:true,private_messages:true,reviews:true } },
+  { key: "feature_flags", value: { new_questions:true,free_questions:true,paid_questions:true,expert_answers:true,community_answers:true,expert_targeting:true,answer_unlocking:true,expert_applications:true,token_purchases:true,withdrawals:true,support_messaging:true,private_messages:true,reviews:true } },
   { key: "maintenance_page", value: { enabled:false,title_ar:"الموقع تحت الصيانة",message_ar:"نعمل على تحسين المنصة. سنعود قريبًا.",title_fr:"Maintenance en cours",message_fr:"Nous serons bientôt de retour.",title_en:"Maintenance",message_en:"We will be back shortly.",expected_return:"" } },
   { key: "moderation_reasons", value: { question:["معلومات غير كافية","سؤال مكرر","محتوى غير مناسب"],answer:["إجابة غير دقيقة","معلومات ناقصة","تخصص غير مطابق"],expert:["وثائق غير مكتملة"],withdrawal:["بيانات التحويل غير صحيحة"] } },
   { key: "expert_audiences", value: [
