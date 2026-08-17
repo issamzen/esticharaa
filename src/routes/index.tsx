@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import * as Icons from "lucide-react";
@@ -6,6 +6,8 @@ import {
   ArrowRight,
   BadgeCheck,
   Check,
+  ChevronLeft,
+  ChevronRight,
   Clock3,
   Lock,
   MessageSquare,
@@ -127,6 +129,7 @@ function Index() {
   const site=useSiteSettings();
   const [liveQuestions,setLiveQuestions]=useState<HomeLiveQuestion[]>([]);
   const [homeCategories,setHomeCategories]=useState<HomeCategory[]>([]);
+  const categoryRail=useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     import("@/lib/supabase").then(({ supabase }) => {
@@ -174,6 +177,7 @@ function Index() {
           email: "Support email",
         };
   const categoryStrip=homeCategories.length?homeCategories.map(item=>({slug:item.slug,name:locale==="fr"&&item.name_fr?item.name_fr:locale==="en"&&item.name_en?item.name_en:item.name_ar,icon:item.icon||"Sparkles",count:Number(item.question_count)||0})):categories.slice(0,9).map((item,index)=>({slug:item.slug,name:getCategoryLabel(t,index,item.name),icon:item.icon,count:item.questions}));
+  function slideCategories(direction:1|-1){const amount=Math.min(420,Math.round((categoryRail.current?.clientWidth??320)*.72));categoryRail.current?.scrollBy({left:direction*amount*(locale==="ar"?-1:1),behavior:"smooth"})}
   const stats = [
     { value: "12.4k+", label: t("home.stats.answers") },
     { value: "640+", label: t("home.stats.experts") },
@@ -188,7 +192,13 @@ function Index() {
         <div className="pointer-events-none absolute -start-20 -top-20 size-48 rounded-full bg-secondary/10 blur-3xl"/>
         <div className="relative mx-auto flex max-w-7xl items-center gap-3 px-4 py-3 sm:px-6">
           <div className="hidden shrink-0 items-center gap-2 pe-2 text-xs font-bold text-foreground lg:flex"><span className="grid size-8 place-items-center rounded-xl bg-primary text-primary-foreground shadow-md"><Sparkles className="size-3.5"/></span>{locale==="ar"?"استكشف التصنيفات":locale==="fr"?"Explorer":"Explore"}</div>
-          <div className="no-scrollbar flex min-w-0 flex-1 gap-2 overflow-x-auto py-1">{categoryStrip.map(category=>{const Icon=(Icons[category.icon as keyof typeof Icons]??Icons.Sparkles) as Icons.LucideIcon;return <Link key={category.slug} to="/questions" search={{category:category.slug}} className="group inline-flex shrink-0 items-center gap-2 rounded-2xl border border-border/60 bg-background/80 px-3 py-2 text-xs font-semibold text-muted-foreground shadow-sm backdrop-blur transition hover:-translate-y-0.5 hover:border-primary/25 hover:bg-primary hover:text-primary-foreground hover:shadow-lg"><span className="grid size-7 place-items-center rounded-lg bg-primary/8 text-primary transition group-hover:bg-white/15 group-hover:text-primary-foreground"><Icon className="size-3.5"/></span><span>{category.name}</span><span className="hidden rounded-full bg-muted px-1.5 py-0.5 text-[9px] font-normal text-muted-foreground group-hover:bg-white/15 group-hover:text-primary-foreground/75 sm:inline">{formatNumber(category.count,locale)}</span></Link>})}</div>
+          <div className="relative flex min-w-0 flex-1 items-center gap-1">
+            <button type="button" onClick={()=>slideCategories(-1)} aria-label={locale==="ar"?"التصنيفات السابقة":"Previous categories"} className="grid size-8 shrink-0 place-items-center rounded-xl border border-border/60 bg-background/90 text-muted-foreground shadow-sm transition hover:-translate-y-0.5 hover:border-primary/30 hover:bg-primary hover:text-primary-foreground active:scale-90"><ChevronLeft className="size-4 rtl:rotate-180"/></button>
+            <div className="pointer-events-none absolute inset-y-0 start-9 z-10 w-7 bg-gradient-to-e from-transparent to-background/90"/>
+            <div ref={categoryRail} className="no-scrollbar flex min-w-0 flex-1 snap-x snap-mandatory gap-2 overflow-x-auto px-2 py-1 scroll-smooth">{categoryStrip.map(category=>{const Icon=(Icons[category.icon as keyof typeof Icons]??Icons.Sparkles) as Icons.LucideIcon;return <Link key={category.slug} to="/questions" search={{category:category.slug}} className="group inline-flex shrink-0 snap-start items-center gap-2 rounded-2xl border border-border/60 bg-background/80 px-3 py-2 text-xs font-semibold text-muted-foreground shadow-sm backdrop-blur transition hover:-translate-y-0.5 hover:border-primary/25 hover:bg-primary hover:text-primary-foreground hover:shadow-lg"><span className="grid size-7 place-items-center rounded-lg bg-primary/8 text-primary transition group-hover:bg-white/15 group-hover:text-primary-foreground"><Icon className="size-3.5"/></span><span>{category.name}</span><span className="hidden rounded-full bg-muted px-1.5 py-0.5 text-[9px] font-normal text-muted-foreground group-hover:bg-white/15 group-hover:text-primary-foreground/75 sm:inline">{formatNumber(category.count,locale)}</span></Link>})}</div>
+            <div className="pointer-events-none absolute inset-y-0 end-9 z-10 w-7 bg-gradient-to-s from-transparent to-background/90"/>
+            <button type="button" onClick={()=>slideCategories(1)} aria-label={locale==="ar"?"المزيد من التصنيفات":"More categories"} className="grid size-8 shrink-0 place-items-center rounded-xl border border-border/60 bg-background/90 text-muted-foreground shadow-sm transition hover:-translate-y-0.5 hover:border-primary/30 hover:bg-primary hover:text-primary-foreground active:scale-90"><ChevronRight className="size-4 rtl:rotate-180"/></button>
+          </div>
           <Link to="/categories" className="shrink-0 rounded-xl border border-border/60 bg-background/80 px-3 py-2 text-[10px] font-bold text-primary shadow-sm transition hover:bg-primary hover:text-primary-foreground">{locale==="ar"?"الكل":locale==="fr"?"Tout":"All"}</Link>
         </div>
       </section>
