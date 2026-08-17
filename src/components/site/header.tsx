@@ -58,9 +58,9 @@ export function Header() {
   function notificationIcon(type:string){if(type==="support_reply")return Headphones;if(type==="private_message")return MessageCircle;if(type==="new_answer"||type==="question_update")return MessagesSquare;if(["token_refund","expert_earning","purchase_confirmed","withdrawal_update"].includes(type))return WalletCards;return CircleAlert}
 
   // Admin-controlled menu (falls back to the default list before load)
-  const navItems = site.loaded
+  const navItems = (site.loaded
     ? site.nav.filter((i) => i.visible)
-    : [...navigation];
+    : [...navigation]).filter((item)=>site.tokenProgram.mode==="full"||!["/tokens","/pricing"].includes(item.to));
   const sheetSide = localeDirection(locale) === "rtl" ? "left" : "right";
 
   return (
@@ -118,14 +118,14 @@ export function Header() {
           </div>
           <ThemeToggle />
 
-          {user && profile ? (
+          {user && profile && site.tokenProgram.mode!=="hidden" && site.tokenProgram.wallet_enabled ? (
             <Button
               asChild
               variant="ghost"
               size="sm"
               className="hidden md:inline-flex"
             >
-              <Link to="/tokens">
+              <Link to="/wallet">
                 <Coins className="size-4 text-accent" />{" "}
                 {profile.tokens_balance.toLocaleString()}
               </Link>
