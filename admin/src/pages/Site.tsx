@@ -54,7 +54,6 @@ export function SitePage() {
   const [about, setAbout] = useState<AboutSettings>(DEFAULT_ABOUT);
   const [aboutLang, setAboutLang] = useState<"ar"|"fr"|"en">("ar");
   const [saved, setSaved] = useState("");
-  const logoRef = useRef<HTMLInputElement>(null);
   const logoArRef=useRef<HTMLInputElement>(null);
   const logoLatinRef=useRef<HTMLInputElement>(null);
   const favRef = useRef<HTMLInputElement>(null);
@@ -69,7 +68,7 @@ export function SitePage() {
         const map = Object.fromEntries((data ?? []).map((r) => [r.key, r.value]));
         if (map.site_branding) {
           const next=map.site_branding as Partial<Branding>;
-          setBranding(current=>({...current,...next,site_name_ar:next.site_name_ar??"",logo_ar_url:next.logo_ar_url??"",logo_latin_url:next.logo_latin_url??"",logo_width_desktop:Number(next.logo_width_desktop)||170,logo_width_mobile:Number(next.logo_width_mobile)||120,use_image_logo:next.use_image_logo!==false}));
+          setBranding(current=>({...current,...next,site_name_ar:next.site_name_ar??"",logo_ar_url:next.logo_ar_url??"",logo_latin_url:next.logo_latin_url??"",logo_width_desktop:Number(next.logo_width_desktop)||170,logo_width_mobile:Number(next.logo_width_mobile)||120,use_image_logo:true}));
         }
         if (map.site_colors) setColors(map.site_colors as Colors);
         if (map.site_nav) setNav(map.site_nav as NavItem[]);
@@ -157,70 +156,15 @@ export function SitePage() {
         {saved && <Badge tone="success">تم حفظ: {saved} ✓</Badge>}
       </div>
 
-      {/* Branding */}
-      <Card className="fade-up p-6">
-        <h2 className="flex items-center gap-2 font-bold"><Type className="size-4.5 text-brand-teal" /> الهوية</h2>
-        <div className="mt-5 grid gap-5 sm:grid-cols-3">
-          <div>
-            <label className="text-xs font-semibold text-ink/60">اسم الموقع (فرنسية/إنجليزية)</label>
-            <input
-              dir="ltr"
-              value={branding.site_name}
-              onChange={(e) => setBranding({ ...branding, site_name: e.target.value })}
-              className="mt-1.5 w-full rounded-xl border border-ink/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-brand-teal"
-            />
-            <label className="mt-3 block text-xs font-semibold text-ink/60">اسم الموقع بالعربية</label>
-            <input
-              dir="rtl"
-              placeholder="استشارة"
-              value={branding.site_name_ar}
-              onChange={(e) => setBranding({ ...branding, site_name_ar: e.target.value })}
-              className="mt-1.5 w-full rounded-xl border border-ink/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-brand-teal"
-            />
-            <p className="mt-1.5 text-[11px] leading-5 text-ink/45">
-              يظهر للزوار باللغة العربية — اتركه فارغًا لعرض الاسم اللاتيني للجميع
-            </p>
-          </div>
-          <div>
-            <label className="text-xs font-semibold text-ink/60">الشعار (PNG — يظهر في الترويسة)</label>
-            <div className="mt-1.5 flex items-center gap-3">
-              {branding.logo_url ? (
-                <img src={branding.logo_url} alt="logo" className="size-10 rounded-lg border border-ink/10 object-contain" />
-              ) : (
-                <span className="grid size-10 place-items-center rounded-lg bg-ink/5"><Image className="size-4 text-ink/40" /></span>
-              )}
-              <Btn small tone="ghost" onClick={() => logoRef.current?.click()}>رفع شعار</Btn>
-              <input ref={logoRef} type="file" accept="image/png,image/jpeg,image/svg+xml,image/webp" hidden
-                onChange={(e) => e.target.files?.[0] && upload(e.target.files[0], "logo")} />
-            </div>
-          </div>
-          <div>
-            <label className="text-xs font-semibold text-ink/60">الأيقونة (ICO/PNG — تبويب المتصفح)</label>
-            <div className="mt-1.5 flex items-center gap-3">
-              {branding.favicon_url ? (
-                <img src={branding.favicon_url} alt="favicon" className="size-10 rounded-lg border border-ink/10 object-contain" />
-              ) : (
-                <span className="grid size-10 place-items-center rounded-lg bg-ink/5"><Image className="size-4 text-ink/40" /></span>
-              )}
-              <Btn small tone="ghost" onClick={() => favRef.current?.click()}>رفع أيقونة</Btn>
-              <input ref={favRef} type="file" accept="image/x-icon,image/png,image/svg+xml" hidden
-                onChange={(e) => e.target.files?.[0] && upload(e.target.files[0], "favicon")} />
-            </div>
-          </div>
-        </div>
-        <div className="mt-5 border-t border-ink/8 pt-4">
-          <Btn onClick={() => saveKey("site_branding", branding, "الهوية")}><Save className="size-4" /> حفظ الهوية</Btn>
-        </div>
-      </Card>
-
       {/* Localized image logos */}
       <Card className="fade-up p-6">
-        <div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="flex items-center gap-2 font-bold"><Image className="size-4.5 text-brand-teal"/> الشعار المصور حسب اللغة</h2><p className="mt-1 text-xs text-ink/50">ارفع صورة عربية وصورة للفرنسية والإنجليزية، أو ارجع إلى الاسم النصي في أي وقت.</p></div><button onClick={()=>setBranding({...branding,use_image_logo:!branding.use_image_logo})} className={`rounded-full px-4 py-2 text-xs font-bold ${branding.use_image_logo?"bg-brand-teal text-white":"bg-ink/7 text-ink/55"}`}>{branding.use_image_logo?"الشعار المصور مفعّل":"الاسم النصي مفعّل"}</button></div>
+        <div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="flex items-center gap-2 font-bold"><Image className="size-4.5 text-brand-teal"/> الشعار المصور حسب اللغة</h2><p className="mt-1 text-xs text-ink/50">ارفع صورة عربية وصورة للفرنسية والإنجليزية. لن يظهر أي اسم نصي بجانب الشعار.</p></div><span className="rounded-full bg-brand-teal/10 px-4 py-2 text-xs font-bold text-brand-teal">صورة فقط</span></div>
         <div className="mt-5 grid gap-4 md:grid-cols-2">
           <div className="rounded-2xl border border-ink/8 bg-white p-4"><p className="text-xs font-bold">الشعار العربي</p><div className="mt-3 flex min-h-24 items-center justify-center rounded-xl bg-paper/70 p-3">{branding.logo_ar_url?<img src={branding.logo_ar_url} alt="Arabic logo" className="max-h-20 max-w-full object-contain"/>:<span className="text-xs text-ink/35">لم ترفع صورة بعد</span>}</div><div className="mt-3 flex gap-2"><Btn small tone="ghost" onClick={()=>logoArRef.current?.click()}>رفع صورة عربية</Btn>{branding.logo_ar_url&&<Btn small tone="danger" onClick={()=>setBranding({...branding,logo_ar_url:""})}>إزالة</Btn>}</div><input ref={logoArRef} type="file" accept="image/png,image/jpeg,image/svg+xml,image/webp" hidden onChange={e=>e.target.files?.[0]&&upload(e.target.files[0],"logoAr")}/></div>
           <div className="rounded-2xl border border-ink/8 bg-white p-4"><p className="text-xs font-bold">شعار الفرنسية والإنجليزية</p><div className="mt-3 flex min-h-24 items-center justify-center rounded-xl bg-paper/70 p-3">{branding.logo_latin_url?<img src={branding.logo_latin_url} alt="Latin logo" className="max-h-20 max-w-full object-contain"/>:<span className="text-xs text-ink/35">لم ترفع صورة بعد</span>}</div><div className="mt-3 flex gap-2"><Btn small tone="ghost" onClick={()=>logoLatinRef.current?.click()}>رفع صورة FR / EN</Btn>{branding.logo_latin_url&&<Btn small tone="danger" onClick={()=>setBranding({...branding,logo_latin_url:""})}>إزالة</Btn>}</div><input ref={logoLatinRef} type="file" accept="image/png,image/jpeg,image/svg+xml,image/webp" hidden onChange={e=>e.target.files?.[0]&&upload(e.target.files[0],"logoLatin")}/></div>
         </div>
         <div className="mt-5 grid gap-5 sm:grid-cols-2"><label className="text-xs font-semibold text-ink/60">عرض الشعار على الكمبيوتر: <b>{branding.logo_width_desktop}px</b><input type="range" min="80" max="320" step="5" value={branding.logo_width_desktop} onChange={e=>setBranding({...branding,logo_width_desktop:Number(e.target.value)})} className="mt-2 w-full accent-brand-teal"/></label><label className="text-xs font-semibold text-ink/60">عرض الشعار على الهاتف: <b>{branding.logo_width_mobile}px</b><input type="range" min="60" max="220" step="5" value={branding.logo_width_mobile} onChange={e=>setBranding({...branding,logo_width_mobile:Number(e.target.value)})} className="mt-2 w-full accent-brand-teal"/></label></div>
+        <div className="mt-5 flex flex-wrap items-center gap-3 rounded-2xl border border-ink/8 bg-white p-4"><div className="flex-1"><p className="text-xs font-bold">أيقونة المتصفح</p><p className="mt-1 text-[10px] text-ink/45">ICO أو PNG — تظهر في تبويب المتصفح</p></div>{branding.favicon_url?<img src={branding.favicon_url} alt="favicon" className="size-10 rounded-lg border border-ink/10 object-contain"/>:<span className="grid size-10 place-items-center rounded-lg bg-ink/5"><Image className="size-4 text-ink/40"/></span>}<Btn small tone="ghost" onClick={()=>favRef.current?.click()}>رفع أيقونة</Btn><input ref={favRef} type="file" accept="image/x-icon,image/png,image/svg+xml" hidden onChange={e=>e.target.files?.[0]&&upload(e.target.files[0],"favicon")}/></div>
         <div className="mt-5 border-t border-ink/8 pt-4"><Btn onClick={()=>saveKey("site_branding",branding,"الشعار المصور")}><Save className="size-4"/> حفظ الشعار والمقاسات</Btn></div>
       </Card>
 
