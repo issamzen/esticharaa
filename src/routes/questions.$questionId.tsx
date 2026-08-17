@@ -150,15 +150,9 @@ function DbQuestionDetail({ questionId }: { questionId: string }) {
     supabase.from("settings").select("value").eq("key", "expert_audiences").single()
       .then(({ data }) => setAudiences(((data?.value as Audience[]) ?? []).filter((item) => item.active)));
 
-    if (!user || profile?.role !== "expert") {
-      setExpertAccess(null);
-      setMyAnswerStatus(null);
-      return;
-    }
-    supabase.from("expert_profiles").select("status, audience_ids").eq("user_id", user.id).single()
-      .then(({ data }) => setExpertAccess(data as ExpertAccess | null));
-    if(q?.id) supabase.from("answers").select("status").eq("question_id",q.id).eq("expert_id",user.id).maybeSingle()
-      .then(({ data })=>setMyAnswerStatus(data?.status??null));
+    if(!user){setExpertAccess(null);setMyAnswerStatus(null);return}
+    if(q?.id)supabase.from("answers").select("status").eq("question_id",q.id).eq("expert_id",user.id).maybeSingle().then(({data})=>setMyAnswerStatus(data?.status??null));
+    if(profile?.role==="expert")supabase.from("expert_profiles").select("status,audience_ids").eq("user_id",user.id).single().then(({data})=>setExpertAccess(data as ExpertAccess|null));else setExpertAccess(null);
   }, [questionId,user,profile?.role,q?.id]);
 
   async function submitAnswer() {
@@ -168,19 +162,11 @@ function DbQuestionDetail({ questionId }: { questionId: string }) {
       return;
     }
     setSubmittingAnswer(true);
-    const { error } = await supabase.rpc("submit_expert_answer",{
-      p_question_id:q!.id,
-      p_body:clean,
-      p_preview:clean.slice(0,220),
-    });
+    const{data,error}=await supabase.rpc("submit_community_answer",{p_question_id:q!.id,p_body:clean,p_preview:clean.slice(0,220)});
     setSubmittingAnswer(false);
-    if (error) {
-      toast.error(locale === "ar" ? "لا يمكنك الإجابة عن هذا السؤال. تحقق من الفئة المهنية المطلوبة." : locale === "fr" ? "Vous ne pouvez pas répondre à cette question. Vérifiez le groupe professionnel demandé." : "You cannot answer this question. Check its required professional group.");
-      return;
-    }
-    setAnswerBody("");
-    setMyAnswerStatus("pending");
-    toast.success(locale === "ar" ? "تم إرسال إجابتك للمراجعة" : locale === "fr" ? "Votre réponse a été envoyée pour validation." : "Your answer was submitted for review.");
+    if(error){toast.error(error.message.includes("CANNOT_ANSWER_OWN_QUESTION")?(locale==="ar"?"لا يمكنك الإجابة عن سؤالك الخاص":"You cannot answer your own question"):error.message);return}
+    const published=(data as {status?:string}|null)?.status==="approved";setAnswerBody("");setMyAnswerStatus(published?"approved":"pending");if(published)await load();
+    toast.success(published?(locale==="ar"?"نُشرت إجابتك مباشرة لأنك خبير معتمد":"Your approved-expert answer was published immediately"):(locale==="ar"?"تم إرسال إجابتك للمراجعة الإدارية":locale==="fr"?"Votre réponse a été envoyée pour validation.":"Your answer was submitted for admin review."));
   }
 
   async function submitReport(){if(!reportTarget||!user){navigate({to:"/auth"});return}if(reportDetails.trim().length<5){toast.error(locale==="ar"?"أضف تفاصيل قصيرة عن سبب البلاغ":"Please add a short explanation");return}setReportBusy(true);const{error}=await supabase.rpc("create_content_report",{p_target_type:reportTarget.type,p_target_id:reportTarget.id,p_category:reportCategory,p_details:reportDetails.trim()});setReportBusy(false);if(error){toast.error(error.message.includes("REPORT_ALREADY_OPEN")?(locale==="ar"?"لديك بلاغ مفتوح بالفعل حول هذا المحتوى":"You already have an open report for this content"):error.message);return}setReportTarget(null);setReportDetails("");toast.success(locale==="ar"?"تم إرسال البلاغ إلى فريق المراجعة":"Report sent to moderation")}
@@ -246,8 +232,7 @@ function DbQuestionDetail({ questionId }: { questionId: string }) {
   const assignedLabels = audiences
     .filter((item) => expertAccess?.audience_ids?.includes(item.id))
     .map((item) => locale === "fr" ? item.label_fr : locale === "en" ? item.label_en : item.label_ar);
-  const isEligibleExpert = expertAccess?.status === "approved"
-    && (!q.target_audience_id || expertAccess.audience_ids?.includes(q.target_audience_id));
+  const isEligibleExpert=expertAccess?.status==="approved"&&(site.tokenProgram.mode!=="full"||!q.target_audience_id||expertAccess.audience_ids?.includes(q.target_audience_id));
 
   return (
     <SiteLayout>
@@ -353,12 +338,8 @@ function DbQuestionDetail({ questionId }: { questionId: string }) {
                   </>
                 ) : isEligibleExpert ? (
                   <>
-                    <h2 className="font-semibold">{locale === "ar" ? "أنت مؤهل للإجابة عن هذا السؤال" : locale === "fr" ? "Vous êtes autorisé à répondre à cette question" : "You are eligible to answer this question"}</h2>
-                    <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                      {targetLabel
-                        ? (locale === "ar" ? `الفئة المطلوبة: ${targetLabel}` : locale === "fr" ? `Groupe demandé : ${targetLabel}` : `Requested group: ${targetLabel}`)
-                        : (locale === "ar" ? "هذا السؤال مفتوح لكل الخبراء المعتمدين." : locale === "fr" ? "Cette question est ouverte à tous les experts approuvés." : "This question is open to all approved experts.")}
-                    </p>
+                    <h2 className="font-semibold">{site.tokenProgram.mode!=="full"?(locale==="ar"?"أنت خبير معتمد — ستُنشر إجابتك مباشرة":locale==="fr"?"Expert approuvé — votre réponse sera publiée immédiatement":"Approved expert — your answer will publish immediately"):(locale==="ar"?"أنت مؤهل للإجابة عن هذا السؤال":locale==="fr"?"Vous êtes autorisé à répondre":"You are eligible to answer")}</h2>
+                    <p className="mt-1 text-sm leading-6 text-muted-foreground">{site.tokenProgram.mode!=="full"?(locale==="ar"?"لا تحتاج إجابتك إلى مراجعة الإدارة. حافظ على الدقة والجودة المهنية.":"No admin review is required. Please maintain professional quality."):targetLabel?(locale==="ar"?`الفئة المطلوبة: ${targetLabel}`:`Requested group: ${targetLabel}`):(locale==="ar"?"هذا السؤال مفتوح لكل الخبراء المعتمدين.":"Open to all approved experts.")}</p>
                   </>
                 ) : (
                   <>
@@ -385,13 +366,18 @@ function DbQuestionDetail({ questionId }: { questionId: string }) {
                   <span className="text-xs text-muted-foreground">{answerBody.length} / 12000</span>
                   <Button onClick={submitAnswer} disabled={submittingAnswer || answerBody.trim().length < 20} className="rounded-xl">
                     {submittingAnswer ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
-                    {locale === "ar" ? "إرسال الإجابة للمراجعة" : locale === "fr" ? "Envoyer pour validation" : "Submit for review"}
+                    {site.tokenProgram.mode!=="full"?(locale==="ar"?"نشر الإجابة":"Publish answer"):(locale==="ar"?"إرسال الإجابة للمراجعة":locale==="fr"?"Envoyer pour validation":"Submit for review")}
                   </Button>
                 </div>
               </div>
             )}
           </section>
         )}
+
+        {site.tokenProgram.mode!=="full"&&site.features["community_answers"]!==false&&profile?.role==="user"&&(
+          <section className="mt-8 overflow-hidden rounded-3xl border border-secondary/25 bg-secondary/[.035] shadow-soft"><div className="flex items-start gap-4 p-5 sm:p-6"><span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-secondary/10 text-secondary"><MessageSquare className="size-5"/></span><div className="min-w-0 flex-1"><h2 className="font-semibold">{locale==="ar"?"شارك معرفتك وأجب عن السؤال":locale==="fr"?"Partagez votre expérience":"Share your knowledge"}</h2><p className="mt-1 text-sm leading-6 text-muted-foreground">{myAnswerStatus==="pending"?(locale==="ar"?"إجابتك قيد مراجعة الإدارة.":"Your answer is awaiting admin review."):myAnswerStatus==="approved"?(locale==="ar"?"تم نشر إجابتك.":"Your answer is published."):(locale==="ar"?"يمكن لأي عضو تقديم إجابة مفيدة. ستظهر إجابتك بعد موافقة الإدارة.":"Any member can contribute. Your answer will appear after admin approval.")}</p></div></div>{!myAnswerStatus&&<div className="border-t border-border/60 bg-background/70 p-5 sm:p-6"><Textarea value={answerBody} onChange={e=>setAnswerBody(e.target.value)} maxLength={12000} className="min-h-40 rounded-2xl" placeholder={locale==="ar"?"اكتب إجابة واضحة ومفيدة…":"Write a clear and useful answer…"}/><div className="mt-3 flex items-center justify-between"><span className="text-xs text-muted-foreground">{answerBody.length} / 12000</span><Button onClick={submitAnswer} disabled={submittingAnswer||answerBody.trim().length<20} className="rounded-xl">{submittingAnswer?<Loader2 className="size-4 animate-spin"/>:<Send className="size-4"/>}{locale==="ar"?"إرسال للمراجعة":"Submit for review"}</Button></div></div>}</section>
+        )}
+        {site.tokenProgram.mode!=="full"&&site.features["community_answers"]!==false&&!user&&<div className="mt-8 rounded-2xl border border-dashed border-secondary/30 bg-secondary/[.025] p-5 text-center"><p className="font-semibold">{locale==="ar"?"لديك إجابة مفيدة؟":"Have a helpful answer?"}</p><p className="mt-1 text-xs text-muted-foreground">{locale==="ar"?"سجّل الدخول وشارك معرفتك مع المجتمع.":"Sign in and share your knowledge with the community."}</p><Button asChild size="sm" className="mt-3 rounded-xl"><Link to="/auth">{t("nav.signIn")}</Link></Button></div>}
 
         <h2 className="mt-12 flex items-center gap-2 text-xl font-semibold">
           <MessageSquare className="size-5 text-secondary" />
