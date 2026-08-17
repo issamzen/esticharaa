@@ -31,6 +31,7 @@ export type SiteColors = {
 
 export type FeatureFlags = Record<string, boolean>;
 export type MaintenancePage = { enabled:boolean; title_ar:string; message_ar:string; title_fr:string; message_fr:string; title_en:string; message_en:string; expected_return:string };
+export type TokenProgram = { mode:"hidden"|"header_only"|"full";signup_bonus:number;share_bonus:number;share_daily_limit:number;wallet_enabled:boolean };
 type SiteSettings = {
   branding: Branding;
   colors: SiteColors | null;
@@ -39,6 +40,7 @@ type SiteSettings = {
   paymentMethods: PaymentMethod[];
   features: FeatureFlags;
   maintenance: MaintenancePage;
+  tokenProgram: TokenProgram;
   loaded: boolean;
 };
 
@@ -50,6 +52,7 @@ const DEFAULTS: SiteSettings = {
   paymentMethods: [],
   features: {},
   maintenance: { enabled:false,title_ar:"الموقع تحت الصيانة",message_ar:"سنعود قريبًا.",title_fr:"Maintenance en cours",message_fr:"Nous serons bientôt de retour.",title_en:"Maintenance in progress",message_en:"We will be back shortly.",expected_return:"" },
+  tokenProgram: { mode:"header_only",signup_bonus:0,share_bonus:0,share_daily_limit:0,wallet_enabled:true },
   loaded: false,
 };
 
@@ -105,6 +108,7 @@ export function SiteSettingsProvider({ children }: { children: ReactNode }) {
         "payment_methods",
         "feature_flags",
         "maintenance_page",
+        "token_program",
       ])
       .then(({ data }) => {
         if (!data) return;
@@ -117,6 +121,7 @@ export function SiteSettingsProvider({ children }: { children: ReactNode }) {
           paymentMethods: (map.payment_methods as PaymentMethod[]) ?? [],
           features: (map.feature_flags as FeatureFlags) ?? {},
           maintenance: { ...DEFAULTS.maintenance, ...((map.maintenance_page as Partial<MaintenancePage>) ?? {}) },
+          tokenProgram: { ...DEFAULTS.tokenProgram, ...((map.token_program as Partial<TokenProgram>) ?? {}) },
           loaded: true,
         };
         setSettings(next);
