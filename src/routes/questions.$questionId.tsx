@@ -29,6 +29,7 @@ import { localizeExpert, localizeQuestion } from "@/i18n/platform";
 import { useLocale } from "@/i18n/use-locale";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth";
+import { useSiteSettings } from "@/lib/site-settings";
 
 function decodeQuestionRef(value:string){try{return decodeURIComponent(value)}catch{return value}}
 
@@ -105,6 +106,7 @@ function DbQuestionDetail({ questionId }: { questionId: string }) {
   const locale = useLocale();
   const navigate = useNavigate();
   const { user, profile, refreshProfile } = useAuth();
+  const site=useSiteSettings();
   const [q, setQ] = useState<DbQuestion | null>(null);
   const [state, setState] = useState<"loading" | "ready" | "notfound">("loading");
   const [unlocking, setUnlocking] = useState(false);
@@ -190,7 +192,7 @@ function DbQuestionDetail({ questionId }: { questionId: string }) {
       navigate({ to: "/auth" });
       return;
     }
-    if ((profile?.tokens_balance ?? 0) < (q?.unlock_cost ?? 0)) {
+    if ((profile?.tokens_balance ?? 0) < effectiveUnlockCost) {
       toast.error(
         t("question.notEnoughTokens", "رصيدك غير كافٍ — اشترِ توكن أولًا"),
       );
@@ -236,6 +238,7 @@ function DbQuestionDetail({ questionId }: { questionId: string }) {
     );
   }
 
+  const effectiveUnlockCost=site.tokenProgram.mode==="full"?q.unlock_cost:0;
   const targetAudience = audiences.find((item) => item.id === q.target_audience_id);
   const targetLabel = targetAudience
     ? locale === "fr" ? targetAudience.label_fr : locale === "en" ? targetAudience.label_en : targetAudience.label_ar
@@ -260,16 +263,16 @@ function DbQuestionDetail({ questionId }: { questionId: string }) {
             {targetLabel ?? (locale === "ar" ? "كل الخبراء المؤهلين" : locale === "fr" ? "Tous les experts qualifiés" : "All qualified experts")}
           </Badge>
           <Badge
-            variant={q.unlock_cost > 0 ? "default" : "outline"}
+            variant={effectiveUnlockCost > 0 ? "default" : "outline"}
             className={
-              q.unlock_cost > 0
+              effectiveUnlockCost > 0
                 ? "rounded-full bg-accent text-accent-foreground"
                 : "rounded-full"
             }
           >
-            {q.unlock_cost > 0 ? (
+            {effectiveUnlockCost > 0 ? (
               <>
-                <Lock className="size-3" /> {q.unlock_cost} {t("common.tokens")}
+                <Lock className="size-3" /> {effectiveUnlockCost} {t("common.tokens")}
               </>
             ) : (
               copy.free
@@ -463,7 +466,7 @@ function DbQuestionDetail({ questionId }: { questionId: string }) {
                     <div className="glass w-full rounded-2xl p-5 text-center shadow-lift sm:p-6">
                       <Lock className="mx-auto size-5 text-accent" />
                       <p className="mt-3 font-semibold">
-                        {copy.unlockTitle.replace("{{count}}", String(q.unlock_cost))}
+                        {copy.unlockTitle.replace("{{count}}", String(effectiveUnlockCost))}
                       </p>
                       <p className="mt-1 text-xs text-muted-foreground">
                         {copy.unlockText}
