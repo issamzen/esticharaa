@@ -108,6 +108,7 @@ function TextLink({ to, children }: { to: HomeTextLink; children: ReactNode }) {
   );
 }
 
+type HomeCategory={slug:string;name_ar:string;name_fr:string;name_en:string;icon:string;question_count:number};
 type HomeLiveQuestion = {
   id: string;
   slug: string;
@@ -124,15 +125,15 @@ type HomeLiveQuestion = {
 function Index() {
   const { t } = useTranslation();
   const site=useSiteSettings();
-  const [liveQuestions, setLiveQuestions] = useState<HomeLiveQuestion[]>([]);
+  const [liveQuestions,setLiveQuestions]=useState<HomeLiveQuestion[]>([]);
+  const [homeCategories,setHomeCategories]=useState<HomeCategory[]>([]);
 
   useEffect(() => {
     import("@/lib/supabase").then(({ supabase }) => {
       supabase
         .rpc("get_public_questions", { p_limit: 4 })
-        .then(({ data }) =>
-          setLiveQuestions((data as unknown as HomeLiveQuestion[]) ?? []),
-        );
+        .then(({data})=>setLiveQuestions((data as unknown as HomeLiveQuestion[])??[]));
+      supabase.rpc("get_public_categories").then(({data})=>setHomeCategories(((data as HomeCategory[])??[]).slice(0,9)));
     });
   }, []);
   const features = getHomeFeatures(t);
@@ -172,6 +173,7 @@ function Index() {
           website: "Website",
           email: "Support email",
         };
+  const categoryStrip=homeCategories.length?homeCategories.map(item=>({slug:item.slug,name:locale==="fr"&&item.name_fr?item.name_fr:locale==="en"&&item.name_en?item.name_en:item.name_ar,icon:item.icon||"Sparkles",count:Number(item.question_count)||0})):categories.slice(0,9).map((item,index)=>({slug:item.slug,name:getCategoryLabel(t,index,item.name),icon:item.icon,count:item.questions}));
   const stats = [
     { value: "12.4k+", label: t("home.stats.answers") },
     { value: "640+", label: t("home.stats.experts") },
@@ -181,6 +183,16 @@ function Index() {
 
   return (
     <SiteLayout>
+      {/* Featured categories directly below the header */}
+      <section className="relative overflow-hidden border-b border-border/60 bg-gradient-to-r from-primary/[.035] via-background to-accent/[.045]">
+        <div className="pointer-events-none absolute -start-20 -top-20 size-48 rounded-full bg-secondary/10 blur-3xl"/>
+        <div className="relative mx-auto flex max-w-7xl items-center gap-3 px-4 py-3 sm:px-6">
+          <div className="hidden shrink-0 items-center gap-2 pe-2 text-xs font-bold text-foreground lg:flex"><span className="grid size-8 place-items-center rounded-xl bg-primary text-primary-foreground shadow-md"><Sparkles className="size-3.5"/></span>{locale==="ar"?"استكشف التصنيفات":locale==="fr"?"Explorer":"Explore"}</div>
+          <div className="no-scrollbar flex min-w-0 flex-1 gap-2 overflow-x-auto py-1">{categoryStrip.map(category=>{const Icon=(Icons[category.icon as keyof typeof Icons]??Icons.Sparkles) as Icons.LucideIcon;return <Link key={category.slug} to="/questions" search={{category:category.slug}} className="group inline-flex shrink-0 items-center gap-2 rounded-2xl border border-border/60 bg-background/80 px-3 py-2 text-xs font-semibold text-muted-foreground shadow-sm backdrop-blur transition hover:-translate-y-0.5 hover:border-primary/25 hover:bg-primary hover:text-primary-foreground hover:shadow-lg"><span className="grid size-7 place-items-center rounded-lg bg-primary/8 text-primary transition group-hover:bg-white/15 group-hover:text-primary-foreground"><Icon className="size-3.5"/></span><span>{category.name}</span><span className="hidden rounded-full bg-muted px-1.5 py-0.5 text-[9px] font-normal text-muted-foreground group-hover:bg-white/15 group-hover:text-primary-foreground/75 sm:inline">{formatNumber(category.count,locale)}</span></Link>})}</div>
+          <Link to="/categories" className="shrink-0 rounded-xl border border-border/60 bg-background/80 px-3 py-2 text-[10px] font-bold text-primary shadow-sm transition hover:bg-primary hover:text-primary-foreground">{locale==="ar"?"الكل":locale==="fr"?"Tout":"All"}</Link>
+        </div>
+      </section>
+
       {/* Hero */}
       <section className="relative isolate overflow-hidden border-b border-border/60">
         <div
