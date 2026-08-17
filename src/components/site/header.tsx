@@ -11,6 +11,7 @@ import { localeDirection } from "@/i18n/config";
 import { useLocale } from "@/i18n/use-locale";
 import { LanguageSwitcher } from "./language-switcher";
 import { ThemeToggle } from "./theme-toggle";
+import { HeaderSearch } from "./header-search";
 import { supabase } from "@/lib/supabase";
 
 type HeaderNotification = { id:string;title:string;body:string;type:string;link:string;read_at:string|null;created_at:string };
@@ -60,7 +61,7 @@ export function Header() {
   // Admin-controlled menu (falls back to the default list before load)
   const navItems = (site.loaded
     ? site.nav.filter((i) => i.visible)
-    : [...navigation]).filter((item)=>site.tokenProgram.mode==="full"||!["/tokens","/pricing"].includes(item.to));
+    : [...navigation]).filter(item=>(site.tokenProgram.mode==="full"||!["/tokens","/pricing"].includes(item.to))&&(site.features["expert_applications"]!==false||item.to!=="/become-expert"));
   const sheetSide=localeDirection(locale)==="rtl"?"left":"right";
   const localizedLogo=site.branding.use_image_logo?(locale==="ar"?(site.branding.logo_ar_url||site.branding.logo_url):(site.branding.logo_latin_url||site.branding.logo_url)):"";
   const logoStyle={"--logo-desktop":`${site.branding.logo_width_desktop||170}px`,"--logo-mobile":`${site.branding.logo_width_mobile||120}px`} as CSSProperties;
@@ -83,23 +84,9 @@ export function Header() {
           {!site.branding.use_image_logo&&<span className="text-lg tracking-tight" dir={locale==="ar"&&site.branding.site_name_ar?"rtl":"ltr"}>{siteName!=="Estichara.ma"?siteName:<>Estichara<span className="text-secondary">.ma</span></>}</span>}
         </Link>
 
-        <nav
-          className="mx-auto hidden items-center gap-1 xl:flex"
-          aria-label={t("nav.mainLabel")}
-        >
-          {navItems.map((item) => (
-            <Link
-              key={item.to}
-              to={item.to}
-              className="rounded-full px-3.5 py-2 text-sm font-medium text-muted-foreground transition hover:bg-muted/70 hover:text-foreground"
-              activeProps={{ className: "bg-muted text-primary" }}
-            >
-              {t(item.key)}
-            </Link>
-          ))}
-        </nav>
+        <HeaderSearch />
 
-        <div className="ms-auto flex items-center gap-1.5 xl:ms-0">
+        <div className="ms-auto flex items-center gap-1.5">
           <div className="hidden xl:block">
             <LanguageSwitcher compact />
           </div>
