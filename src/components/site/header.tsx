@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect,useState,type CSSProperties } from "react";
 import { Link } from "@tanstack/react-router";
 import { Bell, CheckCheck, CircleAlert, Coins, Headphones, LogIn, Menu, MessageCircle, MessagesSquare, UserRound, WalletCards } from "lucide-react";
 import { useAuth } from "@/lib/auth";
@@ -61,7 +61,9 @@ export function Header() {
   const navItems = (site.loaded
     ? site.nav.filter((i) => i.visible)
     : [...navigation]).filter((item)=>site.tokenProgram.mode==="full"||!["/tokens","/pricing"].includes(item.to));
-  const sheetSide = localeDirection(locale) === "rtl" ? "left" : "right";
+  const sheetSide=localeDirection(locale)==="rtl"?"left":"right";
+  const localizedLogo=site.branding.use_image_logo?(locale==="ar"?(site.branding.logo_ar_url||site.branding.logo_url):(site.branding.logo_latin_url||site.branding.logo_url)):"";
+  const logoStyle={"--logo-desktop":`${site.branding.logo_width_desktop||170}px`,"--logo-mobile":`${site.branding.logo_width_mobile||120}px`} as CSSProperties;
 
   return (
     <header className="glass sticky top-0 z-50 border-x-0 border-t-0">
@@ -71,29 +73,14 @@ export function Header() {
           to="/"
           className="group flex shrink-0 items-center gap-2.5 font-semibold"
         >
-          {site.branding.logo_url ? (
-            <img
-              src={site.branding.logo_url}
-              alt={siteName}
-              className="size-10 rounded-2xl object-contain"
-            />
+          {localizedLogo?(
+            <img src={localizedLogo} alt={siteName} style={logoStyle} className="site-header-logo max-h-12 object-contain"/>
           ) : (
             <span className="bg-brand grid size-10 place-items-center rounded-2xl text-primary-foreground shadow-lg shadow-primary/15 transition-transform group-hover:-rotate-3 group-hover:scale-105">
               <MessagesSquare className="size-5" />
             </span>
           )}
-          <span
-            className="text-lg tracking-tight"
-            dir={locale === "ar" && site.branding.site_name_ar ? "rtl" : "ltr"}
-          >
-            {siteName !== "Estichara.ma" ? (
-              siteName
-            ) : (
-              <>
-                Estichara<span className="text-secondary">.ma</span>
-              </>
-            )}
-          </span>
+          {!localizedLogo&&<span className="text-lg tracking-tight" dir={locale==="ar"&&site.branding.site_name_ar?"rtl":"ltr"}>{siteName!=="Estichara.ma"?siteName:<>Estichara<span className="text-secondary">.ma</span></>}</span>}
         </Link>
 
         <nav
@@ -185,12 +172,7 @@ export function Header() {
                   onClick={() => setOpen(false)}
                   className="mb-7 flex items-center gap-2.5 font-semibold"
                 >
-                  <span className="bg-brand grid size-10 place-items-center rounded-2xl text-primary-foreground">
-                    <MessagesSquare className="size-5" />
-                  </span>
-                  <span dir={locale === "ar" && site.branding.site_name_ar ? "rtl" : "ltr"}>
-                    {siteName}
-                  </span>
+                  {localizedLogo?<img src={localizedLogo} alt={siteName} style={logoStyle} className="site-header-logo max-h-12 object-contain"/>:<><span className="bg-brand grid size-10 place-items-center rounded-2xl text-primary-foreground"><MessagesSquare className="size-5"/></span><span dir={locale==="ar"&&site.branding.site_name_ar?"rtl":"ltr"}>{siteName}</span></>}
                 </Link>
 
                 <p className="mb-2 text-xs font-semibold text-muted-foreground">
