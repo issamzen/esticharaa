@@ -19,6 +19,7 @@ export function Footer() {
   const hidden = new Set([
     ...(site.loaded ? site.footer.filter((i) => !i.visible).map((i) => i.to) : []),
     ...(site.tokenProgram.mode === "full" ? [] : ["/tokens", "/pricing"]),
+    ...(site.features["expert_applications"]===false?["/become-expert"]:[]),
   ]);
 
   const groups = [
@@ -52,13 +53,13 @@ export function Footer() {
   ] as const;
 
   return (
-    <footer className="relative mt-24 overflow-hidden border-t border-border/60 bg-brand-dark text-white">
+    <footer className="relative mt-24 overflow-hidden border-t border-white/10 bg-[linear-gradient(135deg,#17272b_0%,#243238_55%,#302c29_100%)] text-white">
       <div className="absolute -start-40 -top-40 size-96 rounded-full bg-brand-teal/25 blur-3xl" />
       <div className="absolute -bottom-52 -end-40 size-[30rem] rounded-full bg-brand-gold/15 blur-3xl" />
 
       <div className="relative mx-auto grid max-w-7xl gap-10 px-4 py-16 sm:grid-cols-2 sm:px-6 lg:grid-cols-[1.35fr_1fr_1fr_1fr]">
         <div>
-          <Link to="/" className="flex items-center gap-2.5 font-semibold">{localizedLogo?<img src={localizedLogo} alt={siteName} style={logoStyle} className="max-h-14 object-contain"/>:<><span className="grid size-10 place-items-center rounded-2xl bg-white/10 text-brand-gold ring-1 ring-white/15"><MessagesSquare className="size-5"/></span>{!site.branding.use_image_logo&&<span className="text-lg" dir={locale==="ar"&&site.branding.site_name_ar?"rtl":"ltr"}>{siteName}</span>}</>}</Link>
+          <Link to="/" className={`flex w-fit items-center gap-2.5 font-semibold ${localizedLogo?"rounded-2xl bg-white/95 px-4 py-2 shadow-xl shadow-black/15":""}`}>{localizedLogo?<img src={localizedLogo} alt={siteName} style={logoStyle} className="max-h-14 object-contain"/>:<><span className="grid size-10 place-items-center rounded-2xl bg-white/10 text-brand-gold ring-1 ring-white/15"><MessagesSquare className="size-5"/></span>{!site.branding.use_image_logo&&<span className="text-lg" dir={locale==="ar"&&site.branding.site_name_ar?"rtl":"ltr"}>{siteName}</span>}</>}</Link>
           <p className="mt-5 max-w-sm text-sm leading-7 text-white/65">
             {t("footer.tagline")}
           </p>
