@@ -1,6 +1,6 @@
 import { useEffect, useState, type ChangeEvent } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Loader2, ShieldCheck, Sparkles, Wand2 } from "lucide-react";
+import { Check, EyeOff, Loader2, ShieldCheck, Sparkles, Wand2 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
@@ -65,6 +65,7 @@ function AskPage() {
   const [category, setCategory] = useState("");
   const [reward, setReward] = useState<number>(0);
   const [targetAudience, setTargetAudience] = useState("all");
+  const [anonymous,setAnonymous]=useState(false);
   const [audiences, setAudiences] = useState<Audience[]>([]);
   const [askRules, setAskRules] = useState<AskRules>(DEFAULT_ASK_RULES);
   const [submitting, setSubmitting] = useState(false);
@@ -157,12 +158,13 @@ function AskPage() {
       && (profile?.tokens_balance ?? 0) >= askRules.audience_min_token_balance
       && (!askRules.targeting_requires_paid_question || rewardTokens > 0);
     // The database repeats every check and deducts the reward atomically.
-    const { error } = await supabase.rpc("create_question", {
+    const { error } = await supabase.rpc("create_question_with_options", {
       p_title: result.data.title,
       p_body: result.data.body,
       p_category_id: cat?.id ?? null,
       p_tokens: rewardTokens,
       p_target_audience_id: canTarget && targetAudience !== "all" ? targetAudience : null,
+      p_is_anonymous:anonymous,
     });
     setSubmitting(false);
     if (error) {
@@ -269,6 +271,12 @@ function AskPage() {
                 </Select>
               </div>
             </div>
+
+            <button type="button" onClick={()=>setAnonymous(!anonymous)} className={`flex w-full items-center gap-4 rounded-2xl border p-4 text-start transition ${anonymous?"border-primary bg-primary/[.055] ring-2 ring-primary/15":"border-border/70 bg-muted/20 hover:border-primary/25"}`}>
+              <span className={`grid size-11 shrink-0 place-items-center rounded-2xl ${anonymous?"bg-primary text-primary-foreground":"bg-muted text-muted-foreground"}`}><EyeOff className="size-5"/></span>
+              <span className="min-w-0 flex-1"><span className="block text-sm font-semibold">{locale==="ar"?"اطرح السؤال بشكل مجهول":locale==="fr"?"Poser la question anonymement":"Ask anonymously"}</span><span className="mt-1 block text-xs leading-5 text-muted-foreground">{locale==="ar"?"لن يظهر اسمك للمستخدمين أو الخبراء، بينما تبقى هويتك متاحة للإدارة لأغراض الأمان والمراجعة.":locale==="fr"?"Votre nom sera masqué aux utilisateurs et aux experts, mais restera accessible à l’administration pour la sécurité.":"Your name will be hidden from users and experts, but remains available to administration for safety and moderation."}</span></span>
+              <span className={`grid size-6 shrink-0 place-items-center rounded-full border-2 ${anonymous?"border-primary bg-primary text-primary-foreground":"border-border"}`}>{anonymous&&<Check className="size-3.5"/>}</span>
+            </button>
 
             <div>
               <div className="flex flex-wrap items-center justify-between gap-2">
