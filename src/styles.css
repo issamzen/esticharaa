@@ -194,6 +194,8 @@ html, body, .premium-card, .glass { transition: background-color .25s ease, colo
   -webkit-backdrop-filter: blur(22px) saturate(165%);
 }
 .dark .mobile-app-nav { box-shadow: 0 -14px 42px oklch(0 0 0 / 35%); }
+.site-header-logo{width:var(--logo-mobile,120px);height:auto;max-width:42vw;}
+@media(min-width:1024px){.site-header-logo{width:var(--logo-desktop,170px);max-width:280px;}}
 
 @media (display-mode: standalone) {
   .mobile-app-nav { padding-bottom: env(safe-area-inset-bottom); }
