@@ -13,11 +13,10 @@ export function Footer() {
   const siteName = useSiteName(locale);
 
   // Admin can hide any footer link from the dashboard
-  const hidden = new Set(
-    site.loaded
-      ? site.footer.filter((i) => !i.visible).map((i) => i.to)
-      : [],
-  );
+  const hidden = new Set([
+    ...(site.loaded ? site.footer.filter((i) => !i.visible).map((i) => i.to) : []),
+    ...(site.tokenProgram.mode === "full" ? [] : ["/tokens", "/pricing"]),
+  ]);
 
   const groups = [
     {
