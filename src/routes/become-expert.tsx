@@ -25,6 +25,7 @@ import { usePageCopy } from "@/i18n/page-copy";
 import { createPageSeo, pageHead } from "@/i18n/route-meta";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth";
+import { useSiteSettings } from "@/lib/site-settings";
 
 export const Route = createFileRoute("/become-expert")({
   loader: ({ context }) => ({
@@ -60,6 +61,7 @@ function BecomeExpertPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { user, loading } = useAuth();
+  const site=useSiteSettings();
 
   const [application, setApplication] = useState<Application | null>(null);
   const [checked, setChecked] = useState(false);
@@ -151,6 +153,7 @@ function BecomeExpertPage() {
       </SiteLayout>
     );
   }
+  if(site.loaded&&site.features["expert_applications"]===false)return <SiteLayout><div className="mx-auto max-w-xl px-4 py-32 text-center"><ShieldCheck className="mx-auto size-12 text-primary"/><h1 className="mt-5 text-3xl font-semibold">{t("nav.becomeExpert")}</h1><p className="mt-3 text-muted-foreground">طلبات الانضمام كخبير متوقفة مؤقتًا من طرف الإدارة.</p><Button asChild className="mt-6 rounded-xl"><Link to="/questions">{t("nav.questions")}</Link></Button></div></SiteLayout>;
 
   return (
     <SiteLayout>
