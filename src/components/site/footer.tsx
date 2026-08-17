@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import { Link } from "@tanstack/react-router";
 import { ArrowUpRight, MessagesSquare, ShieldCheck } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -10,7 +11,9 @@ export function Footer() {
   const copy = usePageCopy();
   const site = useSiteSettings();
   const locale = useLocale();
-  const siteName = useSiteName(locale);
+  const siteName=useSiteName(locale);
+  const localizedLogo=site.branding.use_image_logo?(locale==="ar"?(site.branding.logo_ar_url||site.branding.logo_url):(site.branding.logo_latin_url||site.branding.logo_url)):"";
+  const logoStyle={width:`${Math.round((site.branding.logo_width_desktop||170)*.9)}px`} as CSSProperties;
 
   // Admin can hide any footer link from the dashboard
   const hidden = new Set([
@@ -55,17 +58,7 @@ export function Footer() {
 
       <div className="relative mx-auto grid max-w-7xl gap-10 px-4 py-16 sm:grid-cols-2 sm:px-6 lg:grid-cols-[1.35fr_1fr_1fr_1fr]">
         <div>
-          <Link to="/" className="flex items-center gap-2.5 font-semibold">
-            <span className="grid size-10 place-items-center rounded-2xl bg-white/10 text-brand-gold ring-1 ring-white/15">
-              <MessagesSquare className="size-5" />
-            </span>
-            <span
-              className="text-lg"
-              dir={locale === "ar" && site.branding.site_name_ar ? "rtl" : "ltr"}
-            >
-              {siteName}
-            </span>
-          </Link>
+          <Link to="/" className="flex items-center gap-2.5 font-semibold">{localizedLogo?<img src={localizedLogo} alt={siteName} style={logoStyle} className="max-h-14 object-contain"/>:<><span className="grid size-10 place-items-center rounded-2xl bg-white/10 text-brand-gold ring-1 ring-white/15"><MessagesSquare className="size-5"/></span><span className="text-lg" dir={locale==="ar"&&site.branding.site_name_ar?"rtl":"ltr"}>{siteName}</span></>}</Link>
           <p className="mt-5 max-w-sm text-sm leading-7 text-white/65">
             {t("footer.tagline")}
           </p>
