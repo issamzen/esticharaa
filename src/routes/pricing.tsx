@@ -18,6 +18,7 @@ import { getHomeFaqs } from "@/i18n/home-content";
 import { formatNumber } from "@/i18n/format";
 import { tokenPackName } from "@/i18n/platform";
 import { useLocale } from "@/i18n/use-locale";
+import { useSiteSettings } from "@/lib/site-settings";
 
 export const Route = createFileRoute("/pricing")({
   loader: ({ context }) => ({
@@ -50,7 +51,9 @@ function PricingPage() {
       });
   }, []);
   const locale = useLocale();
+  const site=useSiteSettings();
   const faqs = getHomeFaqs(t);
+  if(site.loaded&&site.tokenProgram.mode!=="full")return <SiteLayout><div className="mx-auto max-w-xl px-4 py-32 text-center"><Coins className="mx-auto size-12 text-primary"/><h1 className="mt-5 text-3xl font-semibold">{locale==="ar"?"Estichara.ma مجانية حاليًا":locale==="fr"?"Estichara.ma est actuellement gratuite":"Estichara.ma is currently free"}</h1><p className="mt-3 text-muted-foreground">{locale==="ar"?"تم إيقاف الشراء وفتح الإجابات بالتوكن. يمكنك استخدام المنصة مجانًا وجمع توكن المكافآت.":"Purchases and paid answer unlocking are disabled. You can use the platform for free and collect reward tokens."}</p><Button asChild className="mt-6 rounded-xl"><Link to="/questions">{locale==="ar"?"تصفح الأسئلة":"Browse questions"}</Link></Button></div></SiteLayout>;
 
   return (
     <SiteLayout>
