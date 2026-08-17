@@ -38,6 +38,7 @@ import {
   getTokenPackLabel,
 } from "@/i18n/home-content";
 import { categories, experts, questions, tokenPacks } from "@/data/platform";
+import { useSiteSettings } from "@/lib/site-settings";
 
 export const Route = createFileRoute("/")({
   loader: ({ context }) => {
@@ -122,6 +123,7 @@ type HomeLiveQuestion = {
 
 function Index() {
   const { t } = useTranslation();
+  const site=useSiteSettings();
   const [liveQuestions, setLiveQuestions] = useState<HomeLiveQuestion[]>([]);
 
   useEffect(() => {
@@ -518,14 +520,7 @@ function Index() {
                 <ArrowRight data-directional className="size-4" />
               </Link>
             </Button>
-            <Button
-              asChild
-              size="lg"
-              variant="outline"
-              className="rounded-xl bg-background"
-            >
-              <Link to="/pricing">{t("home.how.explorePricing")}</Link>
-            </Button>
+            {site.tokenProgram.mode==="full"&&<Button asChild size="lg" variant="outline" className="rounded-xl bg-background"><Link to="/pricing">{t("home.how.explorePricing")}</Link></Button>}
           </div>
         </div>
       </section>
@@ -557,7 +552,7 @@ function Index() {
                         {q.category_name_ar}
                       </Badge>
                     ) : null}
-                    {q.unlock_cost > 0 ? (
+                    {site.tokenProgram.mode==="full" && q.unlock_cost > 0 ? (
                       <Badge className="rounded-full bg-accent text-accent-foreground">
                         <Lock className="size-3" /> {q.unlock_cost}{" "}
                         {t("common.tokens")}
@@ -724,7 +719,7 @@ function Index() {
       </section>
 
       {/* Pricing */}
-      <section className="mx-auto max-w-6xl px-4 py-20 sm:py-28">
+      {site.tokenProgram.mode==="full"&&<section className="mx-auto max-w-6xl px-4 py-20 sm:py-28">
         <SectionHeading
           eyebrow={t("home.pricing.eyebrow")}
           title={t("home.pricing.title")}
@@ -788,7 +783,7 @@ function Index() {
             </article>
           ))}
         </div>
-      </section>
+      </section>}
 
       {/* FAQ */}
       <section className="border-t border-border/60 bg-card/40">
