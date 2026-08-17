@@ -15,6 +15,7 @@ import { createPageSeo, pageHead } from "@/i18n/route-meta";
 import { localizeQuestion } from "@/i18n/platform";
 import { useLocale } from "@/i18n/use-locale";
 import { formatNumber } from "@/i18n/format";
+import { useSiteSettings } from "@/lib/site-settings";
 
 type SearchParams = { category?: string };
 type Filter = "newest" | "trending" | "mostAnswered" | "premium" | "unresolved";
@@ -58,6 +59,7 @@ function QuestionsPage() {
   const copy = usePageCopy().questions;
   const locale = useLocale();
   const { t } = useTranslation();
+  const site=useSiteSettings();
   const [live, setLive] = useState<LiveQuestion[]>([]);
   const [audiences, setAudiences] = useState<Audience[]>([]);
 
@@ -159,7 +161,7 @@ function QuestionsPage() {
                 <Badge variant="outline" className="rounded-full border-secondary/35 bg-secondary/5">
                   <Users className="size-3" /> {audienceLabel(q.target_audience_id)}
                 </Badge>
-                {q.unlock_cost > 0 ? (
+                {site.tokenProgram.mode==="full" && q.unlock_cost > 0 ? (
                   <Badge className="rounded-full bg-accent text-accent-foreground">
                     <Lock className="size-3" /> {q.unlock_cost} {t("common.tokens")}
                   </Badge>
