@@ -121,8 +121,8 @@ function AskPage() {
     return `${value} ${t("common.tokens")}`;
   }
 
-  const categoryMinimum = dbCategories.find((item) => item.slug === category)?.min_reward_tokens ?? 0;
-  const targetingAvailable = askRules.targeting_enabled
+  const categoryMinimum=site.tokenProgram.mode==="full"?(dbCategories.find(item=>item.slug===category)?.min_reward_tokens??0):0;
+  const targetingAvailable = site.tokenProgram.mode==="full"&&askRules.targeting_enabled
     && site.features.expert_targeting !== false
     && (profile?.tokens_balance ?? 0) >= askRules.audience_min_token_balance
     && (!askRules.targeting_requires_paid_question || reward > 0);
@@ -154,7 +154,7 @@ function AskPage() {
       toast.error(t("ask.freeDisabled", "الأسئلة المجانية متوقفة حاليًا"));
       return;
     }
-    const canTarget = askRules.targeting_enabled
+    const canTarget = site.tokenProgram.mode==="full"&&askRules.targeting_enabled
       && (profile?.tokens_balance ?? 0) >= askRules.audience_min_token_balance
       && (!askRules.targeting_requires_paid_question || rewardTokens > 0);
     // The database repeats every check and deducts the reward atomically.
@@ -278,7 +278,7 @@ function AskPage() {
               <span className={`grid size-6 shrink-0 place-items-center rounded-full border-2 ${anonymous?"border-primary bg-primary text-primary-foreground":"border-border"}`}>{anonymous&&<Check className="size-3.5"/>}</span>
             </button>
 
-            <div>
+            {site.tokenProgram.mode==="full"&&<div>
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <Label>{copy.answerPrice}</Label>
                 <span className="text-xs text-muted-foreground">
@@ -319,9 +319,9 @@ function AskPage() {
                   )}
                 </p>
               )}
-            </div>
+            </div>}
 
-            {askRules.targeting_enabled && site.features.expert_targeting !== false && audiences.length > 0 && (
+            {site.tokenProgram.mode==="full"&&askRules.targeting_enabled && site.features.expert_targeting !== false && audiences.length > 0 && (
               <div>
                 <Label>{t("ask.targetAudience", "من تريد أن يجيب؟")}</Label>
                 <Select value={targetAudience} onValueChange={setTargetAudience} disabled={!targetingAvailable}>
