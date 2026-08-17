@@ -375,10 +375,7 @@ function AccountPage() {
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <div className="rounded-2xl border border-white/15 bg-white/10 px-5 py-3 text-center backdrop-blur">
-                <p className="text-[11px] text-primary-foreground/60">الرصيد المتاح</p>
-                <p className="mt-0.5 text-2xl font-bold text-accent">{(profile?.tokens_balance ?? 0).toLocaleString()}</p>
-              </div>
+              {site.tokenProgram.mode!=="hidden"&&<div className="rounded-2xl border border-white/15 bg-white/10 px-5 py-3 text-center backdrop-blur"><p className="text-[11px] text-primary-foreground/60">الرصيد المتاح</p><p className="mt-0.5 text-2xl font-bold text-accent">{(profile?.tokens_balance??0).toLocaleString()}</p></div>}
               <Button variant="outline" className="rounded-xl border-white/20 bg-white/10 text-white hover:bg-white/20 hover:text-white"
                 onClick={async () => { await signOut(); navigate({ to: "/" }); }}>
                 <LogOut className="size-4" /> {t("nav.signOut")}
@@ -388,7 +385,7 @@ function AccountPage() {
         </section>
 
         <nav className="sticky top-20 z-10 mt-5 flex gap-2 overflow-x-auto rounded-2xl border border-border/70 bg-background/85 p-2 shadow-soft backdrop-blur-xl">
-          {dashboardLinks.map(({ id, label, icon: Icon }) => (
+          {dashboardLinks.filter(item=>site.tokenProgram.mode!=="hidden"||item.id!=="wallet-activity").map(({ id, label, icon: Icon }) => (
             <a key={id} href={`#${id}`} className="inline-flex shrink-0 items-center gap-2 rounded-xl px-3.5 py-2 text-xs font-semibold text-muted-foreground transition hover:bg-primary/8 hover:text-primary">
               <Icon className="size-3.5" /> {label}
             </a>
@@ -409,7 +406,7 @@ function AccountPage() {
 
         {/* Wallet + quick actions */}
         <div className="mt-8 grid gap-4 sm:grid-cols-3">
-          <div className="rounded-3xl border border-primary/20 bg-primary p-6 text-primary-foreground shadow-xl shadow-primary/15">
+          {site.tokenProgram.mode!=="hidden"&&<div className="rounded-3xl border border-primary/20 bg-primary p-6 text-primary-foreground shadow-xl shadow-primary/15">
             <div className="flex items-center gap-2 text-sm text-primary-foreground/70">
               <Coins className="size-4" /> {t("account.wallet")}
             </div>
@@ -421,7 +418,7 @@ function AccountPage() {
             </p>
             <div className="mt-4 flex flex-wrap gap-2">
               <Button asChild variant="secondary" size="sm" className="rounded-xl">
-                <Link to="/tokens">{t("tokens.buyTokens")}</Link>
+                <Link to="/wallet">سجل المحفظة</Link>
               </Button>
               <Button
                 size="sm"
@@ -436,7 +433,7 @@ function AccountPage() {
                 {t("payout.convert", "تحويل إلى أموال")}
               </Button>
             </div>
-          </div>
+          </div>}
 
           <Link
             to="/ask"
@@ -605,7 +602,7 @@ function AccountPage() {
               </div>
             </section>
 
-            <section className="rounded-3xl border border-border/70 bg-card p-5 shadow-soft sm:p-6">
+            {site.tokenProgram.mode!=="hidden"&&<section className="rounded-3xl border border-border/70 bg-card p-5 shadow-soft sm:p-6">
               <div className="flex items-center justify-between gap-3">
                 <h2 className="flex items-center gap-2 text-lg font-semibold">
                   <Activity className="size-5 text-primary" /> سجل حركة التوكن
@@ -617,6 +614,7 @@ function AccountPage() {
                 {transactions.map((tx) => {
                   const positive = tx.amount > 0;
                   const labels: Record<string, string> = {
+                    signup_bonus:"مكافأة إنشاء الحساب",share_bonus:"مكافأة مشاركة الموقع",
                     purchase: "شراء توكن", spend_unlock: "فتح إجابة", spend_question: "مكافأة سؤال محجوزة",
                     refund_question: "استرجاع مكافأة سؤال", earn_question_reward: "مكافأة سؤال مكتسبة",
                     earn_answer: "مكافأة إجابة", earn_bonus: "مكافأة إضافية", withdrawal_hold: "طلب تحويل",
@@ -638,7 +636,7 @@ function AccountPage() {
                   );
                 })}
               </div>
-            </section>
+            </section>}
           </div>
 
           <div className="space-y-8">
@@ -739,7 +737,7 @@ function AccountPage() {
             </section>
 
             {/* Payout history */}
-            {payouts.length > 0 && (
+            {site.tokenProgram.mode!=="hidden"&&payouts.length > 0 && (
               <section className="rounded-3xl border border-border/70 bg-card p-6">
                 <h2 className="flex items-center gap-2 font-semibold">
                   <Banknote className="size-4.5 text-primary" />
