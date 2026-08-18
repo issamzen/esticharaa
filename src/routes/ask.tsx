@@ -1,6 +1,6 @@
 import { useEffect, useState, type ChangeEvent } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Check, EyeOff, Loader2, ShieldCheck, Sparkles, Wand2 } from "lucide-react";
+import { Check, EyeOff, Loader2, Mail, ShieldCheck, Sparkles, Wand2 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
@@ -9,8 +9,9 @@ import { useTranslation } from "react-i18next";
 import { SiteLayout, PageHeader } from "@/components/site/layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Dialog,DialogContent,DialogHeader,DialogTitle,DialogDescription } from "@/components/ui/dialog";
+import { QuestionComposer,RichTextContent } from "@/components/site/question-composer";
 import { Badge } from "@/components/ui/badge";
 import {
   Select,
@@ -66,6 +67,9 @@ function AskPage() {
   const [reward, setReward] = useState<number>(0);
   const [targetAudience, setTargetAudience] = useState("all");
   const [anonymous,setAnonymous]=useState(false);
+  const [notifyByEmail,setNotifyByEmail]=useState(true);
+  const [files,setFiles]=useState<File[]>([]);
+  const [previewOpen,setPreviewOpen]=useState(false);
   const [audiences, setAudiences] = useState<Audience[]>([]);
   const [askRules, setAskRules] = useState<AskRules>(DEFAULT_ASK_RULES);
   const [submitting, setSubmitting] = useState(false);
@@ -127,6 +131,8 @@ function AskPage() {
     && (profile?.tokens_balance ?? 0) >= askRules.audience_min_token_balance
     && (!askRules.targeting_requires_paid_question || reward > 0);
 
+  function openPreview(){if(title.trim().length<15){toast.error(copy.validationTitle);return}if(body.trim().length<30){toast.error(copy.validationBody);return}if(!category){toast.error(copy.validationCategory);return}setPreviewOpen(true)}
+
   async function submit() {
     const schema = z.object({
       title: z.string().trim().min(15, copy.validationTitle).max(160),
@@ -158,14 +164,7 @@ function AskPage() {
       && (profile?.tokens_balance ?? 0) >= askRules.audience_min_token_balance
       && (!askRules.targeting_requires_paid_question || rewardTokens > 0);
     // The database repeats every check and deducts the reward atomically.
-    const { error } = await supabase.rpc("create_question_with_options", {
-      p_title: result.data.title,
-      p_body: result.data.body,
-      p_category_id: cat?.id ?? null,
-      p_tokens: rewardTokens,
-      p_target_audience_id: canTarget && targetAudience !== "all" ? targetAudience : null,
-      p_is_anonymous:anonymous,
-    });
+    const{data:createdId,error}=await supabase.rpc("create_question_composer",{p_title:result.data.title,p_body:result.data.body,p_category_id:cat?.id??null,p_tokens:rewardTokens,p_target_audience_id:canTarget&&targetAudience!=="all"?targetAudience:null,p_is_anonymous:anonymous,p_notify_by_email:notifyByEmail});
     setSubmitting(false);
     if (error) {
       if (error.message.includes("INSUFFICIENT_TOKENS") || error.message.includes("TARGETING_REQUIRES_TOKENS")) {
@@ -182,6 +181,8 @@ function AskPage() {
       toast.error(error.message);
       return;
     }
+    if(createdId&&files.length){let failed=0;for(const file of files){const safe=file.name.replace(/[^a-zA-Z0-9._-]+/g,"-");const path=`${user.id}/${createdId}/${crypto.randomUUID()}-${safe}`;const{error:uploadError}=await supabase.storage.from("question-attachments").upload(path,file);if(uploadError){failed++;continue}const{error:rowError}=await supabase.from("question_attachments").insert({question_id:createdId,user_id:user.id,file_name:file.name,storage_path:path,mime_type:file.type,file_size:file.size});if(rowError)failed++}if(failed)toast.warning(`${failed} attachment(s) could not be uploaded.`)}
+    setPreviewOpen(false);setFiles([]);
     await refreshProfile();
     toast.success(
       t("ask.savedTitle", "تم إرسال سؤالك بنجاح! ✅"),
@@ -232,16 +233,7 @@ function AskPage() {
 
             <div>
               <Label htmlFor="body">{copy.detailsLabel}</Label>
-              <Textarea
-                id="body"
-                value={body}
-                maxLength={4000}
-                onChange={(event: ChangeEvent<HTMLTextAreaElement>) =>
-                  setBody(event.target.value)
-                }
-                placeholder={copy.detailsPlaceholder}
-                className="mt-2 min-h-44 rounded-xl"
-              />
+              <div className="mt-2"><QuestionComposer value={body} onChange={setBody} placeholder={copy.detailsPlaceholder} files={files} onFiles={setFiles} maxLength={4000}/></div>
             </div>
 
             <div className="max-w-xl">
@@ -277,6 +269,7 @@ function AskPage() {
               <span className="min-w-0 flex-1"><span className="block text-sm font-semibold">{locale==="ar"?"اطرح السؤال بشكل مجهول":locale==="fr"?"Poser la question anonymement":"Ask anonymously"}</span><span className="mt-1 block text-xs leading-5 text-muted-foreground">{locale==="ar"?"لن يظهر اسمك للمستخدمين أو الخبراء، بينما تبقى هويتك متاحة للإدارة لأغراض الأمان والمراجعة.":locale==="fr"?"Votre nom sera masqué aux utilisateurs et aux experts, mais restera accessible à l’administration pour la sécurité.":"Your name will be hidden from users and experts, but remains available to administration for safety and moderation."}</span></span>
               <span className={`grid size-6 shrink-0 place-items-center rounded-full border-2 ${anonymous?"border-primary bg-primary text-primary-foreground":"border-border"}`}>{anonymous&&<Check className="size-3.5"/>}</span>
             </button>
+            <button type="button" onClick={()=>setNotifyByEmail(!notifyByEmail)} className="flex w-full items-center gap-3 rounded-xl border border-border/60 bg-muted/20 px-4 py-3 text-start"><span className={`grid size-8 place-items-center rounded-lg ${notifyByEmail?"bg-secondary/12 text-secondary":"bg-muted text-muted-foreground"}`}><Mail className="size-4"/></span><span className="min-w-0 flex-1"><span className="block text-sm font-semibold">{locale==="ar"?"أخبرني عبر البريد عند وصول إجابة":locale==="fr"?"Me prévenir par e-mail":"Email me when an answer arrives"}</span><span className="text-[10px] text-muted-foreground">{user.email}</span></span><span className={`grid size-5 place-items-center rounded border ${notifyByEmail?"border-secondary bg-secondary text-secondary-foreground":"border-border"}`}>{notifyByEmail&&<Check className="size-3"/>}</span></button>
 
             {site.tokenProgram.mode==="full"&&<div>
               <div className="flex flex-wrap items-center justify-between gap-2">
@@ -355,27 +348,15 @@ function AskPage() {
               </Badge>
             </div>
 
-            <Button size="lg" className="w-full rounded-xl" disabled={submitting} onClick={submit}>
-              {copy.publish}
+            <Button size="lg" className="w-full rounded-xl" disabled={submitting} onClick={openPreview}>
+              {locale==="ar"?"معاينة السؤال قبل الإرسال":locale==="fr"?"Prévisualiser la question":"Preview before submitting"}
             </Button>
           </div>
         </div>
 
-        <aside className="space-y-4 lg:sticky lg:top-24 lg:self-start">
-          {[copy.suggestion, copy.assistant].map((text, index) => (
-            <div key={text} className="premium-card p-5">
-              {index === 0 ? (
-                <Wand2 className="size-5 text-secondary" />
-              ) : (
-                <ShieldCheck className="size-5 text-accent" />
-              )}
-              <p className="mt-3 text-sm leading-6 text-muted-foreground">
-                {text}
-              </p>
-            </div>
-          ))}
-        </aside>
+        <aside className="space-y-4 lg:sticky lg:top-24 lg:self-start"><div className="premium-card overflow-hidden"><div className="border-b border-border/60 bg-primary px-5 py-4 text-primary-foreground"><Wand2 className="size-5 text-accent"/><h2 className="mt-2 font-semibold">{locale==="ar"?"كيف تطرح سؤالًا ممتازًا؟":locale==="fr"?"Comment poser une bonne question ?":"How to ask a great question"}</h2></div><ol className="space-y-4 p-5">{(locale==="ar"?["ابحث أولًا وتجنب تكرار سؤال موجود.","اكتب عنوانًا واضحًا يصف المشكلة باختصار.","اذكر السياق وما جربته والنتيجة التي تريدها.","أخفِ البيانات الشخصية وأرفق الملفات الضرورية فقط."]:locale==="fr"?["Recherchez d’abord les questions similaires.","Rédigez un titre court et précis.","Expliquez le contexte, vos essais et le résultat attendu.","Masquez les données personnelles et joignez uniquement les fichiers utiles."]:["Search for similar questions first.","Write a short, specific title.","Explain the context, what you tried, and the result you need.","Hide personal data and attach only useful files."]).map((item,index)=><li key={item} className="flex gap-3 text-xs leading-6 text-muted-foreground"><span className="grid size-6 shrink-0 place-items-center rounded-full bg-secondary/12 text-[10px] font-bold text-secondary">{index+1}</span><span>{item}</span></li>)}</ol><div className="border-t border-border/60 bg-muted/25 p-4"><p className="flex items-start gap-2 text-[11px] leading-5 text-muted-foreground"><ShieldCheck className="mt-0.5 size-4 shrink-0 text-secondary"/>{locale==="ar"?"تُراجع الإدارة الأسئلة والإجابات للحفاظ على الجودة والاحترام.":"Questions and answers are moderated to maintain quality and respect."}</p></div></div></aside>
       </section>
+      <Dialog open={previewOpen} onOpenChange={setPreviewOpen}><DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto rounded-3xl"><DialogHeader><DialogTitle className="text-start text-xl">{locale==="ar"?"معاينة السؤال":locale==="fr"?"Aperçu de la question":"Question preview"}</DialogTitle><DialogDescription className="text-start">{locale==="ar"?"هكذا سيظهر سؤالك بعد موافقة الإدارة.":"This is how your question will appear after moderation."}</DialogDescription></DialogHeader><article className="rounded-3xl border border-border/70 bg-card p-5 shadow-soft sm:p-7"><div className="flex flex-wrap gap-2"><Badge variant="secondary" className="rounded-full">{dbCategories.find(c=>c.slug===category)?.name_ar??category}</Badge>{anonymous&&<Badge variant="outline" className="rounded-full"><EyeOff className="size-3"/>{locale==="ar"?"مجهول":"Anonymous"}</Badge>}</div><h1 className="mt-5 text-2xl font-semibold leading-snug">{title}</h1><RichTextContent text={body} className="mt-5 text-sm leading-7 text-muted-foreground"/>{files.length>0&&<div className="mt-5 border-t border-border/60 pt-4"><p className="text-xs font-semibold">{locale==="ar"?"المرفقات":"Attachments"} ({files.length})</p><div className="mt-2 flex flex-wrap gap-2">{files.map(file=><span key={file.name} className="rounded-full bg-muted px-3 py-1.5 text-[10px]">{file.name}</span>)}</div></div>}</article><div className="flex flex-wrap justify-end gap-2"><Button variant="outline" className="rounded-xl" onClick={()=>setPreviewOpen(false)}>{locale==="ar"?"العودة للتعديل":"Edit"}</Button><Button className="rounded-xl" disabled={submitting} onClick={submit}>{submitting?<Loader2 className="size-4 animate-spin"/>:null}{locale==="ar"?"إرسال إلى الإدارة":copy.publish}</Button></div></DialogContent></Dialog>
     </SiteLayout>
   );
 }
