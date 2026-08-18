@@ -1,5 +1,7 @@
 # Expert Insights Hub
 
+New version
+
 Build a complete production-ready SaaS platform called "Estichara.ma".
 
 
