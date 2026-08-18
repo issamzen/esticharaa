@@ -14,6 +14,8 @@ import {
   Send,
   Flag,
   EyeOff,
+  FileText,
+  Paperclip,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
@@ -31,6 +33,7 @@ import { useLocale } from "@/i18n/use-locale";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth";
 import { useSiteSettings } from "@/lib/site-settings";
+import { RichTextContent } from "@/components/site/question-composer";
 
 function decodeQuestionRef(value:string){try{return decodeURIComponent(value)}catch{return value}}
 
@@ -84,6 +87,7 @@ type DbQuestion = {
   question_locked: boolean;
   is_anonymous:boolean;
   target_audience_id: string | null;
+  attachments:{id:string;file_name:string;storage_path:string;mime_type:string;file_size:number}[];
   views: number;
   tags: string[];
   created_at: string;
@@ -169,6 +173,7 @@ function DbQuestionDetail({ questionId }: { questionId: string }) {
     toast.success(published?(locale==="ar"?"نُشرت إجابتك مباشرة لأنك خبير معتمد":"Your approved-expert answer was published immediately"):(locale==="ar"?"تم إرسال إجابتك للمراجعة الإدارية":locale==="fr"?"Votre réponse a été envoyée pour validation.":"Your answer was submitted for admin review."));
   }
 
+  async function openAttachment(path:string){const{data,error}=await supabase.storage.from("question-attachments").createSignedUrl(path,300);if(error||!data){toast.error(locale==="ar"?"تعذر فتح المرفق":"Could not open attachment");return}window.open(data.signedUrl,"_blank","noopener,noreferrer")}
   async function submitReport(){if(!reportTarget||!user){navigate({to:"/auth"});return}if(reportDetails.trim().length<5){toast.error(locale==="ar"?"أضف تفاصيل قصيرة عن سبب البلاغ":"Please add a short explanation");return}setReportBusy(true);const{error}=await supabase.rpc("create_content_report",{p_target_type:reportTarget.type,p_target_id:reportTarget.id,p_category:reportCategory,p_details:reportDetails.trim()});setReportBusy(false);if(error){toast.error(error.message.includes("REPORT_ALREADY_OPEN")?(locale==="ar"?"لديك بلاغ مفتوح بالفعل حول هذا المحتوى":"You already have an open report for this content"):error.message);return}setReportTarget(null);setReportDetails("");toast.success(locale==="ar"?"تم إرسال البلاغ إلى فريق المراجعة":"Report sent to moderation")}
   async function submitReview(){if(!reviewAnswer||!user)return;if(reviewComment.trim().length>0&&reviewComment.trim().length<5){toast.error(locale==="ar"?"اكتب تعليقًا أوضح أو اتركه فارغًا":"Write a clearer comment or leave it empty");return}setReviewBusy(true);const{error}=await supabase.rpc("submit_expert_review",{p_answer_id:reviewAnswer.id,p_rating:reviewRating,p_comment:reviewComment.trim()});setReviewBusy(false);if(error){toast.error(error.message.includes("UNLOCK_REQUIRED")?(locale==="ar"?"يجب فتح الإجابة قبل تقييمها":"Unlock the answer before reviewing it"):error.message);return}setReviewAnswer(null);setReviewComment("");toast.success(locale==="ar"?"شكرًا، تم حفظ تقييمك":"Thank you, your review was saved")}
 
@@ -280,9 +285,7 @@ function DbQuestionDetail({ questionId }: { questionId: string }) {
             {t("question.askedBy", "سأل")}: {q.asker_name}
           </p>
         ) : null}
-        <p className="mt-5 whitespace-pre-line text-base leading-8 text-muted-foreground">
-          {q.body}
-        </p>
+        <RichTextContent text={q.body} className="mt-5 text-base leading-8 text-muted-foreground"/>
         {q.question_locked && (
           <div className="mt-5 rounded-2xl border border-accent/30 bg-accent/5 p-5 text-center">
             <Lock className="mx-auto size-5 text-accent" />
@@ -291,6 +294,7 @@ function DbQuestionDetail({ questionId }: { questionId: string }) {
             <Button asChild className="mt-3 rounded-xl"><Link to="/auth">{t("nav.signIn")}</Link></Button>
           </div>
         )}
+        {q.attachments?.length>0&&<div className="mt-5 rounded-2xl border border-border/60 bg-muted/20 p-4"><p className="flex items-center gap-2 text-xs font-semibold"><Paperclip className="size-4 text-secondary"/>{locale==="ar"?"المرفقات":locale==="fr"?"Pièces jointes":"Attachments"}</p><div className="mt-3 flex flex-wrap gap-2">{q.attachments.map(file=><button key={file.id} onClick={()=>openAttachment(file.storage_path)} className="inline-flex items-center gap-2 rounded-xl border border-border/60 bg-background px-3 py-2 text-xs transition hover:border-primary/30 hover:text-primary"><FileText className="size-4"/><span className="max-w-48 truncate">{file.file_name}</span><span className="text-[9px] text-muted-foreground">{(file.file_size/1024/1024).toFixed(1)}MB</span></button>)}</div></div>}
 
         {q.tags.length > 0 && (
           <div className="mt-5 flex flex-wrap gap-2">
