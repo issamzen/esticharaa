@@ -5,7 +5,8 @@ import { Card, Badge, Btn, Empty } from "../ui";
 
 type Q = {
   id: string; title: string; body: string; tokens: number; status: string;is_anonymous:boolean;
-  views: number; answers_count: number; created_at: string;
+  views:number;answers_count:number;created_at:string;
+  question_attachments:{id:string;file_name:string;storage_path:string;mime_type:string;file_size:number}[];
   profiles: { full_name: string } | null;
   categories: { name_ar: string } | null;
 };
@@ -28,7 +29,7 @@ export function QuestionsPage() {
 
   async function load() {
     const [{ data: qs }, { data: as }, { data: moderation }] = await Promise.all([
-      supabase.from("questions").select("id, title, body, tokens, status, is_anonymous, views, answers_count, created_at, profiles:user_id(full_name), categories(name_ar)").order("created_at", { ascending: false }).limit(200),
+      supabase.from("questions").select("id, title, body, tokens, status, is_anonymous, views, answers_count, created_at, profiles:user_id(full_name), categories(name_ar), question_attachments(id,file_name,storage_path,mime_type,file_size)").order("created_at", { ascending: false }).limit(200),
       supabase.from("answers").select("id, body, status, created_at, profiles:expert_id(full_name), questions(title)").eq("status", "pending").order("created_at", { ascending: false }).limit(200),
       supabase.from("settings").select("value").eq("key","moderation_reasons").single(),
     ]);
@@ -43,6 +44,7 @@ export function QuestionsPage() {
     if (error) alert(error.message);
     await load();
   }
+  async function openAttachment(path:string){const{data,error}=await supabase.storage.from("question-attachments").createSignedUrl(path,300);if(error||!data){alert(error?.message??"تعذر فتح المرفق");return}window.open(data.signedUrl,"_blank","noopener,noreferrer")}
   async function delQ(id: string) {
     if (!confirm("حذف هذا السؤال نهائيًا؟")) return;
     await supabase.from("questions").delete().eq("id", id);
@@ -95,7 +97,7 @@ export function QuestionsPage() {
                   <p className="mt-1 text-xs text-ink/50">
                     بواسطة {q.profiles?.full_name ?? "—"} · {new Date(q.created_at).toLocaleDateString("ar-MA")} · <Eye className="inline size-3" /> {q.views} · {q.answers_count} إجابة
                   </p>
-                  {expanded === q.id && <p className="mt-3 whitespace-pre-wrap rounded-xl bg-ink/4 p-4 text-sm leading-7 text-ink/75">{q.body}</p>}
+                  {expanded===q.id&&<div className="mt-3 rounded-xl bg-ink/4 p-4"><p className="whitespace-pre-wrap text-sm leading-7 text-ink/75">{q.body}</p>{q.question_attachments?.length>0&&<div className="mt-4 border-t border-ink/8 pt-3"><p className="text-xs font-bold">المرفقات ({q.question_attachments.length})</p><div className="mt-2 flex flex-wrap gap-2">{q.question_attachments.map(file=><button key={file.id} onClick={()=>openAttachment(file.storage_path)} className="rounded-lg border border-ink/10 bg-white px-3 py-2 text-xs font-semibold text-brand-teal">{file.file_name} · {(file.file_size/1024/1024).toFixed(1)}MB</button>)}</div></div>}</div>}
                 </div>
                 <div className="flex shrink-0 gap-2">
                   {q.status === "pending" && (
