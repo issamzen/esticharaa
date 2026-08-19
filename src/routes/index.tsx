@@ -144,6 +144,7 @@ function Index() {
   const localizedStories = getHomeStories(t);
   const localizedFaqs = getHomeFaqs(t);
   const locale=useLocale();
+  useEffect(()=>{if(!site.loaded)return;const configured=locale==="ar"?site.branding.browser_title_ar:locale==="fr"?site.branding.browser_title_fr:site.branding.browser_title_en;if(configured?.trim())document.title=configured.trim()},[site.loaded,locale,site.branding.browser_title_ar,site.branding.browser_title_fr,site.branding.browser_title_en]);
   const expertsEnabled=site.features["expert_applications"]!==false;
   const visibleFeatures=expertsEnabled?features:features.filter((_,index)=>index!==0);
   const visibleSteps=expertsEnabled?steps:steps.map((step,index)=>index===1?{...step,title:locale==="ar"?"شارك السؤال مع المجتمع":locale==="fr"?"Partagez avec la communauté":"Share with the community",text:locale==="ar"?"يمكن لأي عضو مسجل مشاركة خبرته، وتظهر الإجابات بعد مراجعة الإدارة.":locale==="fr"?"Tout membre inscrit peut contribuer; les réponses sont publiées après modération.":"Any registered member can contribute; answers appear after moderation."}:step);
@@ -242,7 +243,7 @@ function Index() {
             </div>
 
             <div className="mt-8 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-muted-foreground">
-              {[t("home.assuranceNoSubscription"),t("home.assurancePrivate"),...(expertsEnabled?[t("home.assuranceVerified")]:[])].map((item)=>( 
+              {[t("home.assuranceNoSubscription"),t("home.assurancePrivate"),...(expertsEnabled?[t("home.assuranceVerified")]:[])].map((item)=>(
                 <span key={item} className="inline-flex items-center gap-1.5">
                   <Check className="size-3.5 text-primary" /> {item}
                 </span>
@@ -398,7 +399,7 @@ function Index() {
         />
 
         <div className="mt-10 grid gap-4 lg:grid-cols-6">
-          {visibleFeatures.map((feature,index)=>( 
+          {visibleFeatures.map((feature,index)=>(
             <article
               key={feature.title}
               className={`${feature.span} group relative min-h-64 overflow-hidden rounded-3xl border border-border/70 bg-card p-7 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-primary/25 hover:shadow-xl hover:shadow-primary/5 sm:p-8`}
