@@ -1,198 +1,21 @@
-import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import { BadgeCheck, Clock, Coins, MessageSquare, Star } from "lucide-react";
+import { useEffect,useState } from "react";
+import { createFileRoute,Link } from "@tanstack/react-router";
+import { BadgeCheck,Loader2,MessageSquare,Star } from "lucide-react";
 import { SiteLayout } from "@/components/site/layout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { QuestionCard } from "@/components/site/question-card";
-import { experts, questions } from "@/data/platform";
 import { usePageCopy } from "@/i18n/page-copy";
-import { formatNumber } from "@/i18n/format";
-import { localizeExpert } from "@/i18n/platform";
+import { formatDate,formatNumber } from "@/i18n/format";
 import { useLocale } from "@/i18n/use-locale";
+import { supabase } from "@/lib/supabase";
+import { useSiteSettings } from "@/lib/site-settings";
 
-export const Route = createFileRoute("/experts/$expertSlug")({
-  loader: ({ params, context }) => {
-    const base = experts.find((item) => item.slug === params.expertSlug);
-    if (!base) throw notFound();
-    const expert = localizeExpert(base, context.localeRouting.getLocale());
-    return { expert };
-  },
-  head: ({ loaderData }) => ({
-    meta: loaderData
-      ? [
-          {
-            title: `${loaderData.expert.name}, ${loaderData.expert.title} — Estichara.ma`,
-          },
-          { name: "description", content: loaderData.expert.bio.slice(0, 155) },
-        ]
-      : [{ title: "Estichara.ma" }],
-  }),
-  notFoundComponent: ExpertNotFound,
-  errorComponent: ExpertLoadError,
-  component: ExpertProfile,
-});
-
-function ExpertNotFound() {
-  const copy = usePageCopy().expert;
-  return (
-    <SiteLayout>
-      <div className="mx-auto max-w-2xl px-4 py-32 text-center">
-        <h1 className="text-3xl font-semibold">{copy.notFound}</h1>
-        <Button asChild className="mt-6 rounded-xl">
-          <Link to="/experts">{copy.back}</Link>
-        </Button>
-      </div>
-    </SiteLayout>
-  );
-}
-
-function ExpertLoadError() {
-  const copy = usePageCopy().expert;
-  return (
-    <SiteLayout>
-      <div className="mx-auto max-w-2xl px-4 py-32 text-center">
-        <h1 className="text-3xl font-semibold">{copy.loadError}</h1>
-      </div>
-    </SiteLayout>
-  );
-}
-
-function ExpertProfile() {
-  const { expert } = Route.useLoaderData();
-  const copy = usePageCopy().expert;
-  const locale = useLocale();
-  const answered = questions.slice(0, 3);
-
-  const stats = [
-    { label: copy.rating, value: `${expert.rating} / 5`, icon: Star },
-    {
-      label: copy.answersDelivered,
-      value: formatNumber(expert.answered, locale),
-      icon: MessageSquare,
-    },
-    {
-      label: copy.tokensEarned,
-      value: formatNumber(expert.tokens, locale),
-      icon: Coins,
-    },
-    { label: copy.responseTime, value: expert.responseTime, icon: Clock },
-  ];
-
-  return (
-    <SiteLayout>
-      <section className="bg-hero relative overflow-hidden border-b border-border/60">
-        <div className="absolute -end-28 -top-28 size-80 rounded-full bg-accent/15 blur-3xl" />
-        <div className="relative mx-auto flex max-w-7xl flex-col gap-6 px-4 py-14 sm:flex-row sm:items-center sm:px-6 sm:py-20">
-          <span className="bg-brand grid size-24 shrink-0 place-items-center rounded-[2rem] text-3xl font-semibold text-primary-foreground shadow-lift">
-            {expert.initials}
-          </span>
-          <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-3xl font-semibold sm:text-5xl">
-                {expert.name}
-              </h1>
-              {expert.verified ? (
-                <Badge className="rounded-full bg-secondary text-secondary-foreground">
-                  <BadgeCheck className="size-3.5" /> {copy.verifiedLevel}
-                </Badge>
-              ) : (
-                <Badge variant="outline" className="rounded-full">
-                  {copy.pending}
-                </Badge>
-              )}
-            </div>
-            <p className="mt-2 text-muted-foreground">
-              {expert.title} · {expert.specialization} · {expert.city}
-            </p>
-            <div className="mt-6 flex flex-wrap gap-2">
-              <Button className="rounded-xl">
-                <MessageSquare className="size-4" /> {copy.contact}
-              </Button>
-              <Button
-                asChild
-                variant="outline"
-                className="rounded-xl bg-background/70"
-              >
-                <Link to="/ask">{copy.ask}</Link>
-              </Button>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16">
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          {stats.map((stat) => (
-            <article key={stat.label} className="premium-card p-5 sm:p-6">
-              <stat.icon className="size-5 text-secondary" />
-              <p className="mt-4 text-xl font-semibold sm:text-2xl">
-                {stat.value}
-              </p>
-              <p className="mt-1 text-xs text-muted-foreground">{stat.label}</p>
-            </article>
-          ))}
-        </div>
-
-        <div className="mt-12 grid gap-10 lg:grid-cols-[1fr_320px]">
-          <div>
-            <h2 className="text-2xl font-semibold">{copy.biography}</h2>
-            <p className="mt-4 max-w-3xl text-sm leading-7 text-muted-foreground">
-              {expert.bio}
-            </p>
-
-            <h2 className="mt-12 text-2xl font-semibold">
-              {copy.recentAnswers}
-            </h2>
-            <div className="mt-5 grid gap-4">
-              {answered.map((question) => (
-                <QuestionCard key={question.id} question={question} />
-              ))}
-            </div>
-
-            <h2 className="mt-12 text-2xl font-semibold">
-              {copy.reviews} ({formatNumber(expert.reviews, locale)})
-            </h2>
-            <div className="mt-5 grid gap-4 sm:grid-cols-2">
-              {copy.reviewItems.map((review) => (
-                <article key={review} className="premium-card p-5 text-sm">
-                  <div className="flex gap-0.5 text-accent">
-                    {Array.from({ length: 5 }).map((_, index) => (
-                      <Star key={index} className="size-3.5 fill-current" />
-                    ))}
-                  </div>
-                  <p className="mt-3 leading-6 text-muted-foreground">
-                    {review}
-                  </p>
-                </article>
-              ))}
-            </div>
-          </div>
-
-          <aside className="space-y-5">
-            <div className="premium-card p-6">
-              <h3 className="font-semibold">{copy.certificates}</h3>
-              <ul className="mt-4 space-y-3 text-sm text-muted-foreground">
-                {copy.certificateItems.map((item) => (
-                  <li key={item} className="flex items-start gap-2">
-                    <BadgeCheck className="mt-0.5 size-4 shrink-0 text-secondary" />{" "}
-                    {item}
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div className="premium-card p-6">
-              <h3 className="font-semibold">{copy.achievements}</h3>
-              <div className="mt-4 flex flex-wrap gap-2">
-                {copy.achievementItems.map((item) => (
-                  <Badge key={item} variant="outline" className="rounded-full">
-                    {item}
-                  </Badge>
-                ))}
-              </div>
-            </div>
-          </aside>
-        </div>
-      </section>
-    </SiteLayout>
-  );
-}
+type Review={id:string;rating:number;comment:string;created_at:string;reviewer_name:string};type Answer={id:string;preview:string;created_at:string;question_title:string;question_slug:string};type Profile={user_id:string;slug:string;full_name:string;avatar_url:string|null;title:string;specialization:string;bio:string;city:string;verified:boolean;rating:number;reviews_count:number;answered_count:number;audience_ids:string[];reviews:Review[];answers:Answer[]};
+export const Route=createFileRoute("/experts/$expertSlug")({component:ExpertProfile,head:()=>({meta:[{title:"Expert — Estichara.ma"}]})});
+function ExpertProfile(){const{expertSlug}=Route.useParams();const copy=usePageCopy().expert;const locale=useLocale();const site=useSiteSettings();const[profile,setProfile]=useState<Profile|null>(null);const[loading,setLoading]=useState(true);
+ useEffect(()=>{supabase.rpc("get_public_expert_profile",{p_ref:expertSlug}).then(({data})=>{setProfile(data as Profile|null);setLoading(false)})},[expertSlug]);
+ if(site.loaded&&site.features["expert_applications"]===false)return <SiteLayout><div className="mx-auto max-w-xl px-4 py-32 text-center"><h1 className="text-3xl font-semibold">دليل الخبراء غير متاح حاليًا.</h1></div></SiteLayout>;
+ if(loading)return <SiteLayout><div className="grid min-h-[55vh] place-items-center"><Loader2 className="size-8 animate-spin text-primary"/></div></SiteLayout>;
+ if(!profile)return <SiteLayout><div className="mx-auto max-w-xl px-4 py-32 text-center"><h1 className="text-3xl font-semibold">{copy.notFound}</h1><Button asChild className="mt-6"><Link to="/experts">{copy.back}</Link></Button></div></SiteLayout>;
+ const initials=profile.full_name.split(" ").map(x=>x[0]).slice(0,2).join("");return <SiteLayout><section className="bg-hero border-b border-border/60"><div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-14 sm:flex-row sm:items-center sm:px-6 sm:py-20">{profile.avatar_url?<img src={profile.avatar_url} alt={profile.full_name} className="size-24 rounded-[2rem] object-cover shadow-lift"/>:<span className="bg-brand grid size-24 place-items-center rounded-[2rem] text-3xl font-semibold text-primary-foreground shadow-lift">{initials}</span>}<div><div className="flex flex-wrap items-center gap-2"><h1 className="text-3xl font-semibold sm:text-5xl">{profile.full_name}</h1>{profile.verified&&<Badge className="rounded-full bg-secondary"><BadgeCheck className="size-3.5"/>{copy.verifiedLevel}</Badge>}</div><p className="mt-2 text-muted-foreground">{profile.title}{profile.specialization?` · ${profile.specialization}`:""}{profile.city?` · ${profile.city}`:""}</p></div></div></section><section className="mx-auto max-w-7xl px-4 py-12 sm:px-6"><div className="grid grid-cols-3 gap-3"><Stat label={copy.rating} value={`${Number(profile.rating)||0}/5`}/><Stat label={copy.answersDelivered} value={formatNumber(profile.answered_count,locale)}/><Stat label={copy.reviews} value={formatNumber(profile.reviews_count,locale)}/></div><div className="mt-12 grid gap-10 lg:grid-cols-[1fr_340px]"><div><h2 className="text-2xl font-semibold">{copy.biography}</h2><p className="mt-4 whitespace-pre-line text-sm leading-7 text-muted-foreground">{profile.bio||"—"}</p><h2 className="mt-12 text-2xl font-semibold">{copy.recentAnswers}</h2><div className="mt-5 space-y-3">{profile.answers?.map(answer=><Link key={answer.id} to="/questions/$questionId" params={{questionId:answer.question_slug}} className="premium-card block p-5 transition hover:border-primary/30"><h3 className="font-semibold">{answer.question_title}</h3><p className="mt-2 line-clamp-2 text-sm leading-6 text-muted-foreground">{answer.preview}</p></Link>)}{!profile.answers?.length&&<p className="text-sm text-muted-foreground">No published answers yet.</p>}</div></div><aside><h2 className="text-xl font-semibold">{copy.reviews}</h2><div className="mt-4 space-y-3">{profile.reviews?.map(review=><article key={review.id} className="premium-card p-4"><div className="flex gap-0.5">{[1,2,3,4,5].map(i=><Star key={i} className={`size-3.5 ${i<=review.rating?"fill-accent text-accent":"text-muted"}`}/>)}</div>{review.comment&&<p className="mt-2 text-sm leading-6 text-muted-foreground">{review.comment}</p>}<p className="mt-2 text-[10px] text-muted-foreground">{review.reviewer_name} · {formatDate(review.created_at,locale)}</p></article>)}{!profile.reviews?.length&&<p className="text-sm text-muted-foreground">No reviews yet.</p>}</div></aside></div></section></SiteLayout>}
+function Stat({label,value}:{label:string;value:string}){return <article className="premium-card p-5"><p className="text-2xl font-semibold">{value}</p><p className="mt-1 text-xs text-muted-foreground">{label}</p></article>}
