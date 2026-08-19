@@ -1,8 +1,8 @@
 [build]
-  command = "bun run build && cd admin && bun install && bun run build"
+  command = "npm install --no-audit --no-fund && npm run build && cd admin && npm install --no-audit --no-fund && npm run build"
   publish = "dist"
 
-# Admin dashboard (single-page app under /admin)
+# Admin dashboard SPA routes
 [[redirects]]
   from = "/admin"
   to = "/admin/index.html"
@@ -15,5 +15,4 @@
 
 [build.environment]
   NODE_VERSION = "22.20.0"
-  BUN_VERSION = "1.3.14"
   NITRO_PRESET = "netlify"
