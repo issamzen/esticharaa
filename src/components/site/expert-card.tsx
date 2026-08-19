@@ -1,59 +1,8 @@
 import { Link } from "@tanstack/react-router";
-import { BadgeCheck, Clock, Coins, Star } from "lucide-react";
-import { useTranslation } from "react-i18next";
+import { BadgeCheck,MessageSquare,Star } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import type { Expert } from "@/data/platform";
-import { formatNumber } from "@/i18n/format";
-import { localizeExpert } from "@/i18n/platform";
 import { useLocale } from "@/i18n/use-locale";
+import { formatNumber } from "@/i18n/format";
 
-export function ExpertCard({ expert }: { expert: Expert }) {
-  const { t } = useTranslation();
-  const locale = useLocale();
-  const item = localizeExpert(expert, locale);
-
-  return (
-    <Link
-      to="/experts/$expertSlug"
-      params={{ expertSlug: item.slug }}
-      className="group relative block overflow-hidden rounded-3xl border border-border/70 bg-card p-5 shadow-soft transition-all duration-300 hover:-translate-y-1 hover:border-secondary/35 hover:shadow-lift sm:p-6"
-    >
-      <div className="absolute -end-12 -top-12 size-32 rounded-full bg-secondary/10 blur-2xl transition group-hover:bg-secondary/20" />
-      <div className="relative flex items-start gap-4">
-        <span className="bg-brand grid size-14 shrink-0 place-items-center rounded-2xl text-lg font-semibold text-primary-foreground shadow-lg shadow-primary/15">
-          {item.initials}
-        </span>
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-1.5">
-            <h3 className="truncate font-semibold group-hover:text-primary">
-              {item.name}
-            </h3>
-            {item.verified ? (
-              <BadgeCheck className="size-4 shrink-0 fill-secondary text-primary-foreground" />
-            ) : null}
-          </div>
-          <p className="mt-0.5 truncate text-sm text-muted-foreground">
-            {item.title} · {item.city}
-          </p>
-          <Badge variant="secondary" className="mt-2 rounded-full">
-            {item.specialization}
-          </Badge>
-        </div>
-      </div>
-
-      <div className="relative mt-5 grid grid-cols-3 gap-2 border-t border-border/60 pt-4 text-xs text-muted-foreground">
-        <span className="inline-flex items-center gap-1.5">
-          <Star className="size-3.5 fill-accent text-accent" /> {item.rating}
-        </span>
-        <span className="inline-flex items-center gap-1.5">
-          <Coins className="size-3.5 text-secondary" />
-          {formatNumber(item.tokens, locale)}
-        </span>
-        <span className="inline-flex items-center gap-1.5">
-          <Clock className="size-3.5" /> {item.responseTime}
-        </span>
-      </div>
-      <span className="sr-only">{t("experts.viewProfile")}</span>
-    </Link>
-  );
-}
+export type PublicExpert={user_id:string;slug:string;full_name:string;avatar_url:string|null;title:string;specialization:string;bio:string;city:string;verified:boolean;rating:number;reviews_count:number;answered_count:number;earned_tokens:number;audience_ids:string[]};
+export function ExpertCard({expert}:{expert:PublicExpert}){const locale=useLocale();const initials=expert.full_name.split(" ").map(x=>x[0]).slice(0,2).join("");return <Link to="/experts/$expertSlug" params={{expertSlug:expert.slug||expert.user_id}} className="group relative block overflow-hidden rounded-3xl border border-border/70 bg-card p-5 shadow-soft transition-all duration-300 hover:-translate-y-1 hover:border-secondary/35 hover:shadow-lift sm:p-6"><div className="absolute -end-12 -top-12 size-32 rounded-full bg-secondary/10 blur-2xl transition group-hover:bg-secondary/20"/><div className="relative flex items-start gap-4">{expert.avatar_url?<img src={expert.avatar_url} alt={expert.full_name} className="size-14 shrink-0 rounded-2xl object-cover shadow-lg"/>:<span className="bg-brand grid size-14 shrink-0 place-items-center rounded-2xl text-lg font-semibold text-primary-foreground shadow-lg">{initials}</span>}<div className="min-w-0 flex-1"><div className="flex items-center gap-1.5"><h3 className="truncate font-semibold group-hover:text-primary">{expert.full_name}</h3>{expert.verified&&<BadgeCheck className="size-4 shrink-0 text-secondary"/>}</div><p className="mt-0.5 truncate text-sm text-muted-foreground">{expert.title}{expert.city?` · ${expert.city}`:""}</p>{expert.specialization&&<Badge variant="secondary" className="mt-2 rounded-full">{expert.specialization}</Badge>}</div></div><div className="relative mt-5 grid grid-cols-3 gap-2 border-t border-border/60 pt-4 text-xs text-muted-foreground"><span className="inline-flex items-center gap-1.5"><Star className="size-3.5 fill-accent text-accent"/>{Number(expert.rating)||0}</span><span className="inline-flex items-center gap-1.5"><MessageSquare className="size-3.5 text-secondary"/>{formatNumber(expert.answered_count,locale)}</span><span>{formatNumber(expert.reviews_count,locale)} reviews</span></div></Link>}
