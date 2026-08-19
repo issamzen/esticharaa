@@ -20,11 +20,9 @@ import {
 import { SiteLayout, PageHeader } from "@/components/site/layout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { tokenPacks as fallbackPacks } from "@/data/platform";
 import { usePageCopy } from "@/i18n/page-copy";
 import { createPageSeo, pageHead } from "@/i18n/route-meta";
 import { formatNumber } from "@/i18n/format";
-import { tokenPackName } from "@/i18n/platform";
 import { useLocale } from "@/i18n/use-locale";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth";
@@ -65,7 +63,7 @@ function TokensPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const site = useSiteSettings();
-  const [dbPacks, setDbPacks] = useState<DbPack[] | null>(null);
+  const [dbPacks,setDbPacks]=useState<DbPack[]>([]);
   const [ordering, setOrdering] = useState<string | null>(null);
   const [payingPack, setPayingPack] = useState<DbPack | null>(null);
   const [chosenMethod, setChosenMethod] = useState<string>("");
@@ -143,8 +141,7 @@ function TokensPage() {
 
       <section className="mx-auto max-w-7xl px-4 py-14 sm:px-6 sm:py-20">
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4 lg:items-start">
-          {dbPacks
-            ? dbPacks.map((pack) => (
+          {dbPacks.map((pack) => (
                 <article
                   key={pack.id}
                   className={`premium-card relative flex flex-col p-6 transition duration-300 hover:-translate-y-1 hover:shadow-lift ${
@@ -196,31 +193,9 @@ function TokensPage() {
                     )}
                   </Button>
                 </article>
-              ))
-            : fallbackPacks.map((pack) => {
-                const name = tokenPackName(pack.name, locale);
-                return (
-                  <article
-                    key={pack.name}
-                    className={`premium-card relative flex flex-col p-6 ${
-                      pack.popular ? "border-accent lg:-translate-y-3" : ""
-                    }`}
-                  >
-                    <h2 className="font-semibold text-muted-foreground">
-                      {name}
-                    </h2>
-                    <p className="mt-5 text-4xl font-semibold text-brand">
-                      {formatNumber(pack.tokens, locale)}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      {t("common.tokens")}
-                    </p>
-                    <p className="mt-4 text-xl font-semibold">
-                      {formatNumber(pack.price, locale)} {t("common.mad")}
-                    </p>
-                  </article>
-                );
-              })}
+              ))}
+
+          {dbPacks.length===0&&<p className="col-span-full py-10 text-center text-sm text-muted-foreground">No active token packs.</p>}
         </div>
 
         <div className="premium-card mt-12 p-6 sm:p-8">
