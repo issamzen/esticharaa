@@ -3,17 +3,11 @@ import { useTranslation } from "react-i18next";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   ArrowRight,
-  BadgeCheck,
   Check,
-  Clock3,
   Lock,
   MessageSquare,
-  Quote,
   Search,
-  ShieldCheck,
   Sparkles,
-  Star,
-  Users,
 } from "lucide-react";
 import { SiteLayout } from "@/components/site/layout";
 import { Button } from "@/components/ui/button";
@@ -24,18 +18,13 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { QuestionCard } from "@/components/site/question-card";
-import { ExpertCard } from "@/components/site/expert-card";
 import { useLocale } from "@/i18n/use-locale";
 import { formatNumber } from "@/i18n/format";
 import {
   getHomeFaqs,
   getHomeFeatures,
   getHomeSteps,
-  getHomeStories,
-  getTokenPackLabel,
 } from "@/i18n/home-content";
-import { experts, questions, tokenPacks } from "@/data/platform";
 import { useSiteSettings } from "@/lib/site-settings";
 
 export const Route = createFileRoute("/")({
@@ -106,6 +95,8 @@ function TextLink({ to, children }: { to: HomeTextLink; children: ReactNode }) {
   );
 }
 
+type PlatformStats={users:number;questions:number;answers:number;experts:number;reviews:number;average_rating:number};
+type HomePack={id:string;name_ar:string;name_fr:string;name_en:string;tokens:number;price_mad:number;popular:boolean};
 type HomeLiveQuestion = {
   id: string;
   slug: string;
@@ -122,25 +113,26 @@ type HomeLiveQuestion = {
 function Index() {
   const { t } = useTranslation();
   const site=useSiteSettings();
-  const [liveQuestions,setLiveQuestions]=useState<HomeLiveQuestion[]>([]);
+  const[liveQuestions,setLiveQuestions]=useState<HomeLiveQuestion[]>([]);
+  const[platformStats,setPlatformStats]=useState<PlatformStats|null>(null);
+  const[homePacks,setHomePacks]=useState<HomePack[]>([]);
 
   useEffect(() => {
     import("@/lib/supabase").then(({ supabase }) => {
-      supabase
-        .rpc("get_public_questions", { p_limit: 4 })
-        .then(({data})=>setLiveQuestions((data as unknown as HomeLiveQuestion[])??[]));
+      supabase.rpc("get_public_questions",{p_limit:4}).then(({data})=>setLiveQuestions((data as unknown as HomeLiveQuestion[])??[]));
+      supabase.rpc("get_public_platform_stats").then(({data})=>setPlatformStats(data as PlatformStats|null));
+      supabase.from("token_packs").select("id,name_ar,name_fr,name_en,tokens,price_mad,popular").eq("active",true).order("sort").then(({data})=>setHomePacks((data as HomePack[])??[]));
     });
   }, []);
   const features = getHomeFeatures(t);
   const steps = getHomeSteps(t);
-  const localizedStories = getHomeStories(t);
   const localizedFaqs = getHomeFaqs(t);
   const locale=useLocale();
   useEffect(()=>{if(!site.loaded)return;const configured=locale==="ar"?site.branding.browser_title_ar:locale==="fr"?site.branding.browser_title_fr:site.branding.browser_title_en;if(configured?.trim())document.title=configured.trim()},[site.loaded,locale,site.branding.browser_title_ar,site.branding.browser_title_fr,site.branding.browser_title_en]);
   const expertsEnabled=site.features["expert_applications"]!==false;
   const visibleFeatures=expertsEnabled?features:features.filter((_,index)=>index!==0);
   const visibleSteps=expertsEnabled?steps:steps.map((step,index)=>index===1?{...step,title:locale==="ar"?"شارك السؤال مع المجتمع":locale==="fr"?"Partagez avec la communauté":"Share with the community",text:locale==="ar"?"يمكن لأي عضو مسجل مشاركة خبرته، وتظهر الإجابات بعد مراجعة الإدارة.":locale==="fr"?"Tout membre inscrit peut contribuer; les réponses sont publiées après modération.":"Any registered member can contribute; answers appear after moderation."}:step);
-  const stats=[{value:"12.4k+",label:t("home.stats.answers")},...(expertsEnabled?[{value:"640+",label:t("home.stats.experts")}]:[]),{value:"3h 12m",label:t("home.stats.response")},{value:"4.9/5",label:t("home.stats.rating")}];
+  const stats=platformStats?[{value:formatNumber(platformStats.questions,locale),label:locale==="ar"?"سؤال منشور":locale==="fr"?"Questions publiées":"Published questions"},{value:formatNumber(platformStats.answers,locale),label:t("home.stats.answers")},{value:formatNumber(platformStats.users,locale),label:locale==="ar"?"عضو في المجتمع":locale==="fr"?"Membres":"Community members"},...(expertsEnabled&&platformStats.experts>0?[{value:formatNumber(platformStats.experts,locale),label:t("home.stats.experts")}]:[])]:[];
 
   return (
     <SiteLayout>
@@ -164,8 +156,8 @@ function Index() {
           className="absolute -right-40 top-10 -z-10 size-[34rem] rounded-full bg-accent/15 blur-3xl"
         />
 
-        <div className={`mx-auto grid max-w-6xl gap-14 px-4 py-16 sm:py-24 lg:items-center lg:gap-16 lg:py-28 ${expertsEnabled?"lg:grid-cols-[1.08fr_.92fr]":"place-items-center"}`}>
-          <div className={`min-w-0 ${expertsEnabled?"":"mx-auto max-w-3xl text-center"}`}>
+        <div className="mx-auto grid max-w-6xl place-items-center px-4 py-16 sm:py-24 lg:py-28">
+          <div className="mx-auto min-w-0 max-w-3xl text-center">
             <Badge
               variant="outline"
               className="rounded-full border-primary/20 bg-background/70 px-3 py-1.5 shadow-sm backdrop-blur-md"
@@ -223,132 +215,10 @@ function Index() {
               ))}
             </div>
           </div>
-
-          {/* Expert preview is hidden while the expert program is disabled. */}
-          {expertsEnabled&&<div className="relative mx-auto w-full min-w-0 max-w-lg lg:mx-0">
-            <div
-              aria-hidden="true"
-              className="absolute inset-x-8 inset-y-10 -z-10 rounded-[2rem] bg-primary/20 blur-3xl"
-            />
-
-            <div className="relative overflow-hidden rounded-[1.75rem] border border-white/70 bg-background/90 p-3 shadow-2xl shadow-foreground/10 backdrop-blur-xl dark:border-white/10">
-              <div className="rounded-[1.25rem] border border-border/70 bg-card">
-                <div className="flex items-center justify-between border-b border-border/60 px-5 py-4">
-                  <div className="flex gap-1.5" aria-hidden="true">
-                    <span className="size-2.5 rounded-full bg-destructive/55" />
-                    <span className="size-2.5 rounded-full bg-accent/65" />
-                    <span className="size-2.5 rounded-full bg-primary/55" />
-                  </div>
-                  <span className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-                    <span className="size-1.5 rounded-full bg-emerald-500" />
-                    {t("home.expertOnline")}
-                  </span>
-                </div>
-
-                <div className="p-5 sm:p-6">
-                  <div className="flex items-center justify-between gap-3">
-                    <Badge variant="secondary" className="rounded-full">
-                      {t("home.previewCategory")}
-                    </Badge>
-                    <span className="text-xs text-muted-foreground">
-                      {t("home.askedMinutesAgo", { count: 18 })}
-                    </span>
-                  </div>
-
-                  <h2 className="mt-4 text-balance text-xl font-semibold leading-snug sm:text-2xl">
-                    {t("home.previewQuestion")}
-                  </h2>
-                  <div className="mt-4 flex items-center gap-3 text-xs text-muted-foreground">
-                    <span className="inline-flex items-center gap-1.5">
-                      <MessageSquare className="size-3.5" />{" "}
-                      {t("home.answerCount", { count: 3 })}
-                    </span>
-                    <span className="size-1 rounded-full bg-border" />
-                    <span>{t("home.premiumQuestion")}</span>
-                  </div>
-
-                  <div className="mt-6 rounded-2xl border border-primary/20 bg-primary/[0.04] p-4">
-                    <div className="flex items-center gap-3">
-                      <div className="grid size-11 shrink-0 place-items-center rounded-full bg-gradient-to-br from-primary to-accent text-sm font-semibold text-primary-foreground shadow-sm">
-                        {t("home.sampleExpertInitials")}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-1.5">
-                          <p className="truncate text-sm font-semibold">
-                            {t("home.sampleExpertName")}
-                          </p>
-                          <BadgeCheck className="size-4 shrink-0 fill-primary text-primary-foreground" />
-                        </div>
-                        <p className="truncate text-xs text-muted-foreground">
-                          {t("home.sampleExpertRole")}
-                        </p>
-                      </div>
-                      <div className="inline-flex items-center gap-1 text-xs font-medium">
-                        <Star className="size-3.5 fill-amber-400 text-amber-400" />{" "}
-                        4.9
-                      </div>
-                    </div>
-
-                    <div className="relative mt-4 overflow-hidden">
-                      <p className="text-sm leading-6 text-foreground/80">
-                        {t("home.sampleAnswer")}
-                      </p>
-                      <div className="absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-card/95 to-transparent" />
-                    </div>
-
-                    <div className="mt-4 flex items-center justify-between gap-3 border-t border-border/60 pt-4">
-                      <div>
-                        <p className="text-xs text-muted-foreground">
-                          {t("home.fullExpertAnswer")}
-                        </p>
-                        <p className="text-sm font-semibold">
-                          {t("pricing.packTokens", { count: 24 })}
-                        </p>
-                      </div>
-                      <Button asChild size="sm" className="rounded-lg">
-                        <Link to="/questions">
-                          {t("home.previewAnswer")}{" "}
-                          <ArrowRight data-directional className="size-3.5" />
-                        </Link>
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="absolute -left-7 top-20 hidden items-center gap-2 rounded-xl border border-border/70 bg-background/90 px-3 py-2.5 shadow-lg backdrop-blur-xl sm:flex">
-              <span className="grid size-8 place-items-center rounded-lg bg-primary/10 text-primary">
-                <Users className="size-4" />
-              </span>
-              <div>
-                <p className="text-xs font-semibold">
-                  {t("home.verifiedProfessionals", { count: 640 })}
-                </p>
-                <p className="text-[10px] text-muted-foreground">
-                  {t("home.professionals")}
-                </p>
-              </div>
-            </div>
-
-            <div className="absolute -bottom-5 right-5 hidden items-center gap-2 rounded-xl border border-border/70 bg-background/90 px-3 py-2.5 shadow-lg backdrop-blur-xl sm:flex">
-              <span className="grid size-8 place-items-center rounded-lg bg-accent/15 text-accent-foreground">
-                <Clock3 className="size-4" />
-              </span>
-              <div>
-                <p className="text-xs font-semibold">
-                  {t("home.fastResponse")}
-                </p>
-                <p className="text-[10px] text-muted-foreground">
-                  {t("home.medianTime", { time: "3h 12m" })}
-                </p>
-              </div>
-            </div>
-          </div>}
         </div>
 
-        <div className="mx-auto max-w-6xl px-4 pb-12 sm:pb-16">
-          <div className={`grid grid-cols-2 divide-x divide-y divide-border/60 overflow-hidden rounded-2xl border border-border/60 bg-background/60 backdrop-blur-md sm:divide-y-0 ${expertsEnabled?"sm:grid-cols-4":"sm:grid-cols-3"}`}>
+        {stats.length>0&&<div className="mx-auto max-w-6xl px-4 pb-12 sm:pb-16">
+          <div className={`grid grid-cols-2 divide-x divide-y divide-border/60 overflow-hidden rounded-2xl border border-border/60 bg-background/60 backdrop-blur-md sm:divide-y-0 ${stats.length>=4?"sm:grid-cols-4":"sm:grid-cols-3"}`}>
             {stats.map((stat) => (
               <div key={stat.label} className="px-4 py-5 text-center sm:px-6">
                 <p className="text-xl font-semibold tracking-tight sm:text-2xl">
@@ -360,7 +230,7 @@ function Index() {
               </div>
             ))}
           </div>
-        </div>
+        </div>}
       </section>
 
       {/* Value proposition */}
@@ -461,8 +331,7 @@ function Index() {
           }
         />
         <div className="mt-10 grid gap-4 lg:grid-cols-2">
-          {liveQuestions.length > 0
-            ? liveQuestions.map((q) => (
+          {liveQuestions.map((q) => (
                 <Link
                   key={q.id}
                   to="/questions/$questionId"
@@ -499,100 +368,10 @@ function Index() {
                     </span>
                   </div>
                 </Link>
-              ))
-            : questions.slice(0, 4).map((question) => (
-                <QuestionCard key={question.id} question={question} />
               ))}
+          {liveQuestions.length===0&&<div className="premium-card py-14 text-center text-sm text-muted-foreground lg:col-span-2">{locale==="ar"?"لا توجد أسئلة منشورة حاليًا.":locale==="fr"?"Aucune question publiée pour le moment.":"No published questions yet."}</div>}
         </div>
       </section>
-
-      {/* Expert information follows the administration feature switch. */}
-      {expertsEnabled&&<section className="relative overflow-hidden border-y border-border/60 bg-card/40">
-        <div
-          aria-hidden="true"
-          className="absolute right-0 top-0 size-80 rounded-full bg-primary/10 blur-3xl"
-        />
-        <div className="relative mx-auto max-w-6xl px-4 py-20 sm:py-28">
-          <SectionHeading
-            eyebrow={t("home.expertSection.eyebrow")}
-            title={t("home.expertSection.title")}
-            description={t("home.expertSection.description")}
-            action={
-              <TextLink to="/experts">
-                {t("home.expertSection.directory")}
-              </TextLink>
-            }
-          />
-          <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {experts.slice(0, 3).map((expert) => (
-              <ExpertCard key={expert.slug} expert={expert} />
-            ))}
-          </div>
-
-          <div className="mt-8 flex items-center gap-3 rounded-2xl border border-border/70 bg-background/70 p-4 backdrop-blur sm:w-fit">
-            <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
-              <ShieldCheck className="size-5" />
-            </span>
-            <div>
-              <p className="text-sm font-medium">
-                {t("home.expertSection.verificationTitle")}
-              </p>
-              <p className="mt-0.5 text-xs text-muted-foreground">
-                {t("home.expertSection.verificationText")}
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>}
-
-      {/* Expert testimonials are hidden with the expert program. */}
-      {expertsEnabled&&<section className="border-y border-border/60 bg-muted/30">
-        <div className="mx-auto max-w-6xl px-4 py-20 sm:py-28">
-          <SectionHeading
-            eyebrow={t("home.stories.eyebrow")}
-            title={t("home.stories.title")}
-            description={t("home.stories.description")}
-          />
-
-          <div className="mt-10 grid gap-5 lg:grid-cols-3">
-            {localizedStories.map((story, index) => (
-              <figure
-                key={story.name}
-                className={`relative flex min-h-64 flex-col overflow-hidden rounded-3xl border p-7 sm:p-8 ${
-                  index === 0
-                    ? "border-primary/20 bg-primary text-primary-foreground"
-                    : "border-border/70 bg-card"
-                }`}
-              >
-                <Quote
-                  className={`size-7 ${index === 0 ? "text-primary-foreground/55" : "text-primary/50"}`}
-                />
-                <blockquote className="mt-6 text-base leading-7">
-                  {story.quote}
-                </blockquote>
-                <figcaption
-                  className={`mt-auto pt-8 text-xs ${
-                    index === 0
-                      ? "text-primary-foreground/75"
-                      : "text-muted-foreground"
-                  }`}
-                >
-                  <span
-                    className={`font-semibold ${
-                      index === 0
-                        ? "text-primary-foreground"
-                        : "text-foreground"
-                    }`}
-                  >
-                    {story.name}
-                  </span>{" "}
-                  — {story.role}
-                </figcaption>
-              </figure>
-            ))}
-          </div>
-        </div>
-      </section>}
 
       {/* Pricing */}
       {site.tokenProgram.mode==="full"&&<section className="mx-auto max-w-6xl px-4 py-20 sm:py-28">
@@ -606,9 +385,9 @@ function Index() {
         />
 
         <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-4 lg:items-start">
-          {tokenPacks.map((pack, index) => (
+          {homePacks.map((pack) => (
             <article
-              key={pack.name}
+              key={pack.id}
               className={`relative rounded-3xl border bg-card p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl ${
                 pack.popular
                   ? "border-primary shadow-xl shadow-primary/10 lg:-translate-y-3"
@@ -622,7 +401,7 @@ function Index() {
                 </Badge>
               ) : null}
               <h3 className="text-sm font-semibold text-muted-foreground">
-                {getTokenPackLabel(t, index, pack.name)}
+                {locale==="fr"&&pack.name_fr?pack.name_fr:locale==="en"&&pack.name_en?pack.name_en:pack.name_ar}
               </h3>
               <div className="mt-5 flex items-end gap-2">
                 <p className="text-4xl font-semibold tracking-tight">
@@ -633,7 +412,7 @@ function Index() {
                 </p>
               </div>
               <p className="mt-5 text-xl font-semibold">
-                {formatNumber(pack.price, locale)} {t("common.mad")}
+                {formatNumber(pack.price_mad, locale)} {t("common.mad")}
               </p>
               <p className="mt-1 text-xs text-muted-foreground">
                 {t("home.pricing.oneTimePayment")}
