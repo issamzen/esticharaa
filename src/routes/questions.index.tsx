@@ -6,13 +6,10 @@ import { useTranslation } from "react-i18next";
 import { supabase } from "@/lib/supabase";
 import { formatDate } from "@/i18n/format";
 import { SiteLayout, PageHeader } from "@/components/site/layout";
-import { QuestionCard } from "@/components/site/question-card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { questions } from "@/data/platform";
 import { usePageCopy } from "@/i18n/page-copy";
 import { createPageSeo, pageHead } from "@/i18n/route-meta";
-import { localizeQuestion } from "@/i18n/platform";
 import { useLocale } from "@/i18n/use-locale";
 import { formatNumber } from "@/i18n/format";
 import { useSiteSettings } from "@/lib/site-settings";
@@ -78,34 +75,12 @@ function QuestionsPage() {
   function normalizeSearch(value:string){return value.toLocaleLowerCase().normalize("NFD").replace(/[\u064B-\u065F\u0670]/g,"").trim()}
   const liveVisible=useMemo(()=>{const needle=normalizeSearch(query);let list=live.filter(q=>(!category||q.category_slug===category)&&(!needle||normalizeSearch(`${q.title} ${q.body}`).includes(needle)));if(filter==="trending")list=[...list].sort((a,b)=>b.views-a.views);if(filter==="mostAnswered")list=[...list].sort((a,b)=>b.answers_count-a.answers_count);if(filter==="premium")list=site.tokenProgram.mode==="full"?list.filter(q=>q.unlock_cost>0):[];if(filter==="unresolved")list=list.filter(q=>q.answers_count===0);if(filter==="newest")list=[...list].sort((a,b)=>b.created_at.localeCompare(a.created_at));return list},[live,category,query,filter,site.tokenProgram.mode]);
   const suggestions=useMemo(()=>{const needle=normalizeSearch(query);if(needle.length<2)return[];return live.filter(q=>(!category||q.category_slug===category)&&normalizeSearch(`${q.title} ${q.body}`).includes(needle)).slice(0,6)},[live,category,query]);
-  const localized = useMemo(
-    () => questions.map((item) => localizeQuestion(item, locale)),
-    [locale],
-  );
-
   function audienceLabel(id:string|null){if(!id)return locale==="ar"?"كل المشاركين":locale==="fr"?"Toute la communauté":"All contributors";const item=audiences.find(audience=>audience.id===id);return item?(locale==="fr"?item.label_fr:locale==="en"?item.label_en:item.label_ar):id}
   function localizedCategoryName(q:LiveQuestion){return locale==="fr"&&q.category_name_fr?q.category_name_fr:locale==="en"&&q.category_name_en?q.category_name_en:q.category_name_ar??""}
   const activeCategoryName=category?localizedCategoryName(live.find(q=>q.category_slug===category)??({category_name_ar:category,category_name_fr:category,category_name_en:category} as LiveQuestion)):"";
   function highlightedTitle(title:string){const needle=query.trim();if(!needle)return title;const index=title.toLocaleLowerCase().indexOf(needle.toLocaleLowerCase());if(index<0)return title;return <>{title.slice(0,index)}<mark className="rounded bg-accent/25 px-0.5 text-foreground">{title.slice(index,index+needle.length)}</mark>{title.slice(index+needle.length)}</>}
 
-  const visible = useMemo(() => {
-    const needle = query.toLocaleLowerCase();
-    let list = localized.filter(
-      (item) =>
-        (!category || item.categorySlug === category) &&
-        (item.title.toLocaleLowerCase().includes(needle) ||
-          item.tags.some((tag) => tag.toLocaleLowerCase().includes(needle))),
-    );
-    if (filter === "trending") list = list.filter((item) => item.trending);
-    if (filter === "premium") list = list.filter((item) => item.tokens > 0);
-    if (filter === "unresolved") list = list.filter((item) => !item.resolved);
-    if (filter === "mostAnswered")
-      list = [...list].sort((a, b) => b.answers - a.answers);
-    if (filter === "newest") {
-      list = [...list].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-    }
-    return list;
-  }, [category, filter, localized, query]);
+
 
   return (
     <SiteLayout>
@@ -175,14 +150,10 @@ function QuestionsPage() {
               </div>
             </Link>
           ))}
-          {/* Sample questions — shown only while there is no real content yet */}
-          {live.length===0&&visible.map((question)=>(
-              <QuestionCard key={question.id} question={question} />
-            ))}
         </div>
 
         <div className="mt-8 rounded-2xl border border-border/60 bg-muted/35 px-4 py-5 text-center text-sm text-muted-foreground">
-          {live.length>0?(liveVisible.length===0?copy.empty:copy.showing.replace("{{visible}}",formatNumber(liveVisible.length,locale)).replace("{{total}}",formatNumber(live.filter(q=>!category||q.category_slug===category).length,locale))):(visible.length===0?copy.empty:copy.showing.replace("{{visible}}",formatNumber(visible.length,locale)).replace("{{total}}",formatNumber(questions.length,locale)))}
+          {liveVisible.length===0?copy.empty:copy.showing.replace("{{visible}}",formatNumber(liveVisible.length,locale)).replace("{{total}}",formatNumber(live.filter(q=>!category||q.category_slug===category).length,locale))}
         </div>
       </section>
     </SiteLayout>
