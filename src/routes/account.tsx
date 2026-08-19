@@ -20,6 +20,7 @@ import {
   Send,
   Plus,
   ChevronLeft,
+  Star,
 } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import {
@@ -370,6 +371,11 @@ function AccountPage() {
                   <span dir="ltr">{user.email}</span>
                   <span className="rounded-full bg-white/10 px-2.5 py-1 font-semibold">
                     {profile?.role === "expert" ? "خبير معتمد" : profile?.role === "admin" ? "مشرف" : "عضو"}
+                  </span>
+                  <span className="inline-flex items-center gap-1 rounded-full bg-amber-400/15 px-2.5 py-1 font-semibold text-amber-200" dir="ltr">
+                    <Star className="size-3.5 fill-current" />
+                    {Number(profile?.rating||0).toFixed(1)} / 5
+                    <span className="text-white/55">({profile?.reviews_count||0})</span>
                   </span>
                 </div>
               </div>
