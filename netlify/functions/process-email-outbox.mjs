@@ -1,18 +1,91 @@
-import nodemailer from "nodemailer";
-
-export const config={schedule:"*/5 * * * *"};
-const SUPABASE_URL="https://wvbqmuumzbvaxnaajjqo.supabase.co";
-
-export default async function handler(){
- const key=process.env.SUPABASE_SERVICE_ROLE_KEY;const user=process.env.SMTP_USER;const pass=process.env.SMTP_PASSWORD;
- if(!key||!user||!pass)return new Response("Email worker is not configured",{status:503});
- const headers={apikey:key,Authorization:`Bearer ${key}`,"Content-Type":"application/json"};
- const response=await fetch(`${SUPABASE_URL}/rest/v1/email_outbox?status=eq.pending&order=created_at.asc&limit=10`,{headers});
- if(!response.ok)return new Response(await response.text(),{status:500});
- const rows=await response.json();const transport=nodemailer.createTransport({host:process.env.SMTP_HOST||"smtp.hostinger.com",port:Number(process.env.SMTP_PORT||465),secure:Number(process.env.SMTP_PORT||465)===465,auth:{user,pass}});
- let sent=0;
- for(const row of rows){try{await transport.sendMail({from:process.env.EMAIL_FROM||`Estichara.ma <${user}>`,to:row.recipient,subject:row.subject,text:row.body,html:`<div style="font-family:Arial,sans-serif;line-height:1.7;max-width:640px;margin:auto"><h2 style="color:#0D4B4B">Estichara.ma</h2><p>${escapeHtml(row.body).replace(/\n/g,"<br>")}</p><hr style="border:0;border-top:1px solid #eee"><p style="font-size:12px;color:#777">You received this service email because you enabled answer notifications for your question.</p></div>`});await update(row.id,{status:"sent",sent_at:new Date().toISOString(),attempts:row.attempts+1,last_error:""},headers);sent++}catch(error){await update(row.id,{status:row.attempts>=4?"failed":"pending",attempts:row.attempts+1,last_error:String(error?.message||error).slice(0,1000)},headers)}}
- return Response.json({processed:rows.length,sent});
+{
+  "name": "tanstack_start_ts",
+  "private": true,
+  "sideEffects": false,
+  "type": "module",
+  "scripts": {
+    "dev": "vite dev",
+    "build": "vite build",
+    "build:dev": "vite build --mode development",
+    "preview": "vite preview",
+    "lint": "eslint .",
+    "format": "prettier --write ."
+  },
+  "dependencies": {
+    "@hookform/resolvers": "^5.2.2",
+    "@radix-ui/react-accordion": "^1.2.12",
+    "@radix-ui/react-alert-dialog": "^1.1.15",
+    "@radix-ui/react-aspect-ratio": "^1.1.8",
+    "@radix-ui/react-avatar": "^1.1.11",
+    "@radix-ui/react-checkbox": "^1.3.3",
+    "@radix-ui/react-collapsible": "^1.1.12",
+    "@radix-ui/react-context-menu": "^2.2.16",
+    "@radix-ui/react-dialog": "^1.1.15",
+    "@radix-ui/react-dropdown-menu": "^2.1.16",
+    "@radix-ui/react-hover-card": "^1.1.15",
+    "@radix-ui/react-label": "^2.1.8",
+    "@radix-ui/react-menubar": "^1.1.16",
+    "@radix-ui/react-navigation-menu": "^1.2.14",
+    "@radix-ui/react-popover": "^1.1.15",
+    "@radix-ui/react-progress": "^1.1.8",
+    "@radix-ui/react-radio-group": "^1.3.8",
+    "@radix-ui/react-scroll-area": "^1.2.10",
+    "@radix-ui/react-select": "^2.2.6",
+    "@radix-ui/react-separator": "^1.1.8",
+    "@radix-ui/react-slider": "^1.3.6",
+    "@radix-ui/react-slot": "^1.2.4",
+    "@radix-ui/react-switch": "^1.2.6",
+    "@radix-ui/react-tabs": "^1.1.13",
+    "@radix-ui/react-toggle": "^1.1.10",
+    "@radix-ui/react-toggle-group": "^1.1.11",
+    "@radix-ui/react-tooltip": "^1.2.8",
+    "@supabase/supabase-js": "^2.112.3",
+    "@tailwindcss/vite": "^4.2.1",
+    "@tanstack/react-query": "^5.101.1",
+    "@tanstack/react-router": "1.170.18",
+    "@tanstack/react-start": "1.168.32",
+    "@tanstack/router-plugin": "1.168.23",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "cmdk": "^1.1.1",
+    "date-fns": "^4.1.0",
+    "embla-carousel-react": "^8.6.0",
+    "i18next": "^25.4.1",
+    "input-otp": "^1.4.2",
+    "lucide-react": "^0.575.0",
+    "nodemailer": "^7.0.6",
+    "react": "^19.2.0",
+    "react-day-picker": "^9.14.0",
+    "react-dom": "^19.2.0",
+    "react-hook-form": "^7.71.2",
+    "react-i18next": "^15.7.3",
+    "react-resizable-panels": "^4.6.5",
+    "recharts": "^2.15.4",
+    "sonner": "^2.0.7",
+    "tailwind-merge": "^3.5.0",
+    "tailwindcss": "^4.2.1",
+    "tw-animate-css": "^1.3.4",
+    "vaul": "^1.1.2",
+    "vite-tsconfig-paths": "^6.0.2",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.32.0",
+    "@lovable.dev/vite-tanstack-config": "^2.12.0",
+    "@types/node": "^22.16.5",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "@vitejs/plugin-react": "^5.2.0",
+    "eslint": "^9.32.0",
+    "eslint-config-prettier": "^10.1.1",
+    "eslint-plugin-prettier": "^5.2.6",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "eslint-plugin-react-refresh": "^0.4.20",
+    "globals": "^15.15.0",
+    "nitro": "3.0.260603-beta",
+    "prettier": "^3.7.3",
+    "typescript": "^5.8.3",
+    "typescript-eslint": "^8.56.1",
+    "vite": "^8.2.0"
+  }
 }
-function update(id,body,headers){return fetch(`${SUPABASE_URL}/rest/v1/email_outbox?id=eq.${id}`,{method:"PATCH",headers,body:JSON.stringify(body)})}
-function escapeHtml(value){return String(value).replace(/[&<>'"]/g,char=>({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;"}[char]))}
