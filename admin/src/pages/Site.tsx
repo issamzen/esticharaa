@@ -15,7 +15,7 @@ import { Card, Badge, Btn, Empty } from "../ui";
 
 type NavItem = { to: string; key: string; visible: boolean };
 type PayMethod = { id: string; label: string; icon: string; active: boolean; details?: string };
-type Branding = { site_name:string;site_name_ar:string;logo_url:string;favicon_url:string;logo_ar_url:string;logo_latin_url:string;logo_width_desktop:number;logo_width_mobile:number;use_image_logo:boolean };
+type Branding={site_name:string;site_name_ar:string;logo_url:string;favicon_url:string;logo_ar_url:string;logo_latin_url:string;logo_width_desktop:number;logo_width_mobile:number;use_image_logo:boolean;browser_title_ar:string;browser_title_fr:string;browser_title_en:string};
 type Colors = { primary: string; secondary: string; accent: string; muted: string };
 type AboutLocale = { eyebrow:string;title:string;description:string;mission_title:string;mission_text:string;vision_title:string;vision_text:string;team_title:string;team_description:string;partners_title:string };
 type TeamMember = { id:string;name:string;role_ar:string;role_fr:string;role_en:string;image_url:string };
@@ -45,7 +45,7 @@ const COLOR_LABELS: Record<keyof Colors, string> = {
 };
 
 export function SitePage() {
-  const [branding, setBranding] = useState<Branding>({site_name:"",site_name_ar:"",logo_url:"",favicon_url:"",logo_ar_url:"",logo_latin_url:"",logo_width_desktop:170,logo_width_mobile:120,use_image_logo:true});
+  const[branding,setBranding]=useState<Branding>({site_name:"Estichara.ma",site_name_ar:"",logo_url:"",favicon_url:"",logo_ar_url:"",logo_latin_url:"",logo_width_desktop:170,logo_width_mobile:120,use_image_logo:true,browser_title_ar:"Estichara.ma — إجابات موثوقة من المجتمع",browser_title_fr:"Estichara.ma — Questions et réponses fiables",browser_title_en:"Estichara.ma — Trusted questions and answers"});
   const [colors, setColors] = useState<Colors>({ primary: "#0D4B4B", secondary: "#1E8C85", accent: "#D4AF37", muted: "#F2E8D6" });
   const [nav, setNav] = useState<NavItem[]>([]);
   const [footer, setFooter] = useState<NavItem[]>([]);
@@ -165,7 +165,8 @@ export function SitePage() {
         </div>
         <div className="mt-5 grid gap-5 sm:grid-cols-2"><label className="text-xs font-semibold text-ink/60">عرض الشعار على الكمبيوتر: <b>{branding.logo_width_desktop}px</b><input type="range" min="80" max="320" step="5" value={branding.logo_width_desktop} onChange={e=>setBranding({...branding,logo_width_desktop:Number(e.target.value)})} className="mt-2 w-full accent-brand-teal"/></label><label className="text-xs font-semibold text-ink/60">عرض الشعار على الهاتف: <b>{branding.logo_width_mobile}px</b><input type="range" min="60" max="220" step="5" value={branding.logo_width_mobile} onChange={e=>setBranding({...branding,logo_width_mobile:Number(e.target.value)})} className="mt-2 w-full accent-brand-teal"/></label></div>
         <div className="mt-5 flex flex-wrap items-center gap-3 rounded-2xl border border-ink/8 bg-white p-4"><div className="flex-1"><p className="text-xs font-bold">أيقونة المتصفح</p><p className="mt-1 text-[10px] text-ink/45">ICO أو PNG — تظهر في تبويب المتصفح</p></div>{branding.favicon_url?<img src={branding.favicon_url} alt="favicon" className="size-10 rounded-lg border border-ink/10 object-contain"/>:<span className="grid size-10 place-items-center rounded-lg bg-ink/5"><Image className="size-4 text-ink/40"/></span>}<Btn small tone="ghost" onClick={()=>favRef.current?.click()}>رفع أيقونة</Btn><input ref={favRef} type="file" accept="image/x-icon,image/png,image/svg+xml" hidden onChange={e=>e.target.files?.[0]&&upload(e.target.files[0],"favicon")}/></div>
-        <div className="mt-5 border-t border-ink/8 pt-4"><Btn onClick={()=>saveKey("site_branding",branding,"الشعار المصور")}><Save className="size-4"/> حفظ الشعار والمقاسات</Btn></div>
+        <div className="mt-6 border-t border-ink/8 pt-5"><h3 className="font-bold">عنوان تبويب المتصفح</h3><p className="mt-1 text-xs text-ink/50">النص الذي يظهر بجانب الأيقونة أعلى المتصفح في الصفحة الرئيسية.</p><div className="mt-4 grid gap-4"><label className="text-xs font-semibold text-ink/60">العربية<input value={branding.browser_title_ar} onChange={e=>setBranding({...branding,browser_title_ar:e.target.value})} maxLength={70} className="mt-1.5 w-full rounded-xl border border-ink/15 bg-white px-3 py-2.5 text-sm"/></label><label className="text-xs font-semibold text-ink/60">Français<input dir="ltr" value={branding.browser_title_fr} onChange={e=>setBranding({...branding,browser_title_fr:e.target.value})} maxLength={70} className="mt-1.5 w-full rounded-xl border border-ink/15 bg-white px-3 py-2.5 text-sm"/></label><label className="text-xs font-semibold text-ink/60">English<input dir="ltr" value={branding.browser_title_en} onChange={e=>setBranding({...branding,browser_title_en:e.target.value})} maxLength={70} className="mt-1.5 w-full rounded-xl border border-ink/15 bg-white px-3 py-2.5 text-sm"/></label></div></div>
+        <div className="mt-5 border-t border-ink/8 pt-4"><Btn onClick={()=>saveKey("site_branding",branding,"الشعار وعنوان المتصفح")}><Save className="size-4"/> حفظ الشعار والعنوان</Btn></div>
       </Card>
 
       {/* Colors */}
