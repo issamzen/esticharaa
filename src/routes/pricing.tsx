@@ -11,12 +11,10 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { tokenPacks } from "@/data/platform";
 import { usePageCopy } from "@/i18n/page-copy";
 import { createPageSeo, pageHead } from "@/i18n/route-meta";
 import { getHomeFaqs } from "@/i18n/home-content";
 import { formatNumber } from "@/i18n/format";
-import { tokenPackName } from "@/i18n/platform";
 import { useLocale } from "@/i18n/use-locale";
 import { useSiteSettings } from "@/lib/site-settings";
 
@@ -38,7 +36,7 @@ type DbPack = {
 function PricingPage() {
   const copy = usePageCopy().pricing;
   const { t } = useTranslation();
-  const [dbPacks, setDbPacks] = useState<DbPack[] | null>(null);
+  const[dbPacks,setDbPacks]=useState<DbPack[]>([]);
 
   useEffect(() => {
     supabase
@@ -118,39 +116,8 @@ function PricingPage() {
             </Button>
           </div>
           <div className="mt-7 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {dbPacks
-              ? dbPacks.map((pack) => (
-                  <article
-                    key={pack.id}
-                    className="rounded-2xl border border-border/70 bg-background/60 p-5"
-                  >
-                    <p className="text-sm font-semibold text-muted-foreground">
-                      {pack.name_ar}
-                    </p>
-                    <p className="mt-3 text-3xl font-semibold">
-                      {formatNumber(pack.tokens, locale)}
-                    </p>
-                    <p className="mt-2 text-sm text-muted-foreground">
-                      {formatNumber(pack.price_mad, locale)} {t("common.mad")}
-                    </p>
-                  </article>
-                ))
-              : tokenPacks.map((pack) => (
-                  <article
-                    key={pack.name}
-                    className="rounded-2xl border border-border/70 bg-background/60 p-5"
-                  >
-                    <p className="text-sm font-semibold text-muted-foreground">
-                      {tokenPackName(pack.name, locale)}
-                    </p>
-                    <p className="mt-3 text-3xl font-semibold">
-                      {formatNumber(pack.tokens, locale)}
-                    </p>
-                    <p className="mt-2 text-sm text-muted-foreground">
-                      {formatNumber(pack.price, locale)} {t("common.mad")}
-                    </p>
-                  </article>
-                ))}
+            {dbPacks.map((pack)=><article key={pack.id} className="rounded-2xl border border-border/70 bg-background/60 p-5"><p className="text-sm font-semibold text-muted-foreground">{pack.name_ar}</p><p className="mt-3 text-3xl font-semibold">{formatNumber(pack.tokens,locale)}</p><p className="mt-2 text-sm text-muted-foreground">{formatNumber(pack.price_mad,locale)} {t("common.mad")}</p></article>)}
+            {dbPacks.length===0&&<p className="col-span-full py-8 text-center text-sm text-muted-foreground">No active token packs.</p>}
           </div>
         </div>
 
