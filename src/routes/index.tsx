@@ -154,10 +154,11 @@ function Index() {
   return (
     <SiteLayout>
       {/* Featured categories directly below the header */}
-      <section className="relative overflow-hidden border-b border-border/60 bg-gradient-to-r from-primary/[.035] via-background to-accent/[.045]">
+      <section className="sticky top-[4.5rem] z-40 overflow-hidden border-b border-border/60 bg-background/82 shadow-[0_12px_35px_rgba(13,75,75,.08)] backdrop-blur-2xl supports-[backdrop-filter]:bg-background/72">
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-accent/70 to-transparent"/>
         <div className="pointer-events-none absolute -start-20 -top-20 size-48 rounded-full bg-secondary/10 blur-3xl"/>
-        <div className="relative mx-auto flex max-w-7xl items-center gap-3 px-4 py-3 sm:px-6">
-          <div className="hidden shrink-0 items-center gap-2 pe-2 text-xs font-bold text-foreground lg:flex"><span className="grid size-8 place-items-center rounded-xl bg-primary text-primary-foreground shadow-md"><Sparkles className="size-3.5"/></span>{locale==="ar"?"استكشف التصنيفات":locale==="fr"?"Explorer":"Explore"}</div>
+        <div className="relative mx-auto flex max-w-7xl items-center gap-2 px-3 py-2.5 sm:gap-3 sm:px-6">
+          <div className="flex shrink-0 items-center gap-2 pe-1 text-xs font-bold text-foreground sm:pe-2"><span className="grid size-8 place-items-center rounded-xl bg-gradient-to-br from-primary to-secondary text-primary-foreground shadow-lg shadow-primary/20"><Sparkles className="size-3.5"/></span><span className="hidden xl:inline">{locale==="ar"?"استكشف التصنيفات":locale==="fr"?"Explorer":"Explore"}</span></div>
           <div className="relative flex min-w-0 flex-1 items-center gap-1">
             <button type="button" onClick={()=>slideCategories(-1)} aria-label={locale==="ar"?"التصنيفات السابقة":"Previous categories"} className="grid size-8 shrink-0 place-items-center rounded-xl border border-border/60 bg-background/90 text-muted-foreground shadow-sm transition hover:-translate-y-0.5 hover:border-primary/30 hover:bg-primary hover:text-primary-foreground active:scale-90"><ChevronLeft className="size-4 rtl:rotate-180"/></button>
             <div className="pointer-events-none absolute inset-y-0 start-9 z-10 w-7 bg-gradient-to-e from-transparent to-background/90"/>
