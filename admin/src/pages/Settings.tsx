@@ -7,7 +7,7 @@ import { supabase } from "../supabase";
 import { Card, Btn, Badge } from "../ui";
 
 const FIELDS = [
-  { key: "award_per_answer", label: "توكن يكسبه الخبير عن كل جواب معتمد", icon: Award },
+  { key: "award_per_answer", label: "مكافأة اختيار أفضل إجابة (توكن)", icon: Award },
   { key: "best_answer_bonus", label: "بونص أفضل جواب", icon: Coins },
   { key: "min_payout_tokens", label: "الحد الأدنى للسحب (توكن)", icon: Wallet },
   { key: "token_to_mad", label: "قيمة التوكن عند السحب (درهم)", icon: ArrowLeftRight },
@@ -123,7 +123,7 @@ export function SettingsPage() {
   async function save() {
     setSaving(true);
     try {
-      for (const f of FIELDS) await updateSetting(f.key, values[f.key]);
+      for (const f of FIELDS) await updateSetting(f.key, Number(values[f.key]) || 0);
       await updateSetting("maintenance_mode", maintenance);
       await updateSetting("content_access_rules", rules);
       await updateSetting("expert_audiences", audiences);
@@ -249,7 +249,7 @@ export function SettingsPage() {
         <h2 className="flex items-center gap-2 font-bold"><Coins className="size-4.5 text-brand-gold"/> برنامج التوكن المجاني</h2>
         <p className="mt-1 text-xs text-ink/50">تحكم في ظهور التوكن والمكافآت من دون بيع أو شراء.</p>
         <div className="mt-5 grid gap-3 sm:grid-cols-3">{([{id:"hidden",title:"إخفاء كامل",text:"لا يظهر الرصيد أو المحفظة"},{id:"header_only",title:"الرصيد والمكافآت",text:"يظهر في الهيدر ويفتح سجل المحفظة"},{id:"full",title:"النظام الكامل",text:"شراء، فتح إجابات ومكافآت"}] as const).map(option=><button key={option.id} onClick={()=>setTokenProgram({...tokenProgram,mode:option.id})} className={`rounded-2xl border p-4 text-start transition ${tokenProgram.mode===option.id?"border-brand-teal bg-brand-teal/8 ring-2 ring-brand-teal/15":"border-ink/10 bg-white"}`}><p className="text-sm font-bold">{option.title}</p><p className="mt-1 text-[11px] leading-5 text-ink/50">{option.text}</p></button>)}</div>
-        <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4"><NumberField label="توكن عند أول تسجيل" value={tokenProgram.signup_bonus} onChange={value=>setTokenProgram({...tokenProgram,signup_bonus:value})}/><NumberField label="مكافأة مشاركة الموقع" value={tokenProgram.share_bonus} onChange={value=>setTokenProgram({...tokenProgram,share_bonus:value})}/><NumberField label="عدد مكافآت المشاركة يوميًا" value={tokenProgram.share_daily_limit} onChange={value=>setTokenProgram({...tokenProgram,share_daily_limit:value})}/><NumberField label="مكافأة الإجابة المعتمدة" value={Number(values["award_per_answer"])||0} onChange={value=>setValues({...values,award_per_answer:String(value)})}/></div>
+        <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4"><NumberField label="توكن عند أول تسجيل" value={tokenProgram.signup_bonus} onChange={value=>setTokenProgram({...tokenProgram,signup_bonus:value})}/><NumberField label="مكافأة مشاركة الموقع" value={tokenProgram.share_bonus} onChange={value=>setTokenProgram({...tokenProgram,share_bonus:value})}/><NumberField label="عدد مكافآت المشاركة يوميًا" value={tokenProgram.share_daily_limit} onChange={value=>setTokenProgram({...tokenProgram,share_daily_limit:value})}/><NumberField label="مكافأة أفضل إجابة" value={Number(values["award_per_answer"])||0} onChange={value=>setValues({...values,award_per_answer:String(value)})}/></div>
         <div className="mt-4 grid gap-4 sm:grid-cols-2"><NumberField label="قيمة التوكن بالدرهم المغربي" value={Number(values["token_to_mad"])||0} onChange={value=>setValues({...values,token_to_mad:String(value)})}/><Switch checked={tokenProgram.wallet_enabled} onChange={value=>setTokenProgram({...tokenProgram,wallet_enabled:value})} label="تفعيل صفحة المحفظة والسجل" help="عند تعطيلها لا يمكن فتح المحفظة حتى لو ظهر النظام."/></div>
         {tokenProgram.mode!=="full"&&<p className="mt-4 rounded-xl bg-emerald-50 p-3 text-xs leading-6 text-emerald-700">الوضع المجاني يعطّل شراء التوكن والأسئلة المدفوعة وفتح الإجابات بالتوكن تلقائيًا. تبقى المكافآت وسجلها متاحة في وضع «الرصيد والمكافآت».</p>}
       </Card>
