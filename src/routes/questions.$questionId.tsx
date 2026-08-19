@@ -51,6 +51,8 @@ type DbAnswer = {
   expert_verified: boolean | null;
   expert_rating: number | null;
   expert_reviews: number | null;
+  answer_rating: number | null;
+  answer_reviews_count: number | null;
 };
 
 type Audience = {
@@ -162,7 +164,7 @@ function DbQuestionDetail({ questionId }: { questionId: string }) {
 
   async function openAttachment(path:string){const{data,error}=await supabase.storage.from("question-attachments").createSignedUrl(path,300);if(error||!data){toast.error(locale==="ar"?"تعذر فتح المرفق":"Could not open attachment");return}window.open(data.signedUrl,"_blank","noopener,noreferrer")}
   async function submitReport(){if(!reportTarget||!user){navigate({to:"/auth"});return}if(reportDetails.trim().length<5){toast.error(locale==="ar"?"أضف تفاصيل قصيرة عن سبب البلاغ":"Please add a short explanation");return}setReportBusy(true);const{error}=await supabase.rpc("create_content_report",{p_target_type:reportTarget.type,p_target_id:reportTarget.id,p_category:reportCategory,p_details:reportDetails.trim()});setReportBusy(false);if(error){toast.error(error.message.includes("REPORT_ALREADY_OPEN")?(locale==="ar"?"لديك بلاغ مفتوح بالفعل حول هذا المحتوى":"You already have an open report for this content"):error.message);return}setReportTarget(null);setReportDetails("");toast.success(locale==="ar"?"تم إرسال البلاغ إلى فريق المراجعة":"Report sent to moderation")}
-  async function submitReview(){if(!reviewAnswer||!user)return;if(reviewComment.trim().length>0&&reviewComment.trim().length<5){toast.error(locale==="ar"?"اكتب تعليقًا أوضح أو اتركه فارغًا":"Write a clearer comment or leave it empty");return}setReviewBusy(true);const{error}=await supabase.rpc("submit_expert_review",{p_answer_id:reviewAnswer.id,p_rating:reviewRating,p_comment:reviewComment.trim()});setReviewBusy(false);if(error){toast.error(error.message.includes("UNLOCK_REQUIRED")?(locale==="ar"?"يجب فتح الإجابة قبل تقييمها":"Unlock the answer before reviewing it"):error.message);return}setReviewAnswer(null);setReviewComment("");toast.success(locale==="ar"?"شكرًا، تم حفظ تقييمك":"Thank you, your review was saved")}
+  async function submitReview(){if(!reviewAnswer||!user)return;if(reviewComment.trim().length>0&&reviewComment.trim().length<5){toast.error(locale==="ar"?"اكتب تعليقًا أوضح أو اتركه فارغًا":"Write a clearer comment or leave it empty");return}setReviewBusy(true);const{error}=await supabase.rpc("submit_expert_review",{p_answer_id:reviewAnswer.id,p_rating:reviewRating,p_comment:reviewComment.trim()});setReviewBusy(false);if(error){toast.error(error.message.includes("UNLOCK_REQUIRED")?(locale==="ar"?"يجب فتح الإجابة قبل تقييمها":"Unlock the answer before reviewing it"):error.message);return}setReviewAnswer(null);setReviewComment("");await load();toast.success(locale==="ar"?"شكرًا، تم حفظ تقييمك":"Thank you, your review was saved")}
 
   async function selectBestAnswer(answerId:string){
     if(!q?.is_owner||selectingBestId)return;
@@ -427,15 +429,11 @@ function DbQuestionDetail({ questionId }: { questionId: string }) {
                     <BadgeCheck className="size-4 text-secondary" />
                   ) : null}
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  {a.expert_title}
-                  {a.expert_rating ? (
-                    <>
-                      {" "}
-                      · {a.expert_rating}{" "}
-                      <Star className="inline size-3 fill-accent text-accent" />
-                    </>
-                  ) : null}
+                <p className="flex flex-wrap items-center gap-1 text-xs text-muted-foreground">
+                  {a.expert_title&&<span>{a.expert_title}</span>}
+                  {Number(a.expert_reviews)>0?(
+                    <><span>·</span><span dir="ltr">{Number(a.expert_rating||0).toFixed(1)} / 5</span><Star className="inline size-3 fill-accent text-accent"/><span>· {formatNumber(Number(a.expert_reviews),locale)} {locale==="ar"?"تقييم":locale==="fr"?"avis":"ratings"}</span></>
+                  ):(<span>{locale==="ar"?"مساهم جديد دون تقييمات":locale==="fr"?"Nouveau contributeur sans avis":"New contributor with no ratings"}</span>)}
                 </p>
               </div>
             </div>
@@ -500,6 +498,10 @@ function DbQuestionDetail({ questionId }: { questionId: string }) {
                   </div>
                 </>
               )}
+            </div>
+            <div className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-amber-200/70 bg-amber-50/60 px-4 py-3 dark:border-amber-900/60 dark:bg-amber-950/20">
+              <div className="flex items-center gap-1" dir="ltr">{[1,2,3,4,5].map(value=><Star key={value} className={`size-4 ${value<=Math.round(Number(a.answer_rating||0))?"fill-amber-400 text-amber-400":"text-amber-200 dark:text-amber-900"}`}/>)}</div>
+              {Number(a.answer_reviews_count)>0?<p className="text-xs font-semibold text-amber-900 dark:text-amber-100"><span dir="ltr">{Number(a.answer_rating||0).toFixed(1)} / 5</span><span className="mx-1 text-amber-700/60">·</span>{formatNumber(Number(a.answer_reviews_count),locale)} {locale==="ar"?"تقييم لهذه الإجابة":locale==="fr"?"avis pour cette réponse":"ratings for this answer"}</p>:<p className="text-xs text-amber-800/70 dark:text-amber-200/70">{locale==="ar"?"لم تحصل هذه الإجابة على تقييم بعد":locale==="fr"?"Cette réponse n’a pas encore été évaluée":"This answer has not been rated yet"}</p>}
             </div>
             <div className="mt-5 flex flex-wrap items-center justify-end gap-2 border-t border-border/50 pt-4">
               {q.is_owner&&!q.answers.some(answer=>answer.is_best)&&<Button size="sm" className="rounded-xl bg-amber-500 text-white hover:bg-amber-600" disabled={selectingBestId!==null} onClick={()=>selectBestAnswer(a.id)}>{selectingBestId===a.id?<Loader2 className="size-3.5 animate-spin"/>:<Star className="size-3.5 fill-current"/>}{locale==="ar"?"اختيار كأفضل إجابة":locale==="fr"?"Choisir comme meilleure":"Select as best answer"}</Button>}
