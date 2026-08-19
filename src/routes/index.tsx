@@ -143,47 +143,13 @@ function Index() {
   const steps = getHomeSteps(t);
   const localizedStories = getHomeStories(t);
   const localizedFaqs = getHomeFaqs(t);
-  const locale = useLocale();
-  const aboutPlatform = locale === "ar"
-    ? {
-        badge: "حول Estichara.ma",
-        purpose: "Estichara.ma هي منصة مغربية للأسئلة والأجوبة تربط المستخدمين بخبراء موثّقين في مجالات الأعمال والقانون والتقنية والتعليم والصحة والمالية والخدمات المهنية.",
-        features: "يمكن للمستخدمين إنشاء حساب، وطرح الأسئلة، وتلقي إجابات من خبراء معتمدين، وشراء التوكن، وفتح الإجابات المميزة، وإدارة استشاراتهم من داخل المنصة.",
-        google: "يُستخدم تسجيل الدخول بواسطة Google لتسهيل إنشاء الحساب والدخول. لا نصل إلا إلى المعلومات الأساسية التي يوافق المستخدم على مشاركتها، مثل الاسم والبريد الإلكتروني والصورة، ولا نحصل على كلمة مرور Google.",
-        privacy: "لا تبيع Estichara.ma بيانات مستخدمي Google ولا تؤجرها ولا تشاركها لأغراض إعلانية.",
-        contact: "معلومات التواصل",
-        website: "الموقع",
-        email: "البريد الإلكتروني للدعم",
-      }
-    : locale === "fr"
-      ? {
-          badge: "À propos de Estichara.ma",
-          purpose: "Estichara.ma est une plateforme marocaine de questions-réponses qui met les utilisateurs en relation avec des experts vérifiés dans les domaines du droit, des affaires, de la technologie, de l’éducation, de la santé et de la finance.",
-          features: "Les utilisateurs peuvent créer un compte, poser des questions, recevoir des réponses d’experts, acheter des jetons, débloquer des réponses premium et gérer leurs consultations sur la plateforme.",
-          google: "La connexion Google facilite l’inscription et l’authentification. Estichara.ma accède uniquement aux informations de base autorisées par l’utilisateur, comme le nom, l’adresse e-mail et la photo de profil, et ne reçoit jamais le mot de passe Google.",
-          privacy: "Estichara.ma ne vend, ne loue et ne partage pas les données des utilisateurs Google à des fins publicitaires.",
-          contact: "Coordonnées",
-          website: "Site web",
-          email: "E-mail d’assistance",
-        }
-      : {
-          badge: "About Estichara.ma",
-          purpose: "Estichara.ma is a Moroccan question-and-answer platform connecting users with verified experts in business, law, technology, education, health, finance and professional services.",
-          features: "Users can create an account, submit questions, receive expert answers, purchase tokens, unlock premium answers and manage their consultations through the platform.",
-          google: "Google Sign-In simplifies registration and authentication. Estichara.ma accesses only the basic information authorized by the user, such as name, email address and profile picture, and never receives the user’s Google password.",
-          privacy: "Estichara.ma does not sell, rent or share Google user data for advertising purposes.",
-          contact: "Contact information",
-          website: "Website",
-          email: "Support email",
-        };
+  const locale=useLocale();
+  const expertsEnabled=site.features["expert_applications"]!==false;
+  const visibleFeatures=expertsEnabled?features:features.filter((_,index)=>index!==0);
+  const visibleSteps=expertsEnabled?steps:steps.map((step,index)=>index===1?{...step,title:locale==="ar"?"شارك السؤال مع المجتمع":locale==="fr"?"Partagez avec la communauté":"Share with the community",text:locale==="ar"?"يمكن لأي عضو مسجل مشاركة خبرته، وتظهر الإجابات بعد مراجعة الإدارة.":locale==="fr"?"Tout membre inscrit peut contribuer; les réponses sont publiées après modération.":"Any registered member can contribute; answers appear after moderation."}:step);
   const categoryStrip=homeCategories.length?homeCategories.map(item=>({slug:item.slug,name:locale==="fr"&&item.name_fr?item.name_fr:locale==="en"&&item.name_en?item.name_en:item.name_ar,icon:item.icon||"Sparkles",count:Number(item.question_count)||0})):categories.slice(0,9).map((item,index)=>({slug:item.slug,name:getCategoryLabel(t,index,item.name),icon:item.icon,count:item.questions}));
   function slideCategories(direction:1|-1){const amount=Math.min(420,Math.round((categoryRail.current?.clientWidth??320)*.72));categoryRail.current?.scrollBy({left:direction*amount*(locale==="ar"?-1:1),behavior:"smooth"})}
-  const stats = [
-    { value: "12.4k+", label: t("home.stats.answers") },
-    { value: "640+", label: t("home.stats.experts") },
-    { value: "3h 12m", label: t("home.stats.response") },
-    { value: "4.9/5", label: t("home.stats.rating") },
-  ];
+  const stats=[{value:"12.4k+",label:t("home.stats.answers")},...(expertsEnabled?[{value:"640+",label:t("home.stats.experts")}]:[]),{value:"3h 12m",label:t("home.stats.response")},{value:"4.9/5",label:t("home.stats.rating")}];
 
   return (
     <SiteLayout>
@@ -223,8 +189,8 @@ function Index() {
           className="absolute -right-40 top-10 -z-10 size-[34rem] rounded-full bg-accent/15 blur-3xl"
         />
 
-        <div className="mx-auto grid max-w-6xl gap-14 px-4 py-16 sm:py-24 lg:grid-cols-[1.08fr_.92fr] lg:items-center lg:gap-16 lg:py-28">
-          <div className="min-w-0">
+        <div className={`mx-auto grid max-w-6xl gap-14 px-4 py-16 sm:py-24 lg:items-center lg:gap-16 lg:py-28 ${expertsEnabled?"lg:grid-cols-[1.08fr_.92fr]":"place-items-center"}`}>
+          <div className={`min-w-0 ${expertsEnabled?"":"mx-auto max-w-3xl text-center"}`}>
             <Badge
               variant="outline"
               className="rounded-full border-primary/20 bg-background/70 px-3 py-1.5 shadow-sm backdrop-blur-md"
@@ -232,7 +198,7 @@ function Index() {
               <span className="me-1.5 inline-flex size-5 items-center justify-center rounded-full bg-primary/10">
                 <Sparkles className="size-3 text-primary" />
               </span>
-              {t("home.badge")}
+              {expertsEnabled?t("home.badge"):(locale==="ar"?"مجتمع مغربي للأسئلة والأجوبة":locale==="fr"?"Communauté marocaine de questions-réponses":"Moroccan question-and-answer community")}
             </Badge>
 
             <h1 className="mt-7 max-w-3xl text-balance text-4xl font-semibold leading-[1.04] tracking-[-0.035em] sm:text-6xl lg:text-[4.25rem]">
@@ -242,15 +208,7 @@ function Index() {
               </span>
             </h1>
             <p className="mt-6 max-w-xl text-pretty text-base leading-7 text-muted-foreground sm:text-lg sm:leading-8">
-              {t("home.heroDescription")}
-            </p>
-            <p className="mt-3 max-w-xl text-sm leading-6 text-muted-foreground">
-              <strong className="font-semibold text-foreground">Estichara.ma</strong>{" "}
-              {locale === "ar"
-                ? "هي منصة مغربية للأسئلة والأجوبة تربط المستخدمين بخبراء موثّقين للحصول على إرشادات عملية، مع نظام توكن لفتح الإجابات وإدارة مكافآت الخبراء."
-                : locale === "fr"
-                  ? "est une plateforme marocaine de questions-réponses qui met les utilisateurs en relation avec des experts vérifiés, avec un système de jetons pour débloquer les réponses et récompenser les experts."
-                  : "is a Moroccan question-and-answer marketplace connecting users with verified experts, with a token system for unlocking answers and rewarding expert contributions."}
+              {expertsEnabled?t("home.heroDescription"):(locale==="ar"?"اطرح سؤالك مجانًا، وشارك المعرفة، واحصل على إجابات مفيدة من أعضاء المجتمع بعد مراجعتها لضمان الجودة.":locale==="fr"?"Posez votre question gratuitement, partagez vos connaissances et recevez des réponses utiles de la communauté après modération.":"Ask for free, share knowledge, and receive helpful community answers after moderation.")}
             </p>
 
             <div className="mt-8 max-w-xl rounded-2xl border border-border/70 bg-background/85 p-2 shadow-xl shadow-primary/5 backdrop-blur-xl">
@@ -283,11 +241,7 @@ function Index() {
             </div>
 
             <div className="mt-8 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-muted-foreground">
-              {[
-                t("home.assuranceNoSubscription"),
-                t("home.assurancePrivate"),
-                t("home.assuranceVerified"),
-              ].map((item) => (
+              {[t("home.assuranceNoSubscription"),t("home.assurancePrivate"),...(expertsEnabled?[t("home.assuranceVerified")]:[])].map((item)=>( 
                 <span key={item} className="inline-flex items-center gap-1.5">
                   <Check className="size-3.5 text-primary" /> {item}
                 </span>
@@ -295,8 +249,8 @@ function Index() {
             </div>
           </div>
 
-          {/* Product preview */}
-          <div className="relative mx-auto w-full min-w-0 max-w-lg lg:mx-0">
+          {/* Expert preview is hidden while the expert program is disabled. */}
+          {expertsEnabled&&<div className="relative mx-auto w-full min-w-0 max-w-lg lg:mx-0">
             <div
               aria-hidden="true"
               className="absolute inset-x-8 inset-y-10 -z-10 rounded-[2rem] bg-primary/20 blur-3xl"
@@ -415,11 +369,11 @@ function Index() {
                 </p>
               </div>
             </div>
-          </div>
+          </div>}
         </div>
 
         <div className="mx-auto max-w-6xl px-4 pb-12 sm:pb-16">
-          <div className="grid grid-cols-2 divide-x divide-y divide-border/60 overflow-hidden rounded-2xl border border-border/60 bg-background/60 backdrop-blur-md sm:grid-cols-4 sm:divide-y-0">
+          <div className={`grid grid-cols-2 divide-x divide-y divide-border/60 overflow-hidden rounded-2xl border border-border/60 bg-background/60 backdrop-blur-md sm:divide-y-0 ${expertsEnabled?"sm:grid-cols-4":"sm:grid-cols-3"}`}>
             {stats.map((stat) => (
               <div key={stat.label} className="px-4 py-5 text-center sm:px-6">
                 <p className="text-xl font-semibold tracking-tight sm:text-2xl">
@@ -434,29 +388,6 @@ function Index() {
         </div>
       </section>
 
-      {/* Clear platform purpose and OAuth disclosure, localized per language. */}
-      <section className="mx-auto max-w-6xl px-4 py-12 sm:py-16">
-        <div className="rounded-3xl border border-border/70 bg-card p-6 shadow-sm sm:p-8">
-          <Badge variant="outline" className="rounded-full">{aboutPlatform.badge}</Badge>
-          <h2 className="mt-4 text-3xl font-semibold tracking-tight">Estichara.ma</h2>
-          <div className="mt-4 max-w-4xl space-y-4 leading-7 text-muted-foreground">
-            <p>{aboutPlatform.purpose}</p>
-            <p>{aboutPlatform.features}</p>
-            <p>{aboutPlatform.google}</p>
-            <p>{aboutPlatform.privacy}</p>
-          </div>
-          <div className="mt-6 rounded-2xl bg-muted/50 p-4">
-            <h3 className="font-semibold">{aboutPlatform.contact}</h3>
-            <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
-              <li>{aboutPlatform.website}: <a href="https://estichara.ma" className="ms-2 text-primary hover:underline">https://estichara.ma</a></li>
-              <li>{aboutPlatform.email}: <a href="mailto:contact@estichara.ma" className="ms-2 text-primary hover:underline">contact@estichara.ma</a></li>
-              <li><Link to="/privacy" className="text-primary hover:underline">{t("footer.privacy")}</Link></li>
-              <li><Link to="/terms" className="text-primary hover:underline">{t("footer.terms")}</Link></li>
-            </ul>
-          </div>
-        </div>
-      </section>
-
       {/* Value proposition */}
       <section className="mx-auto max-w-6xl px-4 py-20 sm:py-28">
         <SectionHeading
@@ -466,7 +397,7 @@ function Index() {
         />
 
         <div className="mt-10 grid gap-4 lg:grid-cols-6">
-          {features.map((feature, index) => (
+          {visibleFeatures.map((feature,index)=>( 
             <article
               key={feature.title}
               className={`${feature.span} group relative min-h-64 overflow-hidden rounded-3xl border border-border/70 bg-card p-7 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-primary/25 hover:shadow-xl hover:shadow-primary/5 sm:p-8`}
@@ -517,7 +448,7 @@ function Index() {
               aria-hidden="true"
               className="absolute left-[12.5%] right-[12.5%] top-6 hidden border-t border-dashed border-primary/30 lg:block"
             />
-            {steps.map((step) => (
+            {visibleSteps.map((step) => (
               <article key={step.number} className="relative">
                 <div className="relative z-10 grid size-12 place-items-center rounded-full border border-primary/20 bg-background text-xs font-semibold text-primary shadow-sm">
                   {step.number}
@@ -600,8 +531,8 @@ function Index() {
         </div>
       </section>
 
-      {/* Experts */}
-      <section className="relative overflow-hidden border-y border-border/60 bg-card/40">
+      {/* Expert information follows the administration feature switch. */}
+      {expertsEnabled&&<section className="relative overflow-hidden border-y border-border/60 bg-card/40">
         <div
           aria-hidden="true"
           className="absolute right-0 top-0 size-80 rounded-full bg-primary/10 blur-3xl"
@@ -637,57 +568,10 @@ function Index() {
             </div>
           </div>
         </div>
-      </section>
+      </section>}
 
-      {/* Categories */}
-      <section className="mx-auto max-w-6xl px-4 py-20 sm:py-28">
-        <SectionHeading
-          eyebrow={t("home.categorySection.eyebrow")}
-          title={t("home.categorySection.title")}
-          action={
-            <TextLink to="/categories">
-              {t("home.categorySection.exploreAll", { count: 20 })}
-            </TextLink>
-          }
-        />
-        <div className="mt-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {categories.slice(0, 8).map((category) => {
-            const Icon = (Icons[category.icon as keyof typeof Icons] ??
-              Icons.Sparkles) as Icons.LucideIcon;
-
-            return (
-              <Link
-                key={category.slug}
-                to="/questions"
-                search={{ category: category.slug }}
-                className="group flex items-center gap-4 rounded-2xl border border-border/70 bg-card p-4 transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/25 hover:shadow-lg hover:shadow-primary/5"
-              >
-                <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
-                  <Icon className="size-4.5" />
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-sm font-semibold">
-                    {getCategoryLabel(t, category.slug, category.name)}
-                  </span>
-                  <span className="mt-0.5 block text-xs text-muted-foreground">
-                    {t("home.categorySection.questionCount", {
-                      count: category.questions,
-                      formattedCount: formatNumber(category.questions, locale),
-                    })}
-                  </span>
-                </span>
-                <ArrowRight
-                  data-directional
-                  className="size-4 -translate-x-1 text-muted-foreground opacity-0 transition-all group-hover:translate-x-0 group-hover:opacity-100"
-                />
-              </Link>
-            );
-          })}
-        </div>
-      </section>
-
-      {/* Social proof */}
-      <section className="border-y border-border/60 bg-muted/30">
+      {/* Expert testimonials are hidden with the expert program. */}
+      {expertsEnabled&&<section className="border-y border-border/60 bg-muted/30">
         <div className="mx-auto max-w-6xl px-4 py-20 sm:py-28">
           <SectionHeading
             eyebrow={t("home.stories.eyebrow")}
@@ -733,7 +617,7 @@ function Index() {
             ))}
           </div>
         </div>
-      </section>
+      </section>}
 
       {/* Pricing */}
       {site.tokenProgram.mode==="full"&&<section className="mx-auto max-w-6xl px-4 py-20 sm:py-28">
@@ -866,13 +750,13 @@ function Index() {
 
           <div className="relative mx-auto max-w-2xl">
             <span className="mx-auto grid size-12 place-items-center rounded-2xl border border-white/15 bg-white/10 backdrop-blur">
-              <Lock className="size-5" />
+              {expertsEnabled?<Lock className="size-5"/>:<MessageSquare className="size-5"/>}
             </span>
             <h2 className="mt-6 text-balance text-3xl font-semibold tracking-tight sm:text-5xl">
-              {t("home.cta.title")}
+              {expertsEnabled?t("home.cta.title"):(locale==="ar"?"اسأل، أجب، وساعد المجتمع على النمو.":locale==="fr"?"Posez, répondez et faites grandir la communauté.":"Ask, answer, and help the community grow.")}
             </h2>
             <p className="mx-auto mt-5 max-w-xl text-pretty leading-7 text-primary-foreground/75">
-              {t("home.cta.description")}
+              {expertsEnabled?t("home.cta.description"):(locale==="ar"?"المنصة مجانية حاليًا. شارك سؤالك أو خبرتك، وتظهر الإجابات بعد مراجعة الإدارة.":locale==="fr"?"La plateforme est gratuite. Partagez votre question ou votre expérience; les réponses sont modérées avant publication.":"The platform is currently free. Share a question or your experience; answers are moderated before publication.")}
             </p>
             <div className="mt-8 flex flex-wrap justify-center gap-3">
               <Button
